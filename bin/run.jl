@@ -32,7 +32,7 @@ for mean in [true,false]
         local cascade = Cascade(df; localkwargs...)
         local data = collect_data(cascade)
         set_order!(cascade, sortperm(get_value(cascade.start)))
-
+        
         local pviolin = Plot{Violin}(cascade; ylabel="Efficiency (%)")
         local pscatter = Plot{Scatter}(cascade; ylabel="Efficiency (%)")
         local pvertical = Plot{Vertical}(cascade; ylabel="Efficiency (%)")
