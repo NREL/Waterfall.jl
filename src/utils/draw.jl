@@ -33,11 +33,6 @@ function draw(x::Horizontal, ff; opacity=missing, kwargs...)
     coloring = Coloring(x; opacity=opacity, kwargs...)
 
     [draw(x.points[ii], coloring[ii]) for ii in 1:ff]
-
-    # coloring = Coloring(x; opacity=1.0, kwargs...)
-    # draw(x.points[ff], coloring[ff])
-
-    # [draw(p, c; kwargs...) for (p, c) in zip(x.points, coloring)]
     return nothing
 end
 

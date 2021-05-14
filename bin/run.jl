@@ -24,7 +24,7 @@ leo tristique, a condimentum tortor faucibus."""
 
 
 for mean in [true,false]
-    for samples in [1,5,50]
+    for samples in [1,5,10,50]
         samples*mean == 1 && continue
 
         localkwargs = (label=:Process, samples=samples, distribution=distribution, fuzziness=fuzziness)
@@ -32,7 +32,7 @@ for mean in [true,false]
         local cascade = Cascade(df; localkwargs...)
         local data = collect_data(cascade)
         set_order!(cascade, sortperm(get_value(cascade.start)))
-        
+
         local pviolin = Plot{Violin}(cascade; ylabel="Efficiency (%)")
         local pscatter = Plot{Scatter}(cascade; ylabel="Efficiency (%)")
         local pvertical = Plot{Vertical}(cascade; ylabel="Efficiency (%)")
