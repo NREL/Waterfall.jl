@@ -129,3 +129,18 @@ function _draw_xaxis(ax::Axis; angle=-pi/4, halign=:right, valign=:top)
         )
     end
 end
+
+
+function _draw_title(str::String)
+    text(str, Point(WIDTH/2, SEP), halign=:center, valign=:top)
+    return nothing
+end
+
+function _draw_title(str...)
+    y0 = SEP
+    dy = get_fontsize()
+    for ii in 1:length(str)
+        text(str[ii], Point(WIDTH/2, y0+dy*(ii-1)), halign=:center, valign=:top)
+    end
+    return nothing
+end

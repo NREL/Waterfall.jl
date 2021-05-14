@@ -12,6 +12,17 @@ mean=true
 kwargs = (label=:Process, samples=samples, distribution=distribution, fuzziness=fuzziness)
 
 
+loremipsum = """Lorem ipsum dolor sit amet, consectetur
+adipiscing elit. Nunc placerat lorem ullamcorper,
+sagittis massa et, elementum dui. Sed dictum ipsum vel
+commodo pellentesque. Aliquam erat volutpat. Nam est
+dolor, vulputate a molestie aliquet, rutrum quis lectus.
+Sed lectus mauris, tristique et tempor id, accumsan
+pharetra lacus. Donec quam magna, accumsan a quam
+quis, mattis hendrerit nunc. Nullam vehicula leo ac
+leo tristique, a condimentum tortor faucibus."""
+
+
 for mean in [true,false]
     for samples in [1,5,50]
         samples*mean == 1 && continue
@@ -38,6 +49,7 @@ for mean in [true,false]
                 fontsize(14)
                 Luxor.setmatrix([1 0 0 1 LEFT_BORDER TOP_BORDER])
                 # draw(p.cascade, ff)
+                _draw_title(titlecase("$distribution Distribution"),"N = $samples")
                 draw(p)
                 mean && draw(pmean.cascade; style=:stroke, opacity=1.0)
             end WIDTH+LEFT_BORDER+RIGHT_BORDER HEIGHT+TOP_BORDER+BOTTOM_BORDER f
