@@ -36,6 +36,10 @@ function Cascade{Data}(value::Matrix{T}, label::Vector{String}) where T<:Real
     return Cascade{Data}(start, stop, steps)
 end
 
+function Cascade{Data}(value::Vector, label::Vector)
+    return Cascade{Data}(reshape(value, length(value), 1), label)
+end
+
 
 function Cascade{T}(fun::Function, cascade::Cascade{Data}) where T<:Sampling
     result = T(fun, collect_data(cascade))

@@ -39,7 +39,7 @@ function cumulative_x(data::Array{Data,1}, args...; kwargs...)
     return cumulative_x(args...; steps=STEPS, samples=SAMPLES, kwargs...)
 end
 
-cumulative_x(args...) = _calculate(cumulative_x, args...)
+cumulative_x(args...) = _cumulative(cumulative_x, args...)
 
 
 """
@@ -59,23 +59,62 @@ function cumulative_y(v::VecOrMat{T}, shift::Real=0.0) where T <: Real
     return result
 end
 
-cumulative_y(args...) = _calculate(cumulative_y, args...)
+cumulative_y(args...) = _cumulative(cumulative_y, args...)
 
 
 "Helper function for different types of calculation inputs"
-_calculate(fun::Function, cascade::Cascade, args...) = fun(collect_data(cascade), args...)
-_calculate(fun::Function, data::Vector{Data}, args...) = fun(get_value(data), args...)
+_cumulative(fun::Function, cascade::Cascade, args...) = fun(collect_data(cascade), args...)
+_cumulative(fun::Function, data::Vector{Data}, args...) = fun(get_value(data), args...)
 
 
-calculate_mean(v::Vector{T}) where T <: Real = Statistics.mean(v)
+
+
+
+calculate_mean(vec::Vector{T}) where T <: Real = Statistics.mean(vec)
 calculate_mean(mat::Matrix{T}; dims=2) where T <: Real = Statistics.mean(mat; dims=dims)
 
-function calculate_mean(cascade::Cascade{Data})
+function calculate_mean(cascade::Cascade{Data}; kwargs...)
     data = collect_data(cascade)
     label = get_label.(data)
     value = calculate_mean(get_value(data))
     return Cascade{Data}(value, label)
 end
+
+function calculate_mean(plot::Plot{Data}; kwargs...)
+    value = calculate_mean(plot.cascade; kwargs...)
+    return Plot{Horizontal}(Cascade{Horizontal}(value), plot.xaxis, plot.yaxis)
+end
+
+# calculate_mean(args...; kwargs...) = _calculate(calculate_mean, args...; kwargs...)
+
+
+"""
+"""
+function calculate_quantile(cascade::Cascade{Data}, p::Float64; kwargs...)
+    # Calculate values an redefine cascade.
+    data = collect_data(cascade)
+    label = get_label.(data)
+    value = Statistics.quantile!.(copy.(get_value.(data)), p; kwargs...)
+    return Cascade{Data}(value, label)
+end
+
+function calculate_quantile(plot::Plot{Data}, p::Float64; kwargs...)
+    println(p)
+    cascade = calculate_quantile(plot.cascade, p; kwargs...)
+    plot = Plot{Horizontal}(Cascade{Horizontal}(value, p), plot.xaxis, plot.yaxis)
+end
+
+# calculate_quantile(args...; kwargs...) = _calculate(calculate_quantile, args...; kwargs...)
+
+
+"""
+"""
+function _calculate(fun::Function, plot::Plot{Data}, args...; kwargs...)
+    value = fun(plot.cascade, args...; kwargs...)
+    return Plot{Horizontal}(Cascade{Horizontal}(value), plot.xaxis, plot.yaxis)
+end
+
+
 
 
 """

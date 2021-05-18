@@ -139,3 +139,11 @@ function _draw_title(str...)
     end
     return nothing
 end
+
+
+# function _draw_legend()
+#     y0 = SEP*3
+# end
+
+# _legend_highlight(stat::String, hue; style=:stroke)
+# draw(highlight(pdata, hl).cascade; hue=hue, style=:stroke, opacity=1.0)

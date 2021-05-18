@@ -11,20 +11,10 @@ fuzziness=(0.01,0.1)
 mean=true
 kwargs = (label=:Process, samples=samples, distribution=distribution, fuzziness=fuzziness)
 
+parallel_coordinates = true
 
-loremipsum = """Lorem ipsum dolor sit amet, consectetur
-adipiscing elit. Nunc placerat lorem ullamcorper,
-sagittis massa et, elementum dui. Sed dictum ipsum vel
-commodo pellentesque. Aliquam erat volutpat. Nam est
-dolor, vulputate a molestie aliquet, rutrum quis lectus.
-Sed lectus mauris, tristique et tempor id, accumsan
-pharetra lacus. Donec quam magna, accumsan a quam
-quis, mattis hendrerit nunc. Nullam vehicula leo ac
-leo tristique, a condimentum tortor faucibus."""
-
-
-for mean in [true,false]
-    for samples in [1,5,10,50]
+for samples in [1,5,10,50]
+    for mean in [true,false]
         samples*mean == 1 && continue
 
         localkwargs = (label=:Process, samples=samples, distribution=distribution, fuzziness=fuzziness)
@@ -33,25 +23,31 @@ for mean in [true,false]
         local data = collect_data(cascade)
         set_order!(cascade, sortperm(get_value(cascade.start)))
 
-        local pviolin = Plot{Violin}(cascade; ylabel="Efficiency (%)")
-        local pscatter = Plot{Scatter}(cascade; ylabel="Efficiency (%)")
-        local pvertical = Plot{Vertical}(cascade; ylabel="Efficiency (%)")
-        local phorizontal = Plot{Horizontal}(cascade; ylabel="Efficiency (%)")
+        pdata = Plot(cascade; ylabel="Efficiency (%)")
 
-        local cmean = calculate_mean(cascade)
-        local vlims = NamedTuple{(:vmin,:vmax,:vscale)}(vlim(data))
-        local pmean = Plot{Horizontal}(cmean, vlims; ylabel="Efficiency (%)")
-        
+        mean && (pmean = calculate_mean(pdata))
+        local p025 = calculate_quantile(pdata, 0.25)
+        local p075 = calculate_quantile(pdata, 0.75)
+
+
         # POINTS. SORTED BY FIRST.
-        for p in [phorizontal, pviolin, pvertical, pscatter]
+        for T in [Violin, Scatter, Vertical, Horizontal]
+            local p = Plot{T}(pdata)
             local f = filename(p; distribution=distribution, mean=mean)
+
             @png begin
                 fontsize(14)
                 Luxor.setmatrix([1 0 0 1 LEFT_BORDER TOP_BORDER])
                 # draw(p.cascade, ff)
                 _draw_title(titlecase("$distribution Distribution"),"N = $samples")
+
                 draw(p)
+
                 mean && draw(pmean.cascade; style=:stroke, opacity=1.0)
+                # draw(p025.cascade; hue="black", style=:stroke, opacity=0.8)
+                # draw(p075.cascade; style=:stroke)
+
+
             end WIDTH+LEFT_BORDER+RIGHT_BORDER HEIGHT+TOP_BORDER+BOTTOM_BORDER f
             Printf.@printf("\nSaving figure to %s", f)
         end
