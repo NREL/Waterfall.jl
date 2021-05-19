@@ -31,11 +31,11 @@ Run this file to generate waterfall plots and edit this file to customize input.
 * Default visualization features:
     - [ ] Label each waterfall in the with distribution method, mean, and variance.
     - [ ] Add error bars to mean
-    - [ ] Add legend.
+    - [x] Add legend.
 * Add option to...
-    - [ ] Display parallel coordinates lines.
+    - [x] Display parallel coordinates lines.
     - [ ] Display box plots on either end of each waterfall.
-    - [ ] Highlight metrics other than mean (quantile, etc.)
+    - [x] Highlight metrics other than mean (quantile, etc.)
     - [ ] Color bars by correlation coefficient between current and previous step.
     - [ ] Select from distributions other than uniform and normal.
     - [ ] Reorder waterfalls to observe effect of order and sort by desirability.

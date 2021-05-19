@@ -20,6 +20,7 @@ include(joinpath(WATERFALL_DIR,"src","Cascade","Data.jl"))
 include(joinpath(WATERFALL_DIR,"src","Cascade","Cascade.jl"))
 include(joinpath(WATERFALL_DIR,"src","Cascade","Scatter.jl"))
 include(joinpath(WATERFALL_DIR,"src","Cascade","Vertical.jl"))
+include(joinpath(WATERFALL_DIR,"src","Cascade","Parallel.jl"))
 include(joinpath(WATERFALL_DIR,"src","Cascade","Horizontal.jl"))
 include(joinpath(WATERFALL_DIR,"src","Cascade","Violin.jl"))
 

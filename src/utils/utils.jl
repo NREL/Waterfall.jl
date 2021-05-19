@@ -52,6 +52,9 @@ end
 
 
 function filename(p::Plot{T}, stat::AbstractArray; kwargs...) where T <: Points
+    stat = copy(stat)
+    iitup = typeof.(stat) .<: Tuple
+    stat[iitup] .= sort(stat[iitup])
     return filename(p, string(string.(_write_stat.(stat),"_")...)[1:end-1]; kwargs...)
 end
 

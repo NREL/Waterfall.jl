@@ -1,3 +1,12 @@
+function draw_line(point::Tuple{Point,Point}, c::Coloring; kwargs...)
+    setcolor(c.hue.r, c.hue.g, c.hue.b, c.opacity)
+    return Luxor.line(point[1], point[2], :stroke)
+end
+
+
+
+
+
 function draw(point::Point, c::Coloring; diameter=1, style=:fill, kwargs...)
     setcolor(c.hue.r, c.hue.g, c.hue.b, c.opacity)
     return Luxor.circle(point, diameter, style)
@@ -18,7 +27,7 @@ end
 
 function draw(point::Vector{Point}, c::Coloring; style=:fill, kwargs...)
     setcolor(c.hue.r, c.hue.g, c.hue.b, c.opacity)
-    return poly(point, close=true, style)
+    return Luxor.poly(point, close=true, style)
 end
 
 
@@ -43,6 +52,18 @@ function draw(x::Horizontal; opacity=missing, kwargs...)
     [draw(p, c; kwargs...) for (p, c) in zip(x.points, coloring)]
     return nothing
 end
+
+
+function draw(x::Parallel; opacity=0.25, hue=missing, kwargs...)
+    if ismissing(hue)
+        ismissing(opacity) && (opacity = 0.25/log(length(x)))
+        coloring = Coloring(x; opacity=opacity, hue=hue, kwargs...)
+        [draw_line(p, c; kwargs...) for (p, c) in zip(x.points, coloring)]
+    end
+    return nothing
+end
+
+
 
 
 function draw(x::Scatter, args...; kwargs...)

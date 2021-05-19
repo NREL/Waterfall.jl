@@ -16,7 +16,7 @@ function Plot(cascade::Cascade{Data}; xlabel="", ylabel, kwargs...)
 end
 
 
-function Plot{T}(p::Plot{Data}, args...) where T <: Union{Vertical,Horizontal}
+function Plot{T}(p::Plot{Data}, args...) where T <: Union{Horizontal,Parallel,Vertical}
     return Plot(Cascade{T}(p.cascade, args...), p.xaxis, p.yaxis)
 end
 
@@ -35,7 +35,7 @@ get_yaxis(x::Plot) = x.yaxis
 # end
 
 
-# function Plot{T}(x::Cascade{Data}, args...; kwargs...) where T <: Union{Vertical,Horizontal}
+# function Plot{T}(x::Cascade{Data}, args...; kwargs...) where T <: Union{Horizontal,Parallel,Vertical}
 #     p = Plot(x; kwargs...)
 #     return Plot(Cascade{T}(p.cascade, args...), p.xaxis, p.yaxis)
 # end
