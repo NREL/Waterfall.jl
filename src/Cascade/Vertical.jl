@@ -4,7 +4,7 @@ mutable struct Vertical <: Points
 end
 
 
-function Vertical(data::Vector{Data})
+function Vertical(data::Vector{Data}; kwargs...)
     x1 = cumulative_x(data, -1.)
     x2 = cumulative_x(data,  0.)
 

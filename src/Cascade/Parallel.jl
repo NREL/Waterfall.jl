@@ -8,7 +8,7 @@ function Parallel(data::Vector{Data}; kwargs...)
     idx1 = 1:(length(data)-1)
     idx2 = 2:length(data)
 
-    x = cumulative_x(data, -0.5; subdivide=false)
+    x = cumulative_x(data, -0.5; kwargs...)
 
     y1 = scale_y(get_beginning, data[idx1])
     y2 = [

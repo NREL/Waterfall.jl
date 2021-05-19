@@ -4,17 +4,25 @@ mutable struct Coloring
     opacity::Float64
 end
 
-function Coloring(hue::String; saturation=0.0, opacity=1.0, kwargs...)
-    rgb = parse(Luxor.Colorant, hue)
+
+function Coloring(rgb::Luxor.Colorant; saturation=0.0, opacity=1.0, kwargs...)
     return Coloring(scale_saturation(rgb, saturation), saturation, opacity)
 end
 
-# Needs saturation for blend. Or this should be another type. AHHH THIS IS HARD.
-function Coloring(x::T; hue=missing, kwargs...) where T <: Points
-    hue = ismissing(hue) ? get_hue.(x.sign; kwargs...) : fill(hue, length(x))
-    return Coloring.(hue; kwargs...)
+function Coloring(x::T; hue=missing, opacity=missing, kwargs...) where T <: Points
+    hue = _hue(hue, x)
+    opacity = _opacity(opacity, x; kwargs...)
+    return Coloring.(hue; opacity=opacity, kwargs...)
 end
+
+Coloring(hue::String; kwargs...) = Coloring(parse(Luxor.Colorant, hue); kwargs...)
 
 
 # "This function returns the hue associated with whether the value is a gain or loss."
-get_hue(sign::Integer; kwargs...) = sign<0 ? HEX_LOSS : HEX_GAIN
+_hue(sign::Integer) = sign<0 ? HEX_LOSS : HEX_GAIN
+_hue(value::Missing, x::T) where T<:Points = _hue.(x.sign)
+_hue(value, x::T) where T<:Points = fill(value, length(x))
+
+_opacity(N::Integer; factor::Real=0.25, fun::Function=log, kwargs...) = factor/fun(N)
+_opacity(value::Missing, x::T; kwargs...) where T<:Points = _opacity(length(x); kwargs...)
+_opacity(value, x::T; kwargs...) where T <:Points = value

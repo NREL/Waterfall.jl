@@ -47,8 +47,8 @@ function Cascade{T}(fun::Function, cascade::Cascade{Data}) where T<:Sampling
 end
 
 
-function Cascade{T}(cascade::Cascade{Data}, args...) where T<:Sampling
-    result = T(collect_data(cascade), args...)
+function Cascade{T}(cascade::Cascade{Data}, args...; kwargs...) where T<:Sampling
+    result = T(collect_data(cascade), args...; kwargs...)
     return Cascade(first(result), last(result), result[2:end-1])
 end
 

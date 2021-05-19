@@ -26,7 +26,7 @@ Run this file to generate waterfall plots and edit this file to customize input.
 
 ## Development Plans
 * Usage:
-    - [ ] Read options from YAML file.
+    - [ ] Read options from YAML file
     - [ ] Wrap plotting in a function.
 * Default visualization features:
     - [ ] Label each waterfall in the with distribution method, mean, and variance.
@@ -39,3 +39,7 @@ Run this file to generate waterfall plots and edit this file to customize input.
     - [ ] Color bars by correlation coefficient between current and previous step.
     - [ ] Select from distributions other than uniform and normal.
     - [ ] Reorder waterfalls to observe effect of order and sort by desirability.
+* Add/update structures:
+    - [ ] Violin: show cumulative mean at ending.
+    - [ ] Options: 
+    - [ ] Legend: gain/loss color; 

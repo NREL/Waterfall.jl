@@ -1,82 +1,70 @@
-function draw_line(point::Tuple{Point,Point}, c::Coloring; kwargs...)
-    setcolor(c.hue.r, c.hue.g, c.hue.b, c.opacity)
-    return Luxor.line(point[1], point[2], :stroke)
+set_formatting(c::Coloring) = setcolor(c.hue.r, c.hue.g, c.hue.b, c.opacity)
+set_formatting(b::Blending) = setblend(blend(b.point1, b.point2, b.color1.hue, b.color2.hue))
+
+
+draw_box(point::Tuple; style=:fill, kwargs...) = Luxor.box(point[1], point[2], style)
+draw_box(args...; kwargs...) = _draw(draw_box, args...; kwargs...)
+
+draw_line(point::Tuple; kwargs...) = Luxor.line(point[1], point[2], :stroke)
+draw_line(args...; kwargs...) = _draw(draw_line, args...; kwargs...)
+
+draw_point(point::Point; diameter=1, style=:fill, kwargs...) = Luxor.circle(point, diameter, style)
+draw_point(args...; kwargs...) = _draw(draw_point, args...; kwargs...)
+
+draw_poly(point::Vector{Point}; style=:fill, kwargs...) = Luxor.poly(point, close=true, style)
+draw_poly(args...; kwargs...) = _draw(draw_poly, args...; kwargs...)
+
+
+
+function _draw(fun, point, format::Union{Coloring,Blending}; kwargs...)
+    set_formatting(format)
+    fun(point; kwargs...)
+    return nothing
+end
+
+function _draw(fun, point, format::AbstractArray, N::Integer; kwargs...)
+    [fun(point[ii], format[ii]; kwargs...) for ii in 1:N]
+    return nothing
+end
+
+function _draw(fun, point, format::AbstractArray; kwargs...)
+    return _draw(fun, point, format, length(format); kwargs...)
 end
 
 
 
 
-
-function draw(point::Point, c::Coloring; diameter=1, style=:fill, kwargs...)
-    setcolor(c.hue.r, c.hue.g, c.hue.b, c.opacity)
-    return Luxor.circle(point, diameter, style)
+function _draw_with(x::T, fun::Function, formatting::DataType, args...;
+    kwargs...) where T<:Points
+    return fun(x.points, formatting(x; kwargs...), args...; kwargs...)
 end
 
-
-function draw(point::Tuple{Point,Point}, b::Blending; style=:fill, kwargs...)
-    setblend(blend(b.point1, b.point2, b.color1.hue, b.color2.hue))
-    return Luxor.box(point[1], point[2], style)
-end
-
-
-function draw(point::Tuple{Point,Point}, c::Coloring; style=:fill, kwargs...)
-    setcolor(c.hue.r, c.hue.g, c.hue.b, c.opacity)
-    return Luxor.box(point[1], point[2], style)
-end
-
-
-function draw(point::Vector{Point}, c::Coloring; style=:fill, kwargs...)
-    setcolor(c.hue.r, c.hue.g, c.hue.b, c.opacity)
-    return Luxor.poly(point, close=true, style)
-end
 
 
 function draw(x::Vertical, args...; kwargs...)
-    [draw(p, b) for (p, b) in zip(x.points, Blending(x; kwargs...))]
-    return nothing
+    return _draw_with(x, draw_box, Blending, args...; kwargs...)
+end
+
+function draw(x::Horizontal, args...; kwargs...)
+    return _draw_with(x, draw_box, Coloring, args...; kwargs...)
+end
+
+function draw(x::Parallel, args...; opacity=0.5, kwargs...)
+    return _draw_with(x, draw_line, Coloring, args...; opacity=opacity, kwargs...)
 end
 
 
-function draw(x::Horizontal, ff; opacity=missing, kwargs...)
-    ismissing(opacity) && (opacity = 0.25/log(length(x)))
-    coloring = Coloring(x; opacity=opacity, kwargs...)
-
-    [draw(x.points[ii], coloring[ii]) for ii in 1:ff]
-    return nothing
-end
+# function draw(x::Scatter, args...; kwargs...)
+#     [draw_point(p, c) for (p, c) in zip(x.points, Coloring(x; kwargs...))]
+#     return nothing
+# end
 
 
-function draw(x::Horizontal; opacity=missing, kwargs...)
-    ismissing(opacity) && (opacity = 0.25/log(length(x)))
-    coloring = Coloring(x; opacity=opacity, kwargs...)
-    [draw(p, c; kwargs...) for (p, c) in zip(x.points, coloring)]
-    return nothing
-end
-
-
-function draw(x::Parallel; opacity=0.25, hue=missing, kwargs...)
-    if ismissing(hue)
-        ismissing(opacity) && (opacity = 0.25/log(length(x)))
-        coloring = Coloring(x; opacity=opacity, hue=hue, kwargs...)
-        [draw_line(p, c; kwargs...) for (p, c) in zip(x.points, coloring)]
-    end
-    return nothing
-end
-
-
-
-
-function draw(x::Scatter, args...; kwargs...)
-    [draw(p, c) for (p, c) in zip(x.points, Coloring(x; kwargs...))]
-    return nothing
-end
-
-
-function draw(x::Violin, args...; kwargs...)
-    coloring = Coloring(x; opacity=0.5, kwargs...)[1]
-    draw(x.points, coloring; kwargs...)
-    return nothing
-end
+# function draw(x::Violin, args...; kwargs...)
+#     coloring = Coloring(x; opacity=0.5, kwargs...)[1]
+#     draw_poly(x.points, coloring; kwargs...)
+#     return nothing
+# end
 
 
 function draw(x::Cascade{T}, args...; kwargs...) where T <: Points

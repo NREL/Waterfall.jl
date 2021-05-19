@@ -16,8 +16,8 @@ function Plot(cascade::Cascade{Data}; xlabel="", ylabel, kwargs...)
 end
 
 
-function Plot{T}(p::Plot{Data}, args...) where T <: Union{Horizontal,Parallel,Vertical}
-    return Plot(Cascade{T}(p.cascade, args...), p.xaxis, p.yaxis)
+function Plot{T}(p::Plot{Data}, args...; kwargs...) where T <: Union{Horizontal,Parallel,Vertical}
+    return Plot(Cascade{T}(p.cascade, args...; kwargs...), p.xaxis, p.yaxis)
 end
 
 

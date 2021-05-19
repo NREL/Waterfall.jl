@@ -4,7 +4,7 @@ mutable struct Horizontal <: Points
 end
 
 
-Horizontal(data::Vector{Data}, args...) = Horizontal(data, 1.0, args...)
+Horizontal(data::Vector{Data}, args...; kwargs...) = Horizontal(data, 1.0, args...; kwargs...)
 # function Horizontal(data::Vector{Data}, args...)
 #     y1 = scale_y(get_beginning, data, args...)
 #     y2 = scale_y(get_ending, data, args...)
@@ -19,7 +19,7 @@ Horizontal(data::Vector{Data}, args...) = Horizontal(data, 1.0, args...)
 # end
 
 
-function Horizontal(data::Vector{Data}, p::Float64, args...)
+function Horizontal(data::Vector{Data}, p::Float64, args...; kwargs...)
     y1 = scale_y(get_beginning, data, args...)
     y2 = scale_y(get_ending, data, args...)
 

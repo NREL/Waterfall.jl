@@ -13,8 +13,8 @@ kwargs = (label=:Process, samples=samples, distribution=distribution, fuzziness=
 
 parallel_coordinates = true
 
-for samples in [5,10,50]
-# samples = 5
+# for samples in [5,10,50]
+for samples in [5]
 
     prob = [0.75,0.25]
     highlight_stat=["mean"; [("quantile",p) for p in prob]]
@@ -41,7 +41,7 @@ for samples in [5,10,50]
         # POINTS. SORTED BY FIRST.
         for T in [Vertical, Horizontal, Parallel]
         # T = Vertical
-            p = Plot{T}(pdata)
+            p = Plot{T}(pdata; subdivide=false)
             f = filename(p, highlight_stat; distribution=distribution)
             # f = filename(p; distribution=distribution, mean=true)
 
@@ -86,9 +86,8 @@ for samples in [5,10,50]
                 # p2 = [first(getindex.(pmean.cascade.steps[ii].points,1)) for ii in 2:13]
                 # [line(p1[ii],p2[ii], :stroke) for ii in 1:12]
 
-
             end WIDTH+LEFT_BORDER+RIGHT_BORDER HEIGHT+TOP_BORDER+BOTTOM_BORDER f
-            Printf.@printf("\nSaving figure to %s", f)
+            Printf.@printf("\nSaving figure to %s\n", f)
         end
 
 
