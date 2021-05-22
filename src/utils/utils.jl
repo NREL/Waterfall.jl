@@ -37,9 +37,10 @@ This function returns a filename
 """
 function filename(p::Plot{T}, stat; opacity="", distribution=:normal, frame=missing,
 ) where T <: Points
-
     dir = joinpath(FIG_DIR,lowercase(string(T)))
-    fig = Printf.@sprintf("%s_n%02.0f_%s_%s", T, length(p), distribution, _write_stat(stat))
+    fig = Printf.@sprintf("%s_n%02.0f_%s", T, length(p), distribution)
+
+    !isempty(stat) && (fig = Printf.@sprintf("%s_%s", fig, _write_stat(stat)))
 
     if !ismissing(frame)
         dir = joinpath(dir, fig)

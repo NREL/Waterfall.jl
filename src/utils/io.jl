@@ -10,7 +10,7 @@ function fuzzify(df; value::Symbol=:Value, samples::Integer=SAMPLES,
     fuzziness=(0.01,0.1),
     kwargs...,
 )
-    println("Injecting fuzziness into input DataFrame over $samples samples.")
+    println("\n\nInjecting fuzziness into input DataFrame over $samples samples.")
     idx = Not([value,SAMPLE])
     distribution = [distribution;]
 

@@ -99,7 +99,6 @@ function calculate_quantile(cascade::Cascade{Data}, p::Float64; kwargs...)
 end
 
 function calculate_quantile(plot::Plot{Data}, p::Float64; kwargs...)
-    println(p)
     cascade = calculate_quantile(plot.cascade, p; kwargs...)
     plot = Plot{Horizontal}(Cascade{Horizontal}(cascade, p), plot.xaxis, plot.yaxis)
 end

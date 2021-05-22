@@ -49,8 +49,8 @@ function draw(x::Horizontal, args...; kwargs...)
     return _draw_with(x, draw_box, Coloring, args...; kwargs...)
 end
 
-function draw(x::Parallel, args...; opacity=0.5, kwargs...)
-    return _draw_with(x, draw_line, Coloring, args...; opacity=opacity, kwargs...)
+function draw(x::Parallel, args...; kwargs...)
+    return _draw_with(x, draw_line, Coloring, args...; factor=1.0, kwargs...)
 end
 
 
@@ -67,15 +67,21 @@ end
 # end
 
 
-function draw(x::Cascade{T}, args...; kwargs...) where T <: Points
-    draw(x.start, args...; hue="black", kwargs...)
-    draw(x.stop, args...; hue="black", kwargs...)
+function draw(x::Cascade{T}, args...; show_stc::Bool=true, kwargs...) where T <: Points
+    if show_stc
+        draw(x.start, args...; hue="black", kwargs...)
+        draw(x.stop, args...; hue="black", kwargs...)
+    end
     [draw(x.steps[ii], args...; kwargs...) for ii in 1:length(x.steps)]
     return nothing
 end
 
 
-function draw(p::Plot, args...; kwargs...)
+function draw(p::Plot, args...; distribution, samples, kwargs...)
+    _draw_title(
+        titlecase("$distribution Distribution"),
+        "N = $samples",
+    )
     _draw_xaxis(p.xaxis)
     _draw_yaxis(p.yaxis)
     draw(p.cascade, args...; kwargs...)
@@ -150,9 +156,57 @@ function _draw_title(str...)
 end
 
 
-# function _draw_legend()
-#     y0 = SEP*3
-# end
+function _draw_highlight(p::Plot{Data}, highlights::Vector;
+    style=:stroke,
+    opacity=1.0,
+    hue="black",
+    width=1,
+)
+    if !isempty(highlights)
+        # Define line styles.
+        dashes = scale_dash.(highlights)
+        setline(width)
 
-# _legend_highlight(stat::String, hue; style=:stroke)
-# draw(highlight(pdata, hl).cascade; hue=hue, style=:stroke, opacity=1.0)
+        # Define dimensions.
+        hfont = get_fontsize()
+        y0 = 2*hfont + SEP
+        dy = 1.5*hfont
+        hbox = 0.5*hfont
+        
+        x0 = 0.8*WIDTH
+        wbox = 1*SEP
+
+        for kk in 1:length(highlights)
+            Luxor.setdash(dashes[kk])
+            
+            # Add boxes to plot.
+            draw(highlight(p, highlights[kk]).cascade; hue=hue, style=style, opacity=opacity)
+
+            # Define legend positions.
+            y = y0+dy*(kk+1)                    # middle
+            x = [x0-wbox*(ii-1) for ii in 1:4]  # box (left,mid,right); label (left)
+
+            setcolor(sethue(hue)..., opacity)
+            Luxor.box(Point(x[4],y-hbox), Point(x[2],y+hbox), style)
+            Luxor.text(_label_stat(highlights[kk]), Point(x[1],y); halign=:left, valign=:middle)
+        end
+    end
+
+    return nothing
+end
+
+
+
+function scale_dash(p::Real; dmin=0.5, factor=10)
+    if p==1.0
+        result = "solid"
+    else
+        dash = (1-dmin)*p + dmin
+        result = factor*[dash, 1-dash]
+    end
+    
+    return result
+end
+
+scale_dash(str::String) = scale_dash(1.0)
+scale_dash(tup::Tuple{String,T}; kwargs...) where T<:Real = scale_dash(tup[2]; kwargs...)
