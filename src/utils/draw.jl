@@ -88,15 +88,6 @@ function draw(p::Plot, args...; distribution, samples, kwargs...)
     return nothing
 end
 
-function draw(p::SplitPlot; kwargs...)
-    _draw_xaxis(p.xaxis)
-    _draw_yaxis(p.yaxis)
-
-    draw(p.beginning; kwargs...)
-    draw(p.ending; kwargs...)
-    return nothing
-end
-
 
 function _draw_yaxis(ax::Axis; halign=:right, valign=:middle)
     # Draw axis line.

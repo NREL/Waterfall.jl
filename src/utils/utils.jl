@@ -14,7 +14,6 @@ Base.sign(data::T) where T <: Data = Integer.(sign.(get_value(data)))
 Base.length(x::T) where T <: Points = length(x.points)
 Base.length(x::T) where T <: Cascade = length(x.start)
 
-Base.length(x::SplitPlot{T1,T2}) where {T1<:Points, T2<:Points} = length(x.beginning)
 Base.length(x::Plot{T}) where T<:Points = length(x.cascade)
 
 
@@ -60,22 +59,6 @@ function filename(p::Plot{T}, stat::AbstractArray; kwargs...) where T <: Points
 end
 
 
-function filename(p::SplitPlot{T1,T2}, stat; opacity="", distribution=:normal, frame=missing,
-) where {T1<:Points, T2<:Points}
-
-    dir = joinpath(FIG_DIR,lowercase(string(T)))
-    fig = Printf.@sprintf("%s_n%02.0f_%s_%s", T1, length(p), distribution, _write_stat(stat))
-
-    if !ismissing(frame)
-        dir = joinpath(dir, fig)
-        fig = Printf.@sprintf("frame%02.0f", frame)
-    end
-
-    !isdir(dir) && mkpath(dir)
-    return joinpath(dir, lowercase(fig * ".png"))
-end
-
-
 function filename(p::Plot{T}; opacity="", distribution=:normal, frame=missing, mean
 ) where T <: Points
 
@@ -86,18 +69,6 @@ function filename(p::Plot{T}; opacity="", distribution=:normal, frame=missing, m
         dir = joinpath(dir, fig)
         fig = Printf.@sprintf("frame%02.0f", frame)
     end
-
-    !isdir(dir) && mkpath(dir)
-    return joinpath(dir, lowercase(fig * ".png"))
-end
-
-function filename(p::SplitPlot{T1,T2};
-    opacity="",
-    distribution=:normal,
-    kwargs...,
-) where {T1<:Points, T2<:Points}
-    dir = joinpath(FIG_DIR,lowercase(string(T1,"_",T2)))
-    fig = Printf.@sprintf("%s_%s_n%02.0f_%s_mean%g", T1, T2, length(p), distribution, mean)
 
     !isdir(dir) && mkpath(dir)
     return joinpath(dir, lowercase(fig * ".png"))
