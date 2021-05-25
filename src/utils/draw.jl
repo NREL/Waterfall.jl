@@ -35,10 +35,50 @@ end
 
 
 function _draw_with(x::T, fun::Function, formatting::DataType, args...;
-    kwargs...) where T<:Points
+    kwargs...) where T<:Geometry
     return fun(x.points, formatting(x; kwargs...), args...; kwargs...)
 end
 
+"""
+    draw(p::Plot{T}, args...; kwargs...) where T<:Geometry
+This method adds to a `Luxor.Drawing`: the plot title, x- and y-axes, and waterfall cascade
+of the geometry consistent with `T` and stored in `p.cascade`.
+
+    draw(cascade::Cascade{T}, args...; kwargs...) where T<:Geometry
+This method adds to a `Luxor.Drawing` the entire cascade of waterfalls.
+
+    draw(x::T, args...; kwargs...) where T<:Geometry
+This method adds to a `Luxor.Drawing` each waterfall in the cascade.
+"""
+function draw(p::Plot, args...; distribution, samples, kwargs...)
+    _draw_title(
+        titlecase("$distribution Distribution"),
+        "N = $(length(p))",
+    )
+    _draw_xaxis(p.xaxis)
+    _draw_yaxis(p.yaxis)
+    draw(p.cascade, args...; kwargs...)
+    return nothing
+end
+
+
+function draw(x::Cascade{T}, args...; kwargs...) where T <: Geometry
+    draw(x, T==Parallel, args...; kwargs...)
+    return nothing
+end
+
+
+function draw(x::Cascade{T}, steps_only::Bool, args...; kwargs...) where T <: Geometry
+    draw(x.steps, args...; kwargs...)
+
+    if !steps_only
+        draw(x.start, args...; hue="black", kwargs...)
+        draw(x.stop, args...; hue="black", kwargs...)
+    end
+end
+
+
+draw(vec::Vector, args...; kwargs...) = [draw(x, args...; kwargs...) for x in vec]
 
 
 function draw(x::Vertical, args...; kwargs...)
@@ -55,41 +95,6 @@ end
 
 function draw(x::Violin, args...; kwargs...)
     return _draw_with(x, draw_poly, Coloring, args...; opacity=0.5, kwargs...)
-end
-
-
-# function draw(x::Scatter, args...; kwargs...)
-#     [draw_point(p, c) for (p, c) in zip(x.points, Coloring(x; kwargs...))]
-#     return nothing
-# end
-
-
-# function draw(x::Violin, args...; kwargs...)
-#     coloring = Coloring(x; opacity=0.5, kwargs...)[1]
-#     draw_poly(x.points, coloring; kwargs...)
-#     return nothing
-# end
-
-
-function draw(x::Cascade{T}, args...; show_stc::Bool=true, kwargs...) where T <: Points
-    if show_stc
-        draw(x.start, args...; hue="black", kwargs...)
-        draw(x.stop, args...; hue="black", kwargs...)
-    end
-    [draw(x.steps[ii], args...; kwargs...) for ii in 1:length(x.steps)]
-    return nothing
-end
-
-
-function draw(p::Plot, args...; distribution, samples, kwargs...)
-    _draw_title(
-        titlecase("$distribution Distribution"),
-        "N = $samples",
-    )
-    _draw_xaxis(p.xaxis)
-    _draw_yaxis(p.yaxis)
-    draw(p.cascade, args...; kwargs...)
-    return nothing
 end
 
 

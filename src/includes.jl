@@ -14,7 +14,7 @@ import KernelDensity
 import LinearAlgebra, LinearAlgebra.I
 
 abstract type Sampling end
-abstract type Points <: Sampling end
+abstract type Geometry <: Sampling end
 
 include(joinpath(WATERFALL_DIR,"src","Cascade","Data.jl"))
 include(joinpath(WATERFALL_DIR,"src","Cascade","Cascade.jl"))

@@ -1,4 +1,4 @@
-mutable struct Scatter <: Points
+mutable struct Scatter <: Geometry
     sign::Vector{Integer}
     points::Vector{Point}
 end

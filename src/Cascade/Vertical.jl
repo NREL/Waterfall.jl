@@ -1,18 +1,16 @@
-mutable struct Vertical <: Points
+mutable struct Vertical <: Geometry
     sign::Vector{Integer}
     points::Vector{Tuple{Point,Point}}
 end
 
 
-function Vertical(data::Vector{Data}; kwargs...)
-    x1 = cumulative_x(data, -1.)
-    x2 = cumulative_x(data,  0.)
-
-    y1 = scale_y(get_beginning, data)
-    y2 = scale_y(get_ending, data)
+function Vertical(data::Vector{Data}, args...; kwargs...)
+    # x1, x2 = scale_x(data; subdivide=true)
+    # y1, y2 = scale_y(data, args...)
     
-    return Vertical.(
-        sign.(data),
-        vectorize(Point.(x1,y1), Point.(x2,y2)),
-    )
+    # return Vertical.(
+    #     sign.(data),
+    #     vectorize(Point.(x1,y1), Point.(x2,y2)),
+    # )
+    return _rectangle(Vertical, data, 1.0, args...; subdivide=true)
 end

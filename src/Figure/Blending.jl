@@ -6,7 +6,7 @@ mutable struct Blending
 end
 
 
-function Blending(x::T; kwargs...) where T <: Points
+function Blending(x::T; kwargs...) where T <: Geometry
     color1 = Coloring(x; saturation=-0.2, kwargs...)
     color2 = Coloring(x; saturation=-0.7, kwargs...)
 

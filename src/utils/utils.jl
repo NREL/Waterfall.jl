@@ -11,17 +11,17 @@ get_density(args...) = _get(get_density, args...)
 Base.sign(data::T) where T <: Data = Integer.(sign.(get_value(data)))
 
 
-Base.length(x::T) where T <: Points = length(x.sign)
+Base.length(x::T) where T <: Geometry = length(x.sign)
 Base.length(x::T) where T <: Cascade = length(x.start)
 
-Base.length(x::Plot{T}) where T<:Points = length(x.cascade)
+Base.length(x::Plot{T}) where T<:Geometry = length(x.cascade)
 
 
 """
 This function returns a filename
 """
 function filename(p::Plot{T}, stat; opacity="", distribution=:normal, frame=missing,
-) where T <: Points
+) where T <: Geometry
     dir = joinpath(FIG_DIR,lowercase(string(T)))
     fig = Printf.@sprintf("%s_n%02.0f_%s", T, length(p), distribution)
 
@@ -37,7 +37,7 @@ function filename(p::Plot{T}, stat; opacity="", distribution=:normal, frame=miss
 end
 
 
-function filename(p::Plot{T}, stat::AbstractArray; kwargs...) where T <: Points
+function filename(p::Plot{T}, stat::AbstractArray; kwargs...) where T <: Geometry
     stat = copy(stat)
     iitup = typeof.(stat) .<: Tuple
     stat[iitup] .= sort(stat[iitup])
@@ -46,7 +46,7 @@ end
 
 
 function filename(p::Plot{T}; opacity="", distribution=:normal, frame=missing, mean
-) where T <: Points
+) where T <: Geometry
 
     dir = joinpath(FIG_DIR,lowercase(string(T)))
     fig = Printf.@sprintf("%s_n%02.0f_%s_mean%g", T, length(p), distribution, mean)

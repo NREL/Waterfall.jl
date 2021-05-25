@@ -14,8 +14,9 @@ width(steps::Integer) = (WIDTH-(steps+1)*SEP)/steps
 """
     cumulative_x(shift::Float64)
 """
-function cumulative_x(shift::Float64=-0.5; subdivide=true, samples=1, steps, kwargs...)
+function cumulative_x(shift::Float64=-0.5; subdivide=true, samples=1, space=true, steps, kwargs...)
     ROW, COL = steps, (subdivide ? samples : 1)
+    extend = -sign(-0.5-shift) * (0.5*SEP * !space * !subdivide)
 
     wo = width(steps)
     wi = wo/COL
@@ -23,12 +24,12 @@ function cumulative_x(shift::Float64=-0.5; subdivide=true, samples=1, steps, kwa
     Wo = fill(wo, (ROW,1))
     Wi = fill(wi, (1,COL))
     dWo = fill(SEP, (ROW,1))
-
+    
     L = lower_triangular(ROW)
     U = upper_triangular(COL)
 
     dx = Wi*(U+shift*I)
-    x = (L-I)*Wo + L*dWo
+    x = (L-I)*Wo + L*dWo .+ extend
     result = x .+ dx
 
     return subdivide ? result : hcat(fill(result, samples)...)
@@ -67,9 +68,9 @@ _cumulative(fun::Function, cascade::Cascade, args...) = fun(collect_data(cascade
 _cumulative(fun::Function, data::Vector{Data}, args...) = fun(get_value(data), args...)
 
 
-
-
-
+"""
+    calculate_mean()
+"""
 calculate_mean(vec::Vector{T}) where T <: Real = Statistics.mean(vec)
 calculate_mean(mat::Matrix{T}; dims=2) where T <: Real = Statistics.mean(mat; dims=dims)
 
@@ -114,29 +115,7 @@ function _calculate(fun::Function, plot::Plot{Data}, args...; kwargs...)
 end
 
 
-
-
 """
 """
 calculate_kde(v::Vector{T}) where T <: Real = KernelDensity.kde(v)
 calculate_kde(fun::Function, data::Data) = calculate_kde(fun(data))
-
-"""
-"""
-function scale_density(v::Matrix{T}; steps, kwargs...) where T <: Real
-    ROW, COL = size(v)
-
-    xmid = cumulative_x( ; steps=steps, kwargs...)
-
-    w = width(steps)
-    vmax = maximum(v; dims=2)
-    m = hcat(fill(0.5 * w ./ vmax, COL)...)
-
-    xl = xmid .- (m .* v)
-    xr = xmid .+ (m .* v)
-    return xl, xr
-end
-
-function scale_density(value::Vector; kwargs...)
-    return scale_density(get_density(value); kwargs...)
-end

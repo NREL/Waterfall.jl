@@ -16,7 +16,7 @@ function Plot(cascade::Cascade{Data}; xlabel="", ylabel, kwargs...)
 end
 
 
-function Plot{T}(p::Plot{Data}, args...; kwargs...) where T<:Points
+function Plot{T}(p::Plot{Data}, args...; kwargs...) where T<:Geometry
     return Plot(Cascade{T}(p.cascade, args...; kwargs...), p.xaxis, p.yaxis)
 end
 
