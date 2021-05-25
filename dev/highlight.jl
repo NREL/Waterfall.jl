@@ -15,7 +15,7 @@ kwargs = (label=:Label, distribution=distribution, fuzziness=fuzziness)
 prob = [0.75,0.25]
 highlights=["mean"; [("quantile",p) for p in prob]]
 
-for show_stc in [false,true]
+for show_stc in [true,false]
     for subdivide in [true,false]
 
         # Plot for different sample numbers.
@@ -27,7 +27,8 @@ for show_stc in [false,true]
             pdata = Plot(cascade; ylabel="Efficiency (%)")
             
             # Iterate over plot type.
-            for T in [Vertical, Horizontal, Parallel]
+            for T in [Vertical, Horizontal, Parallel, Violin]
+            # for T in [Vertical, Violin]
                 (T!==Parallel && !(subdivide*show_stc)) && continue
 
                 p = Plot{T}(pdata; subdivide=subdivide)
@@ -35,7 +36,7 @@ for show_stc in [false,true]
                 # Show different combinations of labeling.
                 for hh in [[], [1], 1:length(highlights)]
                     (samples==1 && !isempty(hh)) && continue
-                    
+
                     f = filename(p, highlights[hh]; distribution=distribution)
                     Printf.@printf("\nPlotting and saving figure to %s", f)
 

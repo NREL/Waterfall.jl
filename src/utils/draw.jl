@@ -53,6 +53,10 @@ function draw(x::Parallel, args...; kwargs...)
     return _draw_with(x, draw_line, Coloring, args...; factor=1.0, kwargs...)
 end
 
+function draw(x::Violin, args...; kwargs...)
+    return _draw_with(x, draw_poly, Coloring, args...; opacity=0.5, kwargs...)
+end
+
 
 # function draw(x::Scatter, args...; kwargs...)
 #     [draw_point(p, c) for (p, c) in zip(x.points, Coloring(x; kwargs...))]

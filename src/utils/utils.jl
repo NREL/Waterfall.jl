@@ -11,24 +11,10 @@ get_density(args...) = _get(get_density, args...)
 Base.sign(data::T) where T <: Data = Integer.(sign.(get_value(data)))
 
 
-Base.length(x::T) where T <: Points = length(x.points)
+Base.length(x::T) where T <: Points = length(x.sign)
 Base.length(x::T) where T <: Cascade = length(x.start)
 
 Base.length(x::Plot{T}) where T<:Points = length(x.cascade)
-
-
-function scale_saturation(rgb::Luxor.RGB, args...)
-    hsv = scale_saturation(Luxor.convert(Luxor.Colors.HSV, rgb), args...)
-    return Luxor.convert(Luxor.Colors.RGB, hsv)
-end
-
-function scale_saturation(hsv::Luxor.HSV, f=0.0)
-    if f!==0.0
-        saturation = f<0 ? hsv.s * (1+f) : (1-hsv.s)*f + hsv.s
-        hsv = Luxor.Colors.HSV(hsv.h, saturation, hsv.v)
-    end
-    return hsv
-end
 
 
 """
