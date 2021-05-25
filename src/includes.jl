@@ -1,5 +1,5 @@
 using DataFrames
-using InvertedIndices
+# using InvertedIndices
 using Luxor
 
 import Base
@@ -18,7 +18,7 @@ abstract type Points <: Sampling end
 
 include(joinpath(WATERFALL_DIR,"src","Cascade","Data.jl"))
 include(joinpath(WATERFALL_DIR,"src","Cascade","Cascade.jl"))
-include(joinpath(WATERFALL_DIR,"src","Cascade","Scatter.jl"))
+# include(joinpath(WATERFALL_DIR,"src","Cascade","Scatter.jl"))
 include(joinpath(WATERFALL_DIR,"src","Cascade","Vertical.jl"))
 include(joinpath(WATERFALL_DIR,"src","Cascade","Parallel.jl"))
 include(joinpath(WATERFALL_DIR,"src","Cascade","Horizontal.jl"))
@@ -26,7 +26,7 @@ include(joinpath(WATERFALL_DIR,"src","Cascade","Violin.jl"))
 
 include(joinpath(WATERFALL_DIR,"src","Figure","Axis.jl"))
 include(joinpath(WATERFALL_DIR,"src","Figure","Plot.jl"))
-include(joinpath(WATERFALL_DIR,"src","Figure","SplitPlot.jl"))
+# include(joinpath(WATERFALL_DIR,"src","Figure","SplitPlot.jl"))
 include(joinpath(WATERFALL_DIR,"src","Figure","Coloring.jl"))
 include(joinpath(WATERFALL_DIR,"src","Figure","Blending.jl"))
 

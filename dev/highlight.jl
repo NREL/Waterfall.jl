@@ -1,4 +1,5 @@
 using Waterfall
+
 include(joinpath(WATERFALL_DIR,"src","includes.jl"))
 
 DATA_DIR = joinpath(WATERFALL_DIR,"data","pvrd")
@@ -13,7 +14,6 @@ kwargs = (label=:Label, distribution=distribution, fuzziness=fuzziness)
 # Define highlights to mark.
 prob = [0.75,0.25]
 highlights=["mean"; [("quantile",p) for p in prob]]
-
 
 for show_stc in [false,true]
     for subdivide in [true,false]
@@ -35,7 +35,7 @@ for show_stc in [false,true]
                 # Show different combinations of labeling.
                 for hh in [[], [1], 1:length(highlights)]
                     (samples==1 && !isempty(hh)) && continue
-
+                    
                     f = filename(p, highlights[hh]; distribution=distribution)
                     Printf.@printf("\nPlotting and saving figure to %s", f)
 
