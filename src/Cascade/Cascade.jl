@@ -8,7 +8,7 @@ end
 Cascade( ; start, stop, steps) = Cascade(start, stop, steps)
 
 
-function Cascade(df::DataFrame; label, kwargs...)
+function Cascade(df::DataFrames.DataFrame; label, kwargs...)
     gdf = fuzzify(df; kwargs...)
 
     start = Data(first(gdf), label; kwargs...)

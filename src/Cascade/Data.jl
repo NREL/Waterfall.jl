@@ -18,7 +18,7 @@ function Data( ; label, order=[], value=[], beginning=[], ending=[], kwargs...)
 end
 
 
-function Data(sdf::SubDataFrame, label; value=:Value, kwargs...)
+function Data(sdf::DataFrames.SubDataFrame, label; value=:Value, kwargs...)
     return Data( ; label=sdf[1,label], value=sdf[:,value], kwargs...)
 end
 

@@ -1,6 +1,6 @@
 mutable struct Parallel <: Geometry
     sign::Vector{Integer}
-    points::Vector{Tuple{Point,Point}}
+    points::Vector{Tuple{Luxor.Point,Luxor.Point}}
 end
 
 
@@ -18,7 +18,7 @@ end
     
 #     return Parallel.(
 #         vectorize(Integer.(sign.(-(y2.-y1)))),
-#         vectorize(Point.(x[idx1,:], y1), Point.(x[idx2,:], y2)),
+#         vectorize(Luxor.Point.(x[idx1,:], y1), Luxor.Point.(x[idx2,:], y2)),
 #     )
 # end
 
@@ -30,7 +30,7 @@ function Parallel(data::Vector{Data}, args...; kwargs...)
 
     # return Parallel.(
     #     sign.(data),
-    #     vectorize(Point.(x1,y1), Point.(x2,y2)),
+    #     vectorize(Luxor.Point.(x1,y1), Luxor.Point.(x2,y2)),
     # )
     return _rectangle(Parallel, data, 1.0, args...; subdivide=false, space=false)
 end
@@ -41,5 +41,5 @@ function _rectangle(T::DataType, data::Vector{Data}, quantile::Real, args...; kw
     x1, x2 = scale_x(data, quantile; kwargs...)
     y1, y2 = scale_y(data, args...)
 
-    return T.(sign.(data), vectorize(Point.(x1,y1), Point.(x2,y2)))
+    return T.(sign.(data), vectorize(Luxor.Point.(x1,y1), Luxor.Point.(x2,y2)))
 end

@@ -1,6 +1,6 @@
-using DataFrames
+import DataFrames
 # using InvertedIndices
-using Luxor
+import Luxor
 
 import Base
 import CSV
@@ -18,17 +18,18 @@ abstract type Geometry <: Sampling end
 
 include(joinpath(WATERFALL_DIR,"src","Cascade","Data.jl"))
 include(joinpath(WATERFALL_DIR,"src","Cascade","Cascade.jl"))
-# include(joinpath(WATERFALL_DIR,"src","Cascade","Scatter.jl"))
-include(joinpath(WATERFALL_DIR,"src","Cascade","Vertical.jl"))
-include(joinpath(WATERFALL_DIR,"src","Cascade","Parallel.jl"))
 include(joinpath(WATERFALL_DIR,"src","Cascade","Horizontal.jl"))
+include(joinpath(WATERFALL_DIR,"src","Cascade","Parallel.jl"))
+include(joinpath(WATERFALL_DIR,"src","Cascade","Vertical.jl"))
 include(joinpath(WATERFALL_DIR,"src","Cascade","Violin.jl"))
 
-include(joinpath(WATERFALL_DIR,"src","Figure","Axis.jl"))
-include(joinpath(WATERFALL_DIR,"src","Figure","Plot.jl"))
-# include(joinpath(WATERFALL_DIR,"src","Figure","SplitPlot.jl"))
 include(joinpath(WATERFALL_DIR,"src","Figure","Coloring.jl"))
 include(joinpath(WATERFALL_DIR,"src","Figure","Blending.jl"))
+
+include(joinpath(WATERFALL_DIR,"src","Figure","Attributes.jl"))
+include(joinpath(WATERFALL_DIR,"src","Figure","Axis.jl"))
+include(joinpath(WATERFALL_DIR,"src","Figure","Legend.jl"))
+include(joinpath(WATERFALL_DIR,"src","Figure","Plot.jl"))
 
 include(joinpath(WATERFALL_DIR,"src","definitions.jl"))
 include(joinpath(WATERFALL_DIR,"src","options.jl"))

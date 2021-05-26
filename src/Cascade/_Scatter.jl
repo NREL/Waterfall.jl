@@ -1,6 +1,6 @@
 mutable struct Scatter <: Geometry
     sign::Vector{Integer}
-    points::Vector{Point}
+    points::Vector{Luxor.Point}
 end
 
 
@@ -10,7 +10,7 @@ function Scatter(fun::Function, data::Vector{Data})
 
     return Scatter.(
         sign.(data),
-        vectorize(Point.(x,y)),
+        vectorize(Luxor.Point.(x,y)),
     )
 end
 

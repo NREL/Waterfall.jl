@@ -1,6 +1,6 @@
 DATA_DIR = joinpath(WATERFALL_DIR,"data","pvrd")
-df = CSV.read(joinpath(DATA_DIR,"pvrd2-investment-metrics.csv"), DataFrame)
-dfamt = CSV.read(joinpath(DATA_DIR,"pvrd2-investment-amounts.csv"), DataFrame)
+df = CSV.read(joinpath(DATA_DIR,"pvrd2-investment-metrics.csv"), DataFrames.DataFrame)
+dfamt = CSV.read(joinpath(DATA_DIR,"pvrd2-investment-amounts.csv"), DataFrames.DataFrame)
 
 samples=5
 distribution=:normal

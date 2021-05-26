@@ -1,6 +1,6 @@
 mutable struct Violin <: Geometry
     sign::Vector{Integer}
-    points::Vector{Point}
+    points::Vector{Luxor.Point}
 end
 
 
@@ -9,6 +9,6 @@ function Violin(data::Vector{Data}; kwargs...)
 
     return Violin.(
         sign.(data),
-        vectorize(Point.(x,y)),
+        vectorize(Luxor.Point.(x,y)),
     )
 end

@@ -4,7 +4,7 @@ using Waterfall
 include(joinpath(WATERFALL_DIR,"src","includes.jl"))
 
 DATA_DIR = joinpath(WATERFALL_DIR,"data","pvrd")
-df = CSV.read(joinpath(DATA_DIR,"pvrd2-investment-metrics.csv"), DataFrame)
+df = CSV.read(joinpath(DATA_DIR,"pvrd2-investment-metrics.csv"), DataFrames.DataFrame)
 df[!,:Label] .= string.(titlecase.(df[:,:Process])," (",df[:,:Step],")")
 df[!,:Units] .= "Efficiency (%)"
 
@@ -34,10 +34,10 @@ for samples in [1,5,10,50]
             (samples==1 && !isempty(hh)) && continue
 
             f = filename(p, highlights[hh]; distribution=distribution)
-            # Printf.@printf("\nPlotting and saving figure to %s", f)
+            Printf.@printf("\nPlotting and saving figure to %s", f)
 
-            @png begin
-                fontsize(14)
+            Luxor.@png begin
+                Luxor.fontsize(14)
                 Luxor.setmatrix([1 0 0 1 LEFT_BORDER TOP_BORDER])
 
                 draw(p; distribution=distribution, samples=samples)

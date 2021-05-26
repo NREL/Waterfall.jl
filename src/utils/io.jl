@@ -10,13 +10,13 @@ function fuzzify(df; value::Symbol=:Value, samples::Integer=SAMPLES,
     fuzziness=(0.01,0.1),
     kwargs...,
 )
-    println("\n\nInjecting fuzziness into input DataFrame over $samples samples.")
-    idx = Not([value,SAMPLE])
+    println("\n\nInjecting fuzziness into input DataFrames.DataFrame over $samples samples.")
+    idx = DataFrames.Not([value,SAMPLE])
     distribution = [distribution;]
 
     # (1) Add step-wise information.
     if samples==1
-        df = crossjoin(df, DataFrame(SAMPLE => 1:samples))
+        df = DataFrames.crossjoin(df, DataFrames.DataFrame(SAMPLE => 1:samples))
     else
         Random.seed!(1234)
         steps = size(df,1)
@@ -24,16 +24,16 @@ function fuzzify(df; value::Symbol=:Value, samples::Integer=SAMPLES,
         df[!,:distribution] .= distribution[rand(1:length(distribution), steps)]
         tmp = _fuzzify(df[:,:distribution], df[:,value], df[:,:fuzziness], samples)
 
-        df = crossjoin(df, DataFrame(SAMPLE=>1:samples))
+        df = DataFrames.crossjoin(df, DataFrames.DataFrame(SAMPLE=>1:samples))
         df[!,value] .= tmp
     end
     
     # (2) Re-calculate the final row to equal the cumulative sum of all preceeding steps.
-    gdf = groupby(df, idx)
+    gdf = DataFrames.groupby(df, idx)
     rng = UnitRange.(gdf.starts[end-1:end],gdf.ends[end-1:end])
     df[rng[2],value] .= -DataFrames.transform(
-        groupby(df, :Sample), value => (x -> cumsum(x)) => value)[rng[1],value]
-    return groupby(df, idx)
+        DataFrames.groupby(df, :Sample), value => (x -> cumsum(x)) => value)[rng[1],value]
+    return DataFrames.groupby(df, idx)
 end
 
 

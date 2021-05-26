@@ -2,8 +2,8 @@ using Waterfall
 include(joinpath(WATERFALL_DIR,"src","includes.jl"))
 
 DATA_DIR = joinpath(WATERFALL_DIR,"data","pvrd")
-df = CSV.read(joinpath(DATA_DIR,"pvrd2-investment-metrics.csv"), DataFrame)
-dfamt = CSV.read(joinpath(DATA_DIR,"pvrd2-investment-amounts.csv"), DataFrame)
+df = CSV.read(joinpath(DATA_DIR,"pvrd2-investment-metrics.csv"), DataFrames.DataFrame)
+dfamt = CSV.read(joinpath(DATA_DIR,"pvrd2-investment-amounts.csv"), DataFrames.DataFrame)
 
 samples=2
 distribution=:normal
@@ -36,7 +36,7 @@ for samples in [1,5,10,50]
             local f = filename(p; distribution=distribution, mean=mean)
 
             @png begin
-                fontsize(14)
+                Luxor.fontsize(14)
                 Luxor.setmatrix([1 0 0 1 LEFT_BORDER TOP_BORDER])
                 # draw(p.cascade, ff)
                 _draw_title(titlecase("$distribution Distribution"),"N = $samples")

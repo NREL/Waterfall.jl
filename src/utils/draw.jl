@@ -1,17 +1,40 @@
-set_formatting(c::Coloring) = setcolor(c.hue.r, c.hue.g, c.hue.b, c.opacity)
-set_formatting(b::Blending) = setblend(blend(b.point1, b.point2, b.color1.hue, b.color2.hue))
+set_formatting(c::Coloring) = Luxor.setcolor(c.hue.r, c.hue.g, c.hue.b, c.opacity)
+set_formatting(b::Blending) = Luxor.setblend(Luxor.blend(b.point1, b.point2, b.color1.hue, b.color2.hue))
 
+"""
+    draw_box(point::Tuple{Luxor.Point,Luxor.Point})
+This function draws a box with corners (`point[1], point[2]`).
 
+# Keyword Argument:
+- `style::Symbol=:fill`
+"""
 draw_box(point::Tuple; style=:fill, kwargs...) = Luxor.box(point[1], point[2], style)
 draw_box(args...; kwargs...) = _draw(draw_box, args...; kwargs...)
 
-draw_line(point::Tuple; kwargs...) = Luxor.line(point[1], point[2], :stroke)
+
+"""
+    draw_line(point::Tuple{Luxor.Point,Luxor.Point})
+This function draws a Luxor.line from `point[1]` to `point[2]`.
+
+# Keyword Argument:
+- `style::Symbol=:stroke`
+"""
+draw_line(point::Tuple; style=:stroke, kwargs...) = Luxor.line(point[1], point[2], style)
 draw_line(args...; kwargs...) = _draw(draw_line, args...; kwargs...)
 
-draw_point(point::Point; diameter=1, style=:fill, kwargs...) = Luxor.circle(point, diameter, style)
+
+"""
+    draw_point(point::Tuple{Luxor.Point,Luxor.Point})
+This function draws a point at
+
+# Keyword Arguments:
+- `diameter=1`
+- `style::Symbol=:fill`
+"""
+draw_point(point::Luxor.Point; diameter=1, style=:fill, kwargs...) = Luxor.circle(point, diameter, style)
 draw_point(args...; kwargs...) = _draw(draw_point, args...; kwargs...)
 
-draw_poly(point::Vector{Point}; style=:fill, kwargs...) = Luxor.poly(point, close=true, style)
+draw_poly(point::Vector{Luxor.Point}; style=:fill, kwargs...) = Luxor.poly(point, close=true, style)
 draw_poly(args...; kwargs...) = _draw(draw_poly, args...; kwargs...)
 
 
@@ -99,24 +122,24 @@ end
 
 
 function _draw_yaxis(ax::Axis; halign=:right, valign=:middle)
-    # Draw axis line.
-    arrow(Point(0,HEIGHT), Point(0,0))
+    # Draw axis Luxor.line.
+    Luxor.arrow(Luxor.Point(0,HEIGHT), Luxor.Point(0,0))
 
     # Draw ticks.
     N = length(ax.ticks)
     for ii in 1:length(ax.ticks)
-        ii>1 && line(Point(-SEP/2, ax.ticks[ii]), Point(SEP/2, ax.ticks[ii]), :stroke)
-        text(
+        ii>1 && Luxor.line(Luxor.Point(-SEP/2, ax.ticks[ii]), Luxor.Point(SEP/2, ax.ticks[ii]), :stroke)
+        Luxor.text(
             string(Integer(ax.ticklabels[ii])),
-            Point(-SEP, ax.ticks[ii]),
+            Luxor.Point(-SEP, ax.ticks[ii]),
             halign=halign,
             valign=valign,
         )
     end
 
     # Add label.
-    text(ax.label,
-        midpoint(Point(-LEFT_BORDER, HEIGHT), Point(-SEP, 0)),
+    Luxor.text(ax.label,
+        Luxor.midpoint(Luxor.Point(-LEFT_BORDER, HEIGHT), Luxor.Point(-SEP, 0)),
         angle=-pi/2,
         halign=:center,
         valign=:bottom,
@@ -124,15 +147,15 @@ function _draw_yaxis(ax::Axis; halign=:right, valign=:middle)
 end
 
 function _draw_xaxis(ax::Axis; angle=-pi/4, halign=:right, valign=:top)
-    # Draw axis line.
-    arrow(Point(0,HEIGHT), Point(WIDTH+2*SEP,HEIGHT))
+    # Draw axis Luxor.line.
+    Luxor.arrow(Luxor.Point(0,HEIGHT), Luxor.Point(WIDTH+2*SEP,HEIGHT))
 
     # Draw ticks.
     for ii in 1:length(ax.ticks)
-        line(Point(ax.ticks[ii], HEIGHT-SEP/2), Point(ax.ticks[ii], HEIGHT+SEP/2), :stroke)
-        text(
+        Luxor.line(Luxor.Point(ax.ticks[ii], HEIGHT-SEP/2), Luxor.Point(ax.ticks[ii], HEIGHT+SEP/2), :stroke)
+        Luxor.text(
             ax.ticklabels[ii],
-            Point(ax.ticks[ii], HEIGHT+SEP),
+            Luxor.Point(ax.ticks[ii], HEIGHT+SEP),
             angle=angle,
             halign=halign,
             valign=valign,
@@ -142,19 +165,19 @@ end
 
 
 function _draw_title(str::String)
-    text(str, Point(WIDTH/2, SEP), halign=:center, valign=:top)
+    Luxor.text(str, Luxor.Point(WIDTH/2, SEP), halign=:center, valign=:top)
     return nothing
 end
 
 function _draw_title(str...)
     y0 = SEP
-    fonttmp = get_fontsize()
+    fonttmp = Luxor.get_fontsize()
     dy = 1.25*fonttmp
-    fontsize(dy)
+    Luxor.fontsize(dy)
     for ii in 1:length(str)
-        text(str[ii], Point(WIDTH/2, y0+dy*(ii-1)), halign=:center, valign=:top)
+        Luxor.text(str[ii], Luxor.Point(WIDTH/2, y0+dy*(ii-1)), halign=:center, valign=:top)
     end
-    fontsize(fonttmp)
+    Luxor.fontsize(fonttmp)
     return nothing
 end
 
@@ -166,12 +189,12 @@ function _draw_highlight(p::Plot{Data}, highlights::Vector;
     width=1,
 )
     if !isempty(highlights)
-        # Define line styles.
+        # Define Luxor.line styles.
         dashes = scale_dash.(highlights)
-        setline(width)
+        Luxor.setline(width)
 
         # Define dimensions.
-        hfont = get_fontsize()
+        hfont = Luxor.get_fontsize()
         y0 = 2*hfont + SEP
         dy = 1.5*hfont
         hbox = 0.5*hfont
@@ -189,9 +212,9 @@ function _draw_highlight(p::Plot{Data}, highlights::Vector;
             y = y0+dy*(kk+1)                    # middle
             x = [x0-wbox*(ii-1) for ii in 1:4]  # box (left,mid,right); label (left)
 
-            setcolor(sethue(hue)..., opacity)
-            Luxor.box(Point(x[4],y-hbox), Point(x[2],y+hbox), style)
-            Luxor.text(_label_stat(highlights[kk]), Point(x[1],y); halign=:left, valign=:middle)
+            Luxor.setcolor(Luxor.sethue(hue)..., opacity)
+            Luxor.box(Luxor.Point(x[4],y-hbox), Luxor.Point(x[2],y+hbox), style)
+            Luxor.text(_label_stat(highlights[kk]), Luxor.Point(x[1],y); halign=:left, valign=:middle)
         end
     end
 

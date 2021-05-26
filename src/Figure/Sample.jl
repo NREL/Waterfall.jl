@@ -6,7 +6,7 @@ end
 
 Sample(; start, difference, stop) = Sample(start, difference, stop)
 
-function Sample(df::SubDataFrame; label, value, width=missing)
+function Sample(df::DataFrames.SubDataFrame; label, value, width=missing)
     N = size(df,1)
     CAT = N-2
     ismissing(width) && (width = (WIDTH-(N+1)*SEP)/N)
@@ -18,7 +18,7 @@ function Sample(df::SubDataFrame; label, value, width=missing)
     return Sample(start, difference, stop)
 end
 
-# function Sample(df::DataFrame; kwargs...)
+# function Sample(df::DataFrames.DataFrame; kwargs...)
 #     samples = [Sample(sdf; kwargs...) for sdf in groupby(df, :Sample)]
 #     ymax = round(max_cumsum(samples))+0.5
 #     ymin = floor(min_cumsum(samples)*0.9)
@@ -37,7 +37,7 @@ end
 
 
 
-function define_samples(df::DataFrame; kwargs...)
+function define_samples(df::DataFrames.DataFrame; kwargs...)
     samples = [Sample(sdf; kwargs...) for sdf in groupby(df, :Sample)]
 
     ymin, ymax, yscale = lim_value(samples)

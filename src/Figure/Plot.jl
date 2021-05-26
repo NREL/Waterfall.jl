@@ -8,6 +8,17 @@ end
 Plot( ; cascade, xaxis, yaxis) = Plot(cascade, xaxis, yaxis)
 
 
+# mutable struct Plot{T <: Sampling}
+#     cascade::Cascade{T}
+#     xaxis::Axis
+#     yaxis::Axis
+#     legend::Vector{Legend}
+# end
+
+
+# Plot( ; cascade, xaxis, yaxis, legend) = Plot(cascade, xaxis, yaxis, legend)
+
+
 function Plot(cascade::Cascade{Data}; xlabel="", ylabel, kwargs...)
     data = collect_data(cascade)
     xaxis = set_xaxis(data; label=xlabel)

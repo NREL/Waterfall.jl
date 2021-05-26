@@ -4,3 +4,5 @@ mutable struct Attributes
     style::Symbol
     dash::Vector
 end
+
+Attributes( ; color, shape, style, dash) = Attributes( ; color, shape, style, dash)
