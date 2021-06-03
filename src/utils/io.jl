@@ -1,4 +1,7 @@
 """
+    fuzzify(df::DataFrames.DataFrame; kwargs...)
+This function adds "fuzziness" to an input `df`
+
 # Keyword Arguments
 - value::Symbol=:Value
 - samples::Integer=50
@@ -7,7 +10,7 @@
 """
 function fuzzify(df; value::Symbol=:Value, samples::Integer=SAMPLES,
     distribution=:normal,
-    fuzziness=(0.01,0.1),
+    fuzziness=(0.01,0.15),
     kwargs...,
 )
     println("\n\nInjecting fuzziness into input DataFrames.DataFrame over $samples samples.")
@@ -22,7 +25,8 @@ function fuzzify(df; value::Symbol=:Value, samples::Integer=SAMPLES,
         steps = size(df,1)
         df[!,:fuzziness] .= _fuzzify_uniform(fuzziness, steps)
         df[!,:distribution] .= distribution[rand(1:length(distribution), steps)]
-        tmp = _fuzzify(df[:,:distribution], df[:,value], df[:,:fuzziness], samples)
+        # tmp = _fuzzify(df[:,:distribution], df[:,value], df[:,:fuzziness], samples)
+        tmp = _correlated_fuzzify(df[:,value], df[:,:fuzziness], samples)
 
         df = DataFrames.crossjoin(df, DataFrames.DataFrame(SAMPLE=>1:samples))
         df[!,value] .= tmp
@@ -40,6 +44,29 @@ end
 ""
 function make_seed(x::Float64)
     return convert(Integer, round(parse(Float64, Printf.@sprintf("%.3e", x)[1:5]) * 10^3))
+end
+
+
+""
+function _correlated_fuzzify(fuzziness, N; seed=1234)
+    Random.seed!(seed)
+    return rand(Distributions.Normal(0, abs(fuzziness)), N)
+end
+
+function _correlated_fuzzify(mu, fuzziness, N; seed=-1)
+    steps = length(mu)
+    seed = seed<0 ? make_seed.(fuzziness) : fill(seed,length(mu))
+    randomness = hcat([_correlated_fuzzify(f, N; seed=s) for (f,s) in zip(fuzziness,seed)]...)'
+
+    # https://scipy-cookbook.readthedocs.io/items/CorrelatedRandomSamples.html
+    # https://discourse.julialang.org/t/generate-random-positive-definite-symmetric-matrix/53816
+    X = randn(steps,steps)
+    A = X' * X
+    C = LinearAlgebra.cholesky(A / maximum(A))
+
+    result = C.L * randomness
+    result = result .+ mu
+    return vcat([result[ii,:] for ii in 1:steps]...)
 end
 
 
@@ -79,7 +106,7 @@ end
 ""
 _fuzzify_normal(μ::Real, var::Real, N) = rand(Distributions.Normal(μ, abs(var)), N)
 _fuzzify_normal(args...) = _fuzzify(_fuzzify_normal, args...)
-
+    
 ""
 _fuzzify_uniform(x::Tuple{T,T}, N) where T<:Real = rand(Distributions.Uniform(x[1], x[2]), N)
 _fuzzify_uniform(μ::Real, dμ::Real, N) = _fuzzify_uniform((μ-dμ,μ+dμ), N)

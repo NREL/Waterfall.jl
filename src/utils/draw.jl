@@ -121,49 +121,75 @@ function draw(x::Violin, args...; kwargs...)
 end
 
 
+"""
+"""
 function _draw_yaxis(ax::Axis; halign=:right, valign=:middle)
-    # Draw axis Luxor.line.
-    Luxor.arrow(Luxor.Point(0,HEIGHT), Luxor.Point(0,0))
+    Luxor.arrow(Luxor.Point.(0, (HEIGHT,0))...)
 
-    # Draw ticks.
-    N = length(ax.ticks)
-    for ii in 1:length(ax.ticks)
-        ii>1 && Luxor.line(Luxor.Point(-SEP/2, ax.ticks[ii]), Luxor.Point(SEP/2, ax.ticks[ii]), :stroke)
-        Luxor.text(
-            string(Integer(ax.ticklabels[ii])),
-            Luxor.Point(-SEP, ax.ticks[ii]),
-            halign=halign,
-            valign=valign,
-        )
+    for ii in 1:length(ax)
+        ii>1 && _draw_tick(0, ax.ticks[ii])
+        _draw_ticklabel(ax.ticklabels[ii], -SEP, ax.ticks[ii]; valign=:top)
     end
 
-    # Add label.
-    Luxor.text(ax.label,
-        Luxor.midpoint(Luxor.Point(-LEFT_BORDER, HEIGHT), Luxor.Point(-SEP, 0)),
-        angle=-pi/2,
-        halign=:center,
-        valign=:bottom,
-    )
+    _draw_label(ax.label, Luxor.Point(-LEFT_BORDER, HEIGHT), Luxor.Point(-SEP, 0); angle=-pi/2)
 end
 
-function _draw_xaxis(ax::Axis; angle=-pi/4, halign=:right, valign=:top)
-    # Draw axis Luxor.line.
-    Luxor.arrow(Luxor.Point(0,HEIGHT), Luxor.Point(WIDTH+2*SEP,HEIGHT))
 
-    # Draw ticks.
-    for ii in 1:length(ax.ticks)
-        Luxor.line(Luxor.Point(ax.ticks[ii], HEIGHT-SEP/2), Luxor.Point(ax.ticks[ii], HEIGHT+SEP/2), :stroke)
-        Luxor.text(
-            ax.ticklabels[ii],
-            Luxor.Point(ax.ticks[ii], HEIGHT+SEP),
-            angle=angle,
-            halign=halign,
-            valign=valign,
-        )
+"""
+"""
+function _draw_xaxis(ax::Axis)
+    Luxor.arrow(Luxor.Point.((0,WIDTH+2*SEP), HEIGHT)...)
+
+    for ii in 1:length(ax)
+        _draw_tick(ax.ticks[ii], HEIGHT)
+        _draw_ticklabel(ax.ticklabels[ii], ax.ticks[ii], HEIGHT+SEP; angle=-pi/4, valign=:top)
     end
 end
 
 
+"""
+    _draw_ticklabel
+"""
+function _draw_ticklabel(label::String, x, y; halign=:right, kwargs...)
+    Luxor.text(label, Luxor.Point(x, y); halign=halign, kwargs...)
+    return nothing
+end
+
+function _draw_ticklabel(label::T, args...; kwargs...) where T <: Real
+    _draw_ticklabel(string(Integer(label)), args...; kwargs...)
+    return nothing
+end
+
+
+"""
+    _draw_tick(x, y)
+This function draws a tick at the point `(x, y)`
+"""
+function _draw_tick(x::Union{Float64,Tuple}, y::Union{Float64,Tuple})
+    draw_line(Luxor.Point.(x, y); style=:stroke)
+    return nothing
+end
+
+_draw_tick(x::Integer, y::Float64) = _draw_tick((-1,1).*0.5.*SEP .+ x, y)
+_draw_tick(x::Float64, y::Integer) = _draw_tick(x, (-1,1).*0.5.*SEP .+ y)
+
+
+"""
+"""
+function _draw_label(label::String, point::Luxor.Point; halign=:center, valign=:bottom, kwargs...)
+    Luxor.text(label, point; halign=halign, valign=valign, kwargs...)
+    return nothing
+end
+
+
+function _draw_label(label::String, point...; kwargs...)
+    _draw_label(label, Luxor.midpoint(point...); kwargs...)
+    return nothing
+end
+
+
+"""
+"""
 function _draw_title(str::String)
     Luxor.text(str, Luxor.Point(WIDTH/2, SEP), halign=:center, valign=:top)
     return nothing

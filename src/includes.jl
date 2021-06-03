@@ -30,6 +30,7 @@ include(joinpath(WATERFALL_DIR,"src","Figure","Attributes.jl"))
 include(joinpath(WATERFALL_DIR,"src","Figure","Axis.jl"))
 include(joinpath(WATERFALL_DIR,"src","Figure","Legend.jl"))
 include(joinpath(WATERFALL_DIR,"src","Figure","Plot.jl"))
+include(joinpath(WATERFALL_DIR,"src","Figure","Annotation.jl"))
 
 include(joinpath(WATERFALL_DIR,"src","definitions.jl"))
 include(joinpath(WATERFALL_DIR,"src","options.jl"))

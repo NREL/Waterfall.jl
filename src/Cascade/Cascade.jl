@@ -53,7 +53,7 @@ function Cascade{T}(cascade::Cascade{Data}, args...; kwargs...) where T<:Samplin
 end
 
 
-Base.copy(x::Cascade) = Cascade(copy(x.start), copy(x.start), copy.(x.steps))
+Base.copy(x::Cascade) = Cascade(copy(x.start), copy(x.stop), copy.(x.steps))
 
 get_start(x::Cascade) = x.start
 get_steps(x::Cascade) = x.steps

@@ -10,7 +10,7 @@ df[!,:Units] .= "Efficiency (%)"
 
 # Define global arguments.
 distribution=:normal
-fuzziness=(0.01,0.1)
+fuzziness=(0.01,0.3)
 kwargs = (label=:Label, distribution=distribution, fuzziness=fuzziness)
 
 # Define highlights to mark.
@@ -19,18 +19,16 @@ highlights=["mean"; [("quantile",p) for p in prob]]
 
 
 for samples in [1,5,10,50]
-    cascade = Cascade(df; samples=samples, kwargs...)
-    data = collect_data(cascade)
-    set_order!(cascade, sortperm(get_value(cascade.start)))
-    
-    pdata = Plot(cascade; ylabel="Efficiency (%)")
+
+    pdata = Plot(df; samples=samples, ylabel=:Units, kwargs...)
     
     # Iterate over plot type.
     for T in [Horizontal,Parallel,Vertical,Violin]
         p = Plot{T}(pdata)
 
         # Show different combinations of labeling.
-        for hh in [[], [1], 1:length(highlights)]
+        # for hh in [[], [1], 1:length(highlights)]
+        for hh in [[]]
             (samples==1 && !isempty(hh)) && continue
 
             f = filename(p, highlights[hh]; distribution=distribution)
@@ -41,7 +39,7 @@ for samples in [1,5,10,50]
                 Luxor.setmatrix([1 0 0 1 LEFT_BORDER TOP_BORDER])
 
                 draw(p; distribution=distribution, samples=samples)
-                _draw_highlight(pdata, highlights[hh])
+                # _draw_highlight(pdata, highlights[hh])
 
             end WIDTH+LEFT_BORDER+RIGHT_BORDER HEIGHT+TOP_BORDER+BOTTOM_BORDER f
         end

@@ -13,7 +13,7 @@ Base.sign(data::T) where T <: Data = Integer.(sign.(get_value(data)))
 
 Base.length(x::T) where T <: Geometry = length(x.sign)
 Base.length(x::T) where T <: Cascade = length(x.start)
-
+Base.length(x::T) where T <: Axis = length(x.ticks)
 Base.length(x::Plot{T}) where T<:Geometry = length(x.cascade)
 
 
@@ -78,16 +78,7 @@ function ordinal(x::Float64)
 end
 
 
-"This function highlights a metric in the plot."
-function highlight(p::Plot{Data}, stat::String, args...; kwargs...)
-    return if stat=="mean"
-        calculate_mean(p)
-    elseif stat=="quantile"
-        calculate_quantile(p, args...; kwargs...)
-    end
-end
 
-highlight(p::Plot{Data}, args::Tuple; kwargs...) = highlight(p, args...; kwargs...)
 
 
 
