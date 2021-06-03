@@ -1,6 +1,6 @@
 # Input editing
-SAMPLES = 3
-FUZZINESS = (0.01,0.05)
+SAMPLES = 5
+FUZZINESS = (0.01,0.3)
 DISTRIBUTION = :normal      # linear, normal, triangular
 
 # Display

@@ -1,5 +1,6 @@
 """
     scale_x(data::Data, quantile::Real=1; kwargs...)
+This function scales 
 """
 function scale_x(data, quantile::Real=1; kwargs...)
     x1 = cumulative_x(data, -(1-(1-quantile)/2); kwargs...)

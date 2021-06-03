@@ -60,14 +60,39 @@ function _correlated_fuzzify(mu, fuzziness, N; seed=-1)
 
     # https://scipy-cookbook.readthedocs.io/items/CorrelatedRandomSamples.html
     # https://discourse.julialang.org/t/generate-random-positive-definite-symmetric-matrix/53816
-    X = randn(steps,steps)
+    X = random_rotation(steps, 3)
+    # println(X)
     A = X' * X
     C = LinearAlgebra.cholesky(A / maximum(A))
-
     result = C.L * randomness
+
+    # (dim x dim) (dim x sample)
     result = result .+ mu
     return vcat([result[ii,:] for ii in 1:steps]...)
 end
+
+
+
+""
+function random_rotation2(dim::Integer, args...; seed=1234, kwargs...)
+    rot = zeros(dim,dim)+I
+    idx = random_index2(LinearAlgebra.UnitLowerTriangular(rot), args...)
+
+    Random.seed!(seed)
+    val = rand(length(idx))
+
+    for ii in 1:length(idx)
+        rot[idx[ii]...] = val[ii]
+        rot[reverse(idx[ii])...] = val[ii]
+    end
+
+    return rot
+end
+
+
+
+
+
 
 
 ""
