@@ -83,7 +83,6 @@ https://cran.r-project.org/web/packages/GauPro/vignettes/IntroductionToGPs.html#
 https://scipy-cookbook.readthedocs.io/items/CorrelatedRandomSamples.html
 """
 function random_correlation(dim, args...; kwargs...)
-    println("dim=$dim")
     rot = random_rotation(dim, args...; kwargs...)
     A = rot' * rot
     C = LinearAlgebra.cholesky(A / maximum(abs.(A)))
@@ -95,8 +94,7 @@ end
 function random_rotation(dim::Integer, args...; seed=1234, kwargs...)
     rot = zeros(dim,dim)+I
     idx = random_index(LinearAlgebra.UnitLowerTriangular(rot), args...)
-
-    println(length(idx))
+    
     Random.seed!(seed)
     val = [
         _random_uniform(0.0,1.0,Integer(floor(length(idx)/2)));
@@ -136,5 +134,6 @@ list_index(x...) = vec(collect(collect.(Iterators.product(x...))))
 
 "This function returns a 4-digit integer equal to the first four significant digits of "
 function make_seed(x::Float64, len=4)
-    return convert(Integer, round(parse(Float64, Printf.@sprintf("%.10e", x)[1:len+1]) * 10^(len-1)))
+    return convert(Integer, round(parse(Float64,
+        Printf.@sprintf("%.10e", x)[1:len+1]) * 10^(len-1)))
 end
