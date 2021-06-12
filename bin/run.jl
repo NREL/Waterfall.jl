@@ -1,10 +1,9 @@
 using Waterfall
-
+include(joinpath(WATERFALL_DIR,"bin","io.jl"))
 
 # Define highlights to mark.
 prob = [0.75,0.25]
 highlights=["mean"; [("quantile",p) for p in prob]]
-
 
 for samples in [1,5,10,50]
     pdata = Plot(df; numsample=samples, ylabel=:Units, kwargs...)
