@@ -1,55 +1,33 @@
 using Waterfall
-include(joinpath(WATERFALL_DIR,"src","includes.jl"))
 
-DATA_DIR = joinpath(WATERFALL_DIR,"data","pvrd")
-df = CSV.read(joinpath(DATA_DIR,"pvrd2-investment-metrics.csv"), DataFrames.DataFrame)
-dfamt = CSV.read(joinpath(DATA_DIR,"pvrd2-investment-amounts.csv"), DataFrames.DataFrame)
 
-samples=2
-distribution=:normal
-fuzziness=(0.01,0.1)
-mean=true
-kwargs = (label=:Process, samples=samples, distribution=distribution, fuzziness=fuzziness)
+# Define highlights to mark.
+prob = [0.75,0.25]
+highlights=["mean"; [("quantile",p) for p in prob]]
 
-parallel_coordinates = true
 
 for samples in [1,5,10,50]
-    for mean in [true,false]
-        samples*mean == 1 && continue
+    pdata = Plot(df; numsample=samples, ylabel=:Units, kwargs...)
+    
+    # Iterate over plot type.
+    for T in [Horizontal,Parallel,Vertical,Violin]
+        p = Plot{T}(pdata)
 
-        localkwargs = (label=:Process, samples=samples, distribution=distribution, fuzziness=fuzziness)
+        # Show different combinations of labeling.
+        for hh in [[], [1], 1:length(highlights)]
+        # for hh in [[]]
+            (samples==1 && !isempty(hh)) && continue
 
-        local cascade = Cascade(df; localkwargs...)
-        local data = collect_data(cascade)
-        set_order!(cascade, sortperm(get_value(cascade.start)))
+            f = filename(p, highlights[hh]; distribution=distribution)
+            Printf.@printf("\nPlotting and saving figure to %s", f)
 
-        pdata = Plot(cascade; ylabel="Efficiency (%)")
-
-        mean && (pmean = calculate_mean(pdata))
-        local p025 = calculate_quantile(pdata, 0.25)
-        local p075 = calculate_quantile(pdata, 0.75)
-
-
-        # POINTS. SORTED BY FIRST.
-        for T in [Violin, Scatter, Vertical, Horizontal]
-            local p = Plot{T}(pdata)
-            local f = filename(p; distribution=distribution, mean=mean)
-
-            @png begin
+            Luxor.@png begin
                 Luxor.fontsize(14)
                 Luxor.setmatrix([1 0 0 1 LEFT_BORDER TOP_BORDER])
-                # draw(p.cascade, ff)
-                _draw_title(titlecase("$distribution Distribution"),"N = $samples")
 
-                draw(p)
-
-                mean && draw(pmean.cascade; style=:stroke, opacity=1.0)
-                # draw(p025.cascade; hue="black", style=:stroke, opacity=0.8)
-                # draw(p075.cascade; style=:stroke)
-
+                draw(p; distribution=distribution, samples=samples)
 
             end WIDTH+LEFT_BORDER+RIGHT_BORDER HEIGHT+TOP_BORDER+BOTTOM_BORDER f
-            Printf.@printf("\nSaving figure to %s", f)
         end
     end
 end
