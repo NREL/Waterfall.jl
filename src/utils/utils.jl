@@ -17,6 +17,21 @@ Base.length(x::T) where T <: Axis = length(x.ticks)
 Base.length(x::Plot{T}) where T<:Geometry = length(x.cascade)
 
 
+"This function returns all permutations of the elements in the input vectors or vector of vectors"
+permute(x::Vector{Vector{T}}) where T<: Any = permute(x...)
+permute(x::Vararg{Any}) = vec(collect(collect.(Iterators.product(x...))))
+
+
+"This function returns all of the ways to combine the elements in `lst`. At the moment,
+due to memory size, this will truncate to a maximum length of `maxlen=6`."
+function combinate(lst::AbstractArray; maxlen=6)
+    lst = collect(lst)[1:max(length(lst),maxlen)]
+    x = fill(collect(lst), length(lst))
+    x = permute(x)
+    return sort(x[vec(length.(unique.(x)).==length.(x))])
+end
+
+
 """
 This function returns a filename
 """

@@ -94,7 +94,7 @@ end
 function random_rotation(dim::Integer, args...; seed=1234, kwargs...)
     rot = zeros(dim,dim)+I
     idx = random_index(LinearAlgebra.UnitLowerTriangular(rot), args...)
-    
+
     Random.seed!(seed)
     val = [
         _random_uniform(0.0,1.0,Integer(floor(length(idx)/2)));
@@ -127,9 +127,24 @@ function random_index(mat, numcorrelated::Integer; kwargs...)
 end
 
 
-"This function returns a list of all matrix indices"
-list_index(mat::T) where T<:AbstractMatrix = list_index(UnitRange.(1, size(mat))...)
-list_index(x...) = vec(collect(collect.(Iterators.product(x...))))
+"""
+This function returns a sorted list of all matrix indices.
+
+```jldoctest
+julia> list_index(lower_triangular(3))
+9-element Array{Array{Int64,1},1}:
+ [1, 1]
+ [1, 2]
+ [1, 3]
+ [2, 1]
+ [2, 2]
+ [2, 3]
+ [3, 1]
+ [3, 2]
+ [3, 3]
+```
+"""
+list_index(mat::T) where T<:AbstractMatrix = sort(permute(UnitRange.(1, size(mat))...))
 
 
 "This function returns a 4-digit integer equal to the first four significant digits of "
