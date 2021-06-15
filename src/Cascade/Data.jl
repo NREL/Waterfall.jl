@@ -35,6 +35,7 @@ get_ending(x::Data) = x.ending
 
 ""
 _get(fun::Function, data::Vector) = LinearAlgebra.Matrix(hcat(fun.(data)...,)')
+
 # _get(fun::Function, data::Vector{Data}) = LinearAlgebra.Matrix(hcat(fun.(data)...,)')
 get_order(args...) = _get(get_order, args...)
 get_value(args...) = _get(get_value, args...)

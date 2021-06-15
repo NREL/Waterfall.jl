@@ -80,8 +80,10 @@ y-axis ticks.
 function vlim(data::Vector{Data})
     v = dropzero(get_beginning(data))
 
-    vmin = floor(minimum(v)*0.9)
-    vmax = round(maximum(v))+0.5
+    # vmin = floor(minimum(v)*0.9)
+    # vmax = round(maximum(v))+0.5
+    vmin=13.
+    vmax=21.5
     vscale = HEIGHT/(vmax-vmin)
     return vmin, vmax, vscale
 end

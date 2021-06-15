@@ -6,19 +6,12 @@ include(joinpath(WATERFALL_DIR,"bin","io.jl"))
 DataFrames.GroupedDataFrame values."
 get_value(gdf::DataFrames.GroupedDataFrame; val=:Value) = hcat([x[:,val] for x in gdf]...)'
 
-
-
 df = df[1:8,:]
 
-numsample=50
+numsample=1
 numstep=size(df,1)-2
 
 gdf = fuzzify(df; numsample=numsample, kwargs...)
-# df = DataFrames.transform(gdf)
-
-# 
-# (:parent, :cols, :groups, :idx, :starts, :ends, :ngroups, :keymap, :lazy_lock)
-# dfg.starts -> dfg.stops
 
 v = get_value(gdf)
 

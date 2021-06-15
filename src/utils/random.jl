@@ -94,7 +94,7 @@ end
 function random_rotation(dim::Integer, args...; seed=1234, kwargs...)
     rot = zeros(dim,dim)+I
     idx = random_index(LinearAlgebra.UnitLowerTriangular(rot), args...)
-
+    
     Random.seed!(seed)
     val = [
         _random_uniform(0.0,1.0,Integer(floor(length(idx)/2)));

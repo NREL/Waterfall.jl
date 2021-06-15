@@ -73,13 +73,15 @@ This method adds to a `Luxor.Drawing` the entire cascade of waterfalls.
     draw(x::T, args...; kwargs...) where T<:Geometry
 This method adds to a `Luxor.Drawing` each waterfall in the cascade.
 """
-function draw(p::Plot, args...; distribution, samples, kwargs...)
+function draw(p::Plot, args...; showaxis=true, distribution, samples, kwargs...)
     _draw_title(
         titlecase("$distribution Distribution"),
         "N = $(length(p))",
     )
-    _draw_xaxis(p.xaxis)
-    _draw_yaxis(p.yaxis)
+    if showaxis
+        _draw_xaxis(p.xaxis)
+        _draw_yaxis(p.yaxis)
+    end
     draw(p.cascade, args...; kwargs...)
     return nothing
 end

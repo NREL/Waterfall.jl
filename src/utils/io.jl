@@ -17,6 +17,7 @@ function fuzzify(df;
 
     if numsample==1
         df = DataFrames.crossjoin(df, DataFrames.DataFrame(SAMPLE => 1:numsample))
+        df[end,value] *= -1
     else
         val = df[:,value]
         val = random_samples(val, numsample; kwargs...)

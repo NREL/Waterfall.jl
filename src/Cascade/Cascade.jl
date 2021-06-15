@@ -58,7 +58,7 @@ Base.copy(x::Cascade) = Cascade(copy(x.start), copy(x.stop), copy.(x.steps))
 get_start(x::Cascade) = x.start
 get_steps(x::Cascade) = x.steps
 get_stop(x::Cascade) = x.stop
-collect_data(x::Cascade) = Vector{Data}([x.start; x.steps; x.stop])
+collect_data(x) = Vector{Data}([x.start; x.steps; x.stop])
 
 set_start!(x::Cascade, start) = begin x.start = start; return x end
 set_steps!(x::Cascade, steps) = begin x.steps = steps; return x end
