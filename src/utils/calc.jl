@@ -8,6 +8,13 @@ lower_triangular(N::Integer) = LinearAlgebra.UnitLowerTriangular(Int.(ones(N,N))
 dropzero(mat::Array{T,2}) where T <: Real = mat[all.(eachrow(mat.!==0.)),:]
 dropzero(vec::Array{T,1}) where T <: Real = vec[vec.!==0.0]
 
+"""
+This function calculates the graphical width of each bar based on the number of cascade
+steps, ``N_{step}``:
+```math
+w_{step} = \\dfrac{WIDTH - \\left(N_{step}+1\\right) SEP}{N_{step}}
+```
+"""
 width(steps::Integer) = (WIDTH-(steps+1)*SEP)/steps
 
 
@@ -18,18 +25,18 @@ function cumulative_x(shift::Float64=-0.5; subdivide=true, samples=1, space=true
     ROW, COL = steps, (subdivide ? samples : 1)
     extend = -sign(-0.5-shift) * (0.5*SEP * !space * !subdivide)
 
-    wo = width(steps)
-    wi = wo/COL
+    wstep = width(steps)
+    wsample = wstep/COL
 
-    Wo = fill(wo, (ROW,1))
-    Wi = fill(wi, (1,COL))
+    Wstep = fill(wstep, (ROW,1))
+    Wsample = fill(wsample, (1,COL))
     dWo = fill(SEP, (ROW,1))
     
     L = lower_triangular(ROW)
     U = upper_triangular(COL)
 
-    dx = Wi*(U+shift*I)
-    x = (L-I)*Wo + L*dWo .+ extend
+    dx = Wsample*(U+shift*I)
+    x = (L-I)*Wstep + L*dWo .+ extend
     result = x .+ dx
 
     return subdivide ? result : hcat(fill(result, samples)...)

@@ -30,13 +30,13 @@ function calculate_ordered_mean(lst::Vector{Vector{Data}})
 end
 
 
-
-
 df0 = copy(df)
 df = cutoff(df)
+# df[:,value] .*= 100.
 
 cascade = Cascade2(df; numsample=1, kwargs...)
 data = collect_data(cascade)
+vlim(data)
 
 # convert(Cascade2{Horizontal}, cascade)
 
@@ -87,3 +87,5 @@ end
 #     vend = get_ending(data)
 
 # end
+
+

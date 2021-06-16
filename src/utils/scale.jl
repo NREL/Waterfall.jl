@@ -1,3 +1,6 @@
+get_order(x::T) where T<:Real = parse(Int, match(r"e(.*)", Printf.@sprintf("%e", x))[1])
+
+
 """
     scale_x(data::Data, quantile::Real=1; kwargs...)
 This function scales 
@@ -78,12 +81,15 @@ y-axis ticks.
 - `vscale::Float64`: scaling factor to convert value coordinates to drawing coordinates.
 """
 function vlim(data::Vector{Data})
-    v = dropzero(get_beginning(data))
+    v = get_value(data)
 
-    # vmin = floor(minimum(v)*0.9)
-    # vmax = round(maximum(v))+0.5
-    vmin=13.
-    vmax=21.5
+    vorder = get_order.(v)
+    factor = exp10(minimum(vorder)+1)
+    sigdigits = maximum(vorder)-minimum(vorder)
+
+    vmax = ceil(v[1] + maximum(v[2:end-1]); sigdigits=sigdigits) + 0.5*factor
+    vmin = floor(-v[end] - maximum(v[2:end-1]); sigdigits=sigdigits) - 1.0*factor
+    
     vscale = HEIGHT/(vmax-vmin)
     return vmin, vmax, vscale
 end
