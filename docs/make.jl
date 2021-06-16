@@ -1,6 +1,5 @@
 using Documenter
 
-# Include SLiDE modules.
 using Waterfall
 
 if haskey(ENV, "DOCSARGS")
