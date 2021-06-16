@@ -1,14 +1,40 @@
-mutable struct Cascade{T <: Sampling}
+"""
+"""
+mutable struct Cascade2{T <: Sampling}
     start::T
     stop::T
     steps::Vector{T}
+    order::Vector{Int64}
 end
 
 
-Cascade( ; start, stop, steps) = Cascade(start, stop, steps)
+"""
+    Cascade2( ; kwargs...)
+This method allows for field order-independent Cascade2-definition.
+
+# Keyword arguments
+- `order=missing`: Unless otherwise defined, defaults to ordering steps in the order given.
 
 
-function Cascade(df::DataFrames.DataFrame; label, kwargs...)
+    Cascade2(df::DataFrames.DataFrame; kwargs...)
+
+# Arguments
+- `df::DataFrames.DataFrame` of input data
+
+# Keyword arguments
+- `label::Symbol`: `df` column to use to label information
+- See `Waterfall.fuzzify` and `Waterfall.Data`
+
+# Returns
+- `Cascade2{Data}`
+"""
+function Cascade2( ; start, stop, steps, order=missing, kwargs...)
+    ismissing(order) && (order = collect(1:length(steps)))
+    x = Cascade2(start, stop, steps, order)
+end
+
+
+function Cascade2(df::DataFrames.DataFrame; label, kwargs...)
     gdf = fuzzify(df; kwargs...)
 
     start = Data(first(gdf), label; kwargs...)
@@ -19,53 +45,40 @@ function Cascade(df::DataFrames.DataFrame; label, kwargs...)
     set_beginning!(data, cumulative_y(data,-1))
     set_ending!(data, cumulative_y(data))
 
-    return Cascade(start, stop, steps)
+    # Sort "start" samples by magnitude. Ensure consistent ordering in all subsequent steps.
+    iiorder = sortperm(get_value(data[1]))
+    [set_order!(data[ii], iiorder) for ii in 1:length(data)]
+
+    return Cascade2( ; start=start, stop=stop, steps=steps, kwargs...)
 end
 
 
-function Cascade{Data}(value::Matrix{T}, label::Vector{String}) where T<:Real
-    vbeg = cumulative_y(value,-1)
-    vend = cumulative_y(value)
-
-    N = size(value,1)
-    start = Data(label=label[1], value=value[1,:], beginning=vbeg[1,:], ending=vend[1,:])
-    stop = Data(label=label[N], value=value[N,:], beginning=vbeg[N,:], ending=vend[N,:])
-    steps = [Data(label=label[ii], value=value[ii,:], beginning=vbeg[ii,:], ending=vend[ii,:])
-        for ii in 2:N-1]
-
-    return Cascade{Data}(start, stop, steps)
-end
-
-function Cascade{Data}(value::Vector, label::Vector)
-    return Cascade{Data}(reshape(value, length(value), 1), label)
-end
-
-
-function Cascade{T}(fun::Function, cascade::Cascade{Data}) where T<:Sampling
-    result = T(fun, collect_data(cascade))
-    return Cascade(first(result), last(result), result[2:end-1])
-end
-
-
-function Cascade{T}(cascade::Cascade{Data}, args...; kwargs...) where T<:Sampling
-    result = T(collect_data(cascade), args...; kwargs...)
-    return Cascade(first(result), last(result), result[2:end-1])
-end
-
-
-Base.copy(x::Cascade) = Cascade(copy(x.start), copy(x.stop), copy.(x.steps))
-
-get_start(x::Cascade) = x.start
-get_steps(x::Cascade) = x.steps
-get_stop(x::Cascade) = x.stop
+get_start(x::Cascade2) = x.start
+get_steps(x::Cascade2) = x.steps
+get_stop(x::Cascade2) = x.stop
 collect_data(x) = Vector{Data}([x.start; x.steps; x.stop])
 
-set_start!(x::Cascade, start) = begin x.start = start; return x end
-set_steps!(x::Cascade, steps) = begin x.steps = steps; return x end
-set_stop!(x::Cascade, stop) = begin x.stop = stop; return x end
+set_start!(x::Cascade2, start) = begin x.start = start; return x end
+set_steps!(x::Cascade2, steps) = begin x.steps = steps; return x end
+set_stop!(x::Cascade2, stop) = begin x.stop = stop; return x end
 
-function set_order!(x::Cascade, order)
+function set_order!(x::Cascade2, order)
+    # Update order and steps.
+    x.order = order
+    x.steps = x.steps[order]
+
+    # Recalculate beginning and end based on new order.
     data = collect_data(x)
-    [set_order!(d, order) for d in data]
+    set_beginning!(data, cumulative_y(data,-1))
+    set_ending!(data, cumulative_y(data))
+
     return x
+end
+
+
+Base.copy(x::Cascade2) = Cascade2(copy(x.start), copy(x.stop), copy.(x.steps), copy.(x.order))
+
+function Base.convert(::Type{Cascade2{T}}, cascade::Cascade2{Data}) where T <: Geometry
+    result = T(collect_data(cascade))
+    return Cascade2(first(result), last(result), result[2:end-1], cascade.order)
 end
