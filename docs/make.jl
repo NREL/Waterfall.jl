@@ -23,8 +23,9 @@ makedocs(clean = true,
     pages = [
         "Home" => "index.md",
         "Data Generation" => Any[
-            "Distribution" => "man/distribution.md",
-            "Correlation" =>  "man/correlation.md",
+            "Architecture" => "man/data/overview.md",
+            "Distribution" => "man/data/distribution.md",
+            "Correlation" =>  "man/data/correlation.md",
         ],
         "API" => "api/functions.md",
     ]

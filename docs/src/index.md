@@ -1,6 +1,4 @@
-```@docs
-Waterfall.Data
-```
+
 
 Cumulative value
 
