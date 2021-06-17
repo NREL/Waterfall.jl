@@ -35,7 +35,7 @@ function random_translation(dim;
     kwargs...,
 )
     Random.seed!(seed)
-    offset = nsample==1 ? fill(0.0,dim) : _random_uniform(fuzziness..., dim)
+    offset = nsample==1 ? fill(0.0,dim) : random_uniform(fuzziness..., dim)
     return _random_translation(nsample, distribution, offset)
 end
 
@@ -59,29 +59,29 @@ end
 
 function _random_translation(N, distribution::Symbol, offset::Float64)
     offset!==1.0 && Random.seed!(make_seed(offset))
-    return if distribution==:uniform; _random_uniform(offset, N)
-    elseif distribution==:normal;     _random_normal(offset, N)
+    return if distribution==:uniform; random_uniform(offset, N)
+    elseif distribution==:normal;     random_normal(offset, N)
     else;                             _distribution_error()
     end
 end
 
 
 """
-    _random_uniform(x1, x2, N)
-    _random_uniform(dx, N)
+    random_uniform(x1, x2, N)
+    random_uniform(dx, N)
 This function returns an `N`-element Array of random values on the interval
 `[x1,x2]` or `[-dx,+dx]`
 """
-_random_uniform(x1::Float64, x2::Float64, N) = rand(Distributions.Uniform(x1, x2), N)
-_random_uniform(dx::Float64, N) = _random_uniform(-dx, dx, N)
+random_uniform(x1::Float64, x2::Float64, N) = rand(Distributions.Uniform(x1, x2), N)
+random_uniform(dx::Float64, N) = random_uniform(-dx, dx, N)
 
 
 """
-    _random_normal(var, N)
+    random_normal(var, N)
 This function returns an `N`-element Array of random values from a normal distribution
 centered at `0` with a variance `var`
 """
-_random_normal(var::Float64, N) = rand(Distributions.Normal(0, abs(var)), N)
+random_normal(var::Float64, N) = rand(Distributions.Normal(0, abs(var)), N)
 
 
 """
@@ -143,7 +143,18 @@ R_{i,j} = R_{j,i} = x
 - `maxrot=1.0` maximum rotation ``x_{max}``
 
 # Returns
-- `mat::Matrix` rotation matrix 
+- `mat::Matrix` rotation matrix
+
+# Example
+
+```jldoctest
+julia> Waterfall.random_rotation(4, 3)
+4×4 LinearAlgebra.UnitLowerTriangular{Float64,Array{Float64,2}}:
+ 1.0         ⋅         ⋅    ⋅ 
+ 0.766797   1.0        ⋅    ⋅ 
+ 0.590845  -0.433763  1.0   ⋅ 
+ 0.0        0.0       0.0  1.0
+```
 """
 function random_rotation(dim::Integer, args...; seed=1234, minrot=0.0, maxrot=1.0, kwargs...)
     # Select indices overwhich to apply the rotation.
@@ -154,8 +165,8 @@ function random_rotation(dim::Integer, args...; seed=1234, minrot=0.0, maxrot=1.
     # Generate random values.
     Random.seed!(seed)
     val = [
-        _random_uniform( minrot,  maxrot, Integer(ceil(N/2)));
-        _random_uniform(-maxrot, -minrot, Integer(floor(N/2)));
+        random_uniform( minrot,  maxrot, Integer(ceil(N/2)));
+        random_uniform(-maxrot, -minrot, Integer(floor(N/2)));
     ]
 
     return _fill!(rot, idx.=>val; kwargs...)
@@ -203,12 +214,12 @@ This function returns a list of random indices for which `x` is defined.
 - `idx::Vector` of indices
 
 ```jldoctest
-julia> random_index(lower_triangular(8), 4)
+julia> Waterfall.random_index(Waterfall.lower_triangular(8), 4)
 4-element Array{Array{Int64,1},1}:
- [5, 3]
- [2, 1]
- [8, 3]
- [4, 3]
+ [7, 3]
+ [5, 1]
+ [6, 5]
+ [6, 4]
 ```
 """
 function random_index(x, N::Int; kwargs...)
@@ -249,7 +260,7 @@ end
 This function returns a sorted list of all vector or matrix indices.
 
 ```jldoctest
-julia> list_index(lower_triangular(3))
+julia> Waterfall.list_index(Waterfall.lower_triangular(3))
 9-element Array{Array{Int64,1},1}:
  [1, 1]
  [1, 2]
@@ -266,7 +277,7 @@ list_index(mat::T) where T<:AbstractMatrix = sort(permute(UnitRange.(1, size(mat
 list_index(vec::T) where T<:AbstractVector = collect(1:length(vec))
 
 
-"This function returns a 4-digit integer equal to the first four significant digits of "
+"This function returns a `len`-digit integer equal to the first four significant digits of `x`"
 function make_seed(x::Float64, len=4)
     return convert(Integer, round(parse(Float64,
         Printf.@sprintf("%.10e", x)[1:len+1]) * 10^(len-1)))
@@ -275,11 +286,11 @@ end
 
 """
 ```jldoctest
-julia> pick(3, 4)
+julia> Waterfall.pick(3, 4)
 4×4 SparseArrays.SparseMatrixCSC{Int64,Int64} with 1 stored entry:
   [3, 3]  =  1
 
-julia> pick(1:2, 4)
+julia> Waterfall.pick(1:2, 4)
 4×4 SparseArrays.SparseMatrixCSC{Int64,Int64} with 2 stored entries:
   [1, 1]  =  1
   [2, 2]  =  1

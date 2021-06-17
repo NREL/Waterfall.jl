@@ -84,7 +84,7 @@ This function extends the correlation matrix ``A \\in \\mathbb{R}^{N,N}`` stored
 ```math
 A' = 
 \\begin{pmatrix}
-1 &   &   \\
+1 &   &     \\
     & A &   \\
     &   & 1
 \\end{pmatrix}
