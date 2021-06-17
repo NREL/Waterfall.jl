@@ -22,6 +22,10 @@ makedocs(clean = true,
     # workdir = "../",
     pages = [
         "Home" => "index.md",
+        "Data Generation" => Any[
+            "Distribution" => "api/distribution.md",
+            "Correlation" => "api/correlation.md",
+        ]
     ]
 )
 

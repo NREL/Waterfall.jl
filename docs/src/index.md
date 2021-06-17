@@ -1,5 +1,5 @@
-```math
-R T + \vec{x}
+```@docs
+Waterfall.Data
 ```
 
 Cumulative value
@@ -35,3 +35,19 @@ Calculate ``x``-position:
 \vec{x} &= \left(L-I\right) \vec{w}_{step} + L \vec{\delta w}_{step} + extend + \vec{\delta x}
 \end{aligned}
 ```
+
+
+```math
+\begin{aligned}
+R &= I
+\\
+R_{i,j} &= R_{j,i} = x
+,\;\text{where}\;
+\left\{ x \;\big\vert\; |x| \in \left[ x_{min},x_{max} \right],\, x\in\mathbb{R}^{N} \right\}
+\end{aligned}
+```
+
+
+random_translation(dim, N; distribution, fuzziness)
+
+_random_translation(dim, N, distribution, offset)
