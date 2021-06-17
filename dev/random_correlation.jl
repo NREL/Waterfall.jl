@@ -7,10 +7,10 @@ begin value=:Value; label=:Label; sample=:Sample end
 distribution=:normal
 fuzziness=(0.01,0.3)
 numsample=1000
-numcorrelated=2
+ncor=2
 kwargs = (label=label, distribution=distribution, fuzziness=fuzziness,
     numsample=numsample,
-    numcorrelated=numcorrelated,
+    ncor=ncor,
 )
 
 
@@ -24,7 +24,7 @@ dfw = DataFrames.unstack(DataFrames.select(df, [sample,label,value]), label, val
 steps = size(dfw,2)-1
 
 cols = propertynames(dfw)[2:end]
-vcorr = random_correlation(steps, numcorrelated)
+vcorr = random_correlation(steps, ncor)
 # @df iris corrplot(cols(1:4), grid = false)
 
 StatsPlots.gr(size=(800,800))
