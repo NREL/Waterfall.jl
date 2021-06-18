@@ -36,13 +36,13 @@ function Cascade( ; start, stop, steps, ncor, correlation=[], permutation=[],
     correlation_applied=false,
     kwargs...,
 )
+    # Define permutation.
+    isempty(permutation) && (permutation = collect(1:length(steps)))
+
     # Define and apply correlation.
     if isempty(correlation)
         correlation = random_rotation(length(steps), ncor; kwargs...)
     end
-
-    # Define permutation. !!!! Do so such that non-linear terms are ordered sequentially.
-    isempty(permutation) && (permutation = collect(1:length(steps)))
 
     # Define cascade and apply correlation.
     x = Cascade(start, stop, steps, ncor, permutation, correlation, correlation_applied)
@@ -50,8 +50,10 @@ function Cascade( ; start, stop, steps, ncor, correlation=[], permutation=[],
 end
 
 
-function Cascade(df::DataFrames.DataFrame; kwargs...)
-    gdf = fuzzify(df; kwargs...)
+function Cascade(df::DataFrames.DataFrame; fuzzy_correlation=false, correlation_applied=false, kwargs...)
+    gdf = fuzzify(df; fuzzy_correlation=fuzzy_correlation, kwargs...)
+
+    fuzzy_correlation && (correlation_applied=true)
 
     start = Data(first(gdf); kwargs...)
     stop = Data(last(gdf); kwargs...)
@@ -62,7 +64,7 @@ function Cascade(df::DataFrames.DataFrame; kwargs...)
     iiorder = sortperm(get_value(data[1]))
     [set_order!(data[ii], iiorder) for ii in 1:length(data)]
     
-    return Cascade( ; start=start, stop=stop, steps=steps, kwargs...)
+    return Cascade( ; start=start, stop=stop, steps=steps, correlation_applied=correlation_applied, kwargs...)
 end
 
 
@@ -134,34 +136,28 @@ end
 This function applies a correlation matrix `A` to the vector `v`.
 
 ```math
-\\begin{aligned}
-A_{i,i} &= 0
-\\\\
-\\vec{x} &= \\prod_{i=1}^N \\left(S_{i,i} A+I\\right) \\vec{x}
-\\end{aligned}
+\\vec{x}' = \\prod_{i=N}^1 \\left(S_{i,i} A+I\\right) \\vec{x}
 ```
+
+
 
 where ``S_{i,i}``, defined using [`Waterfall.pick`](@ref), is a sparse matrix `[i,i]=1`,
 ``A`` is a random rotation matrix produced by [`Waterfall.random_rotation`](@ref).
-``S_{i,i} A`` selects the ``i^\text{th}`` row of ``A``, which defines how steps `1:i-1`
+``S_{i,i} A`` selects the ``i^\\text{th}`` row of ``A``, which defines how steps `1:i-1`
 impact step `i`. Once correlations have been applied to the `i`th step,
 this new value will be used when applying correlations between steps `i` and `i+1`.
 Taking this approach applies correlations to ``A`` sequentially to propagate nonlinearities
 to subsequent steps.
 
-All diagonal elements of ``A`` are set to zero prior to performing any calculations since
-selecting a row using ``S_{i,i}`` zeros all other elements on the diagonal. Explicitly
-adding ``I`` ensures that applying correlations to the `i`th step will not impact any other
-steps.
+
 """
-function correlate(v::T, A::M) where {T<:AbstractArray, M<:AbstractMatrix}
-    N = size(v,1)
+function correlate(v::T, A::M, idx) where {T<:AbstractArray, M<:AbstractMatrix}
     # Ensure that, if A has ones on the diagonal, these are made zero.
     # When one row is "picked", this will zero the other elements on the diagonal,
     # so we will add these back at each step in the iteration.
-    LinearAlgebra.tr(A)==N && (A -= I)
+    LinearAlgebra.tr(A)==length(idx) && (A -= I)
 
-    [v = (pick(ii,N)*A + I) * v for ii in 1:N]
+    [v = (pick(ii,N)*A + I) * v for ii in idx]
     return v
 end
 
@@ -183,7 +179,7 @@ function correlate!(x::Cascade)
         v = get_value(collect_data(x))
         A = collect_correlation(x)
 
-        v = correlate(v, A)
+        v = correlate(v, A, x.permutation)
 
         set_value!(x.steps, v[2:end-1,:])
         update_stop!(x)

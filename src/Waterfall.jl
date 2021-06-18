@@ -12,6 +12,10 @@ WATERFALL_DIR = abspath(joinpath(dirname(Base.find_package("Waterfall")), ".."))
 export WATERFALL_DIR
 
 include("includes.jl")
+
+export convert
+
+
 # include("definitions.jl")
 # include("utils.jl")
 

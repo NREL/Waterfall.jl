@@ -15,11 +15,12 @@
 
 """
 """
-function random_samples(value; kwargs...)
+function random_samples(value; fuzzy_correlation=false, kwargs...)
     dim = length(value)
     translation = random_translation(dim; kwargs...)
+    correlation = random_correlation(dim; kwargs...)
 
-    # correlation = random_correlation(dim; kwargs...)
+    fuzzy_correlation && (translation = translation * correlation)
     # return correlation * translation .+ value
     return translation .+ value
 end
@@ -108,7 +109,7 @@ function random_correlation(dim;
     method=:eig,
     kwargs...,
 )
-    rot = random_rotation(dim, ncor; kwargs...)
+    rot = random_rotation(dim, ncor; symmetric=true, kwargs...)
 
     if method==:eig
         eigval = LinearAlgebra.eigvals(rot)
@@ -297,3 +298,5 @@ julia> Waterfall.pick(1:2, 4)
 ```
 """
 pick(idx, dim) = SparseArrays.sparse(fill([idx;],2)..., 1, fill(dim,2)...)
+
+pick(dim) = [pick(ii,dim) for ii in 1:dim]

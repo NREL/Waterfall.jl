@@ -1,5 +1,22 @@
 
 
+
+
+
+```math
+\vec{v}' = \left(\prod_{i=N}^1 \left(S_i A+I\right)\right) \vec{v}
+\\
+\vec{v}_{[1,i]}' = 
+    \left(S_i A' + I\right) \dots
+    \left(S_2 A' + I\right)
+    \left(S_1 A' + I\right) \vec{v}_{[1,i]}
+```
+
+
+
+
+
+
 Cumulative value
 
 ```math

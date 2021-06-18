@@ -32,6 +32,19 @@ function combinate(lst::AbstractArray; maxlen=6)
 end
 
 
+"""
+    convert(::Type{DataFrames.DataFrame}, x::Waterfall.Cascade)
+This function converts `x` into a "sample-by-step"-dimension DataFrame with the step labels
+as property property names.
+"""
+function Base.convert(::Type{DataFrames.DataFrame}, x::Waterfall.Cascade)
+    data = Waterfall.collect_data(x)
+    label = Waterfall.get_label.(data)
+    value = Waterfall.get_value(data)
+    return DataFrames.DataFrame(value', label)
+end
+
+
 # """
 # This function returns a filename
 # """
