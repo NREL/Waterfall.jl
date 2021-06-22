@@ -17,7 +17,7 @@ for samples in [1,5,10,50]
         # for hh in [[]]
             (samples==1 && !isempty(hh)) && continue
 
-            f = filename(p, highlights[hh]; distribution=distribution)
+            # f = filename(p, highlights[hh]; distribution=distribution)
             Printf.@printf("\nPlotting and saving figure to %s", f)
 
             Luxor.@png begin
@@ -26,7 +26,7 @@ for samples in [1,5,10,50]
 
                 draw(p; distribution=distribution, samples=samples)
 
-            end WIDTH+LEFT_BORDER+RIGHT_BORDER HEIGHT+TOP_BORDER+BOTTOM_BORDER f
+            end WIDTH+LEFT_BORDER+RIGHT_BORDER HEIGHT+TOP_BORDER+BOTTOM_BORDER "newplot.png"
         end
     end
 end

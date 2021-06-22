@@ -1,4 +1,4 @@
-mutable struct Parallel <: Geometry
+mutable struct Parallel <: Waterfall.Geometry
     sign::Vector{Integer}
     points::Vector{Tuple{Luxor.Point,Luxor.Point}}
 end
@@ -22,24 +22,24 @@ end
 #     )
 # end
 
-function Parallel(data::Vector{Data}, args...; kwargs...)
-    # # x1, x2 = scale_x(data; subdivide=false)
-    # x1 = cumulative_x(data, -1.0; subdivide=false, space=false)
-    # x2 = cumulative_x(data,  0.; subdivide=false, space=false)
-    # y1, y2 = scale_y(data)
+# function Parallel(data::Vector{Data}, args...; kwargs...)
+#     # # x1, x2 = scale_x(data; subdivide=false)
+#     # x1 = cumulative_x(data, -1.0; subdivide=false, space=false)
+#     # x2 = cumulative_x(data,  0.; subdivide=false, space=false)
+#     # y1, y2 = scale_y(data)
 
-    # return Parallel.(
-    #     sign.(data),
-    #     vectorize(Luxor.Point.(x1,y1), Luxor.Point.(x2,y2)),
-    # )
-    return _rectangle(Parallel, data, 1.0, args...; subdivide=false, space=false)
-end
+#     # return Parallel.(
+#     #     sign.(data),
+#     #     vectorize(Luxor.Point.(x1,y1), Luxor.Point.(x2,y2)),
+#     # )
+#     return _rectangle(Parallel, data, 1.0, args...; subdivide=false, space=false)
+# end
 
 
 
-function _rectangle(T::DataType, data::Vector{Data}, quantile::Real, args...; kwargs...)
-    x1, x2 = scale_x(data, quantile; kwargs...)
-    y1, y2 = scale_y(data, args...)
+# function _rectangle(T::DataType, data::Vector{Data}, quantile::Real, args...; kwargs...)
+#     x1, x2 = scale_x(data, quantile; kwargs...)
+#     y1, y2 = scale_y(data, args...)
 
-    return T.(sign.(data), vectorize(Luxor.Point.(x1,y1), Luxor.Point.(x2,y2)))
-end
+#     return T.(sign.(data), Waterfall.vectorize(Luxor.Point.(x1,y1), Luxor.Point.(x2,y2)))
+# end

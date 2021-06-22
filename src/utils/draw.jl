@@ -74,10 +74,10 @@ This method adds to a `Luxor.Drawing` the entire cascade of waterfalls.
 This method adds to a `Luxor.Drawing` each waterfall in the cascade.
 """
 function draw(p::Plot, args...; showaxis=true, distribution, samples, kwargs...)
-    _draw_title(
-        titlecase("$distribution Distribution"),
-        "N = $(length(p))",
-    )
+    # _draw_title(
+    #     titlecase("$distribution Distribution"),
+    #     "N = $(length(p))",
+    # )
     if showaxis
         _draw_xaxis(p.xaxis)
         _draw_yaxis(p.yaxis)
@@ -110,17 +110,17 @@ function draw(x::Vertical, args...; kwargs...)
     return _draw_with(x, draw_box, Blending, args...; kwargs...)
 end
 
-function draw(x::Horizontal, args...; kwargs...)
-    return _draw_with(x, draw_box, Coloring, args...; kwargs...)
-end
+# function draw(x::Horizontal, args...; kwargs...)
+#     return _draw_with(x, draw_box, Coloring, args...; kwargs...)
+# end
 
 function draw(x::Parallel, args...; kwargs...)
     return _draw_with(x, draw_line, Coloring, args...; factor=1.0, kwargs...)
 end
 
-function draw(x::Violin, args...; kwargs...)
-    return _draw_with(x, draw_poly, Coloring, args...; opacity=0.5, kwargs...)
-end
+# function draw(x::Violin, args...; kwargs...)
+#     return _draw_with(x, draw_poly, Coloring, args...; opacity=0.5, kwargs...)
+# end
 
 
 """
@@ -144,7 +144,8 @@ function _draw_xaxis(ax::Axis)
 
     for ii in 1:length(ax)
         _draw_tick(ax.ticks[ii], HEIGHT)
-        _draw_ticklabel(ax.ticklabels[ii], ax.ticks[ii], HEIGHT+SEP; angle=-pi/4, valign=:top)
+        _draw_ticklabel(ax.ticklabels[ii], ax.ticks[ii], HEIGHT+SEP; angle=0, valign=:top, halign=:center)
+        # _draw_ticklabel(ax.ticklabels[ii], ax.ticks[ii], HEIGHT+SEP; angle=-pi/4, valign=:top)
     end
 end
 

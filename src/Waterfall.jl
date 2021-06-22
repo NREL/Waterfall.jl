@@ -13,8 +13,33 @@ export WATERFALL_DIR
 
 include("includes.jl")
 
-export convert
+export WIDTH
+export HEIGHT
+export BORDER
+export TOP_BORDER
+export BOTTOM_BORDER
+export LEFT_BORDER
+export RIGHT_BORDER
+export SEP
 
+
+export convert
+export Cascade
+export Data
+export Geometry
+export Sampling
+export Parallel
+export Vertical
+export Axis
+
+export Attributes
+# export Legend
+# export Annotation
+
+export Coloring
+export Blending
+
+export Plot
 
 # include("definitions.jl")
 # include("utils.jl")

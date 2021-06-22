@@ -6,8 +6,8 @@ get_order(x::T) where T<:Real = parse(Int, match(r"e(.*)", Printf.@sprintf("%e",
 This function scales 
 """
 function scale_x(data, quantile::Real=1; kwargs...)
-    x1 = cumulative_x(data, -(1-(1-quantile)/2); kwargs...)
-    x2 = cumulative_x(data,    -(1-quantile)/2; kwargs...)
+    x1 = Waterfall.cumulative_x(data, -(1-(1-quantile)/2); kwargs...)
+    x2 = Waterfall.cumulative_x(data,    -(1-quantile)/2; kwargs...)
     return x1, x2
 end
 
@@ -80,16 +80,15 @@ y-axis ticks.
 - `vmax::Float64`: (rounded) minimum data value
 - `vscale::Float64`: scaling factor to convert value coordinates to drawing coordinates.
 """
-function vlim(data::Vector{Data})
-    v = get_value(data)
-
-    vorder = get_order.(v)
-    factor = exp10(minimum(vorder)+1)
-    sigdigits = maximum(vorder)-minimum(vorder)
-
-    vmax = ceil(v[1] + maximum(v[2:end-1]); sigdigits=sigdigits) + 0.5*factor
-    vmin = floor(-v[end] - maximum(v[2:end-1]); sigdigits=sigdigits) - 1.0*factor
+function vlim(mat::Matrix)
+    vmax = 20.5
+    vmin = 15.0
     
-    vscale = HEIGHT/(vmax-vmin)
-    return vmin, vmax, vscale
+    vscale = Waterfall.HEIGHT/(vmax-vmin)
+    return (vmin=vmin, vmax=vmax, vscale=vscale)
+end
+
+
+function Waterfall.vlim(data::Vector{Data})
+    return Waterfall.vlim(Waterfall.get_value(data))
 end

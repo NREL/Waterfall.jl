@@ -1,55 +1,81 @@
 "Returns an NxN lower-triangular matrix."
-lower_triangular(N::Integer) = LinearAlgebra.UnitLowerTriangular(Int.(ones(N,N)))
-lower_triangular(N::Integer, val) = LinearAlgebra.UnitLowerTriangular(fill(val, N, N))
+lower_triangular(N::Integer; kwargs...) = lower_triangular(N, 1; kwargs...)
+
+function lower_triangular(N::Integer, val; unit=true)
+    mat = fill(val, N, N)
+    return unit ? LinearAlgebra.UnitLowerTriangular(mat) : LinearAlgebra.LowerTriangular(mat)
+end
 
 "Returns an NxN upper-triangular matrix."
-upper_triangular(N::Integer) = LinearAlgebra.UnitUpperTriangular(Int.(ones(N,N)))
-upper_triangular(N::Integer, val) = LinearAlgebra.UnitUpperTriangular(fill(val, N, N))
+upper_triangular(N::Integer; kwargs...) = upper_triangular(N, 1; kwargs...)
+
+function upper_triangular(N::Integer, val; unit=true)
+    mat = fill(val, N, N)
+    return unit ? LinearAlgebra.UnitUpperTriangular(mat) : LinearAlgebra.UpperTriangular(mat)
+end
+
 
 "Drops zero values."
 dropzero(mat::Array{T,2}) where T <: Real = mat[all.(eachrow(mat.!==0.)),:]
 dropzero(vec::Array{T,1}) where T <: Real = vec[vec.!==0.0]
 
-# """
-# This function calculates the graphical width of each bar based on the number of cascade
-# steps, ``N_{step}``:
-# ```math
-# w_{step} = \\dfrac{WIDTH - \\left(N_{step}+1\\right) SEP}{N_{step}}
-# ```
-# """
-# width(steps::Integer) = (WIDTH-(steps+1)*SEP)/steps
+
+"""
+"""
+function rowsum(x::Cascade; shift)
+    v = Waterfall.rowprod(x)
+    N, M = size(v[1])
+
+    m = [vcat(zeros(1,M), v[ii]) for ii in 1:N]
+    m = [zeros(N+1,M), m...]
+
+    shift+=1
+    vsum = zeros(size(v[1]))
+    [vsum[ii,:] = Statistics.cumsum(m[ii+shift]; dims=1)[ii+shift,:] for ii in 1:N]
+    return vsum
+end
 
 
-# """
-#     cumulative_x(shift::Float64)
-# """
-# function cumulative_x(shift::Float64=-0.5; subdivide=true, samples=1, space=true, steps, kwargs...)
-#     ROW, COL = steps, (subdivide ? samples : 1)
-#     extend = -sign(-0.5-shift) * (0.5*SEP * !space * !subdivide)
+"""
+This function calculates the graphical width of each bar based on the number of cascade
+steps, ``N_{step}``:
+```math
+w_{step} = \\dfrac{WIDTH - \\left(N_{step}+1\\right) SEP}{N_{step}}
+```
+"""
+width(steps::Integer) = (WIDTH-(steps+1)*SEP)/steps
 
-#     wstep = width(steps)
-#     wsample = wstep/COL
 
-#     Wstep = fill(wstep, (ROW,1))
-#     Wsample = fill(wsample, (1,COL))
-#     dWo = fill(SEP, (ROW,1))
+"""
+    cumulative_x(shift::Float64)
+"""
+function cumulative_x(shift::Float64=-0.5; subdivide=true, samples=1, space=true, steps, kwargs...)
+    ROW, COL = steps, (subdivide ? samples : 1)
+    extend = -sign(-0.5-shift) * (0.5*SEP * !space * !subdivide)
+
+    wstep = width(steps)
+    wsample = wstep/COL
+
+    Wstep = fill(wstep, (ROW,1))
+    Wsample = fill(wsample, (1,COL))
+    dWo = fill(SEP, (ROW,1))
     
-#     L = lower_triangular(ROW)
-#     U = upper_triangular(COL)
+    L = lower_triangular(ROW)
+    U = upper_triangular(COL)
 
-#     dx = Wsample*(U+shift*I)
-#     x = (L-I)*Wstep + L*dWo .+ extend
-#     result = x .+ dx
+    dx = Wsample*(U+shift*I)
+    x = (L-I)*Wstep + L*dWo .+ extend
+    result = x .+ dx
 
-#     return subdivide ? result : hcat(fill(result, samples)...)
-# end
+    return subdivide ? result : hcat(fill(result, samples)...)
+end
 
-# function cumulative_x(data::Array{Data,1}, args...; kwargs...)
-#     STEPS, DEFAULT_NSAMPLE = size(get_value(data))
-#     return cumulative_x(args...; steps=STEPS, samples=DEFAULT_NSAMPLE, kwargs...)
-# end
+function cumulative_x(data::Vector{Data}, args...; kwargs...)
+    STEPS, SAMPLES = size(get_value(data))
+    return cumulative_x(args...; steps=STEPS, samples=SAMPLES, kwargs...)
+end
 
-# cumulative_x(args...) = _cumulative(cumulative_x, args...)
+cumulative_x(args...) = _cumulative(cumulative_x, args...)
 
 
 # """
@@ -72,9 +98,9 @@ dropzero(vec::Array{T,1}) where T <: Real = vec[vec.!==0.0]
 # cumulative_y(args...) = _cumulative(cumulative_y, args...)
 
 
-# "Helper function for different types of calculation inputs"
-# _cumulative(fun::Function, cascade::Cascade, args...) = fun(collect_data(cascade), args...)
-# _cumulative(fun::Function, data::Vector{Data}, args...) = fun(get_value(data), args...)
+"Helper function for different types of calculation inputs"
+_cumulative(fun::Function, cascade::Cascade, args...) = fun(collect_data(cascade), args...)
+_cumulative(fun::Function, data::Vector{Data}, args...) = fun(get_value(data), args...)
 
 
 # """

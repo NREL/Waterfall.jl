@@ -1,3 +1,5 @@
+import Base
+
 vectorize(x::Matrix) = collect.(collect(eachrow(x)))
 vectorize(mat...) = vectorize(Tuple.(hcat.(mat...)))
 
@@ -11,10 +13,10 @@ get_density(args...) = _get(get_density, args...)
 Base.sign(data::T) where T <: Data = Integer.(sign.(get_value(data)))
 
 
-# Base.length(x::T) where T <: Geometry = length(x.sign)
-# Base.length(x::T) where T <: Cascade = length(x.start)
-# Base.length(x::T) where T <: Axis = length(x.ticks)
-# Base.length(x::Plot{T}) where T<:Geometry = length(x.cascade)
+Base.length(x::T) where T <: Geometry = length(x.sign)
+Base.length(x::T) where T <: Cascade = length(x.start)
+Base.length(x::T) where T <: Axis = length(x.ticks)
+Base.length(x::Plot{T}) where T<:Geometry = length(x.cascade)
 
 
 "This function returns all permutations of the elements in the input vectors or vector of vectors"
@@ -33,6 +35,12 @@ end
 
 
 """
+"""
+function Base.convert(::Type{Plot{T}}, p::Plot{Data}) where T <: Geometry
+    return Plot(convert(Cascade{T}, p.cascade), p.xaxis, p.yaxis)
+end
+
+"""
     convert(::Type{DataFrames.DataFrame}, x::Waterfall.Cascade)
 This function converts `x` into a "sample-by-step"-dimension DataFrame with the step labels
 as property property names.
@@ -47,6 +55,41 @@ function Base.convert(::Type{DataFrames.DataFrame}, x::Waterfall.Cascade)
 
     return DataFrames.DataFrame(value', label; makeunique=true)
 end
+
+
+function Base.convert(::Type{Cascade{T}}, x::Cascade{Data}, args...; kwargs...) where T <: Waterfall.Geometry
+    data = _rectangle(T, x, args...; kwargs...)
+    return Cascade(first(data), last(data), data[2:end-1], x.ncor, x.permutation, x.correlation)
+end
+
+function Base.convert(::Type{Cascade{Parallel}}, x::Cascade{Data})
+    return Base.convert(Cascade{Parallel}, x, 1.0; subdivide=false, space=false)
+end
+
+function Base.convert(::Type{Cascade{Vertical}}, x::Cascade{Data})
+    return Base.convert(Cascade{Vertical}, x, 1.0; subdivide=true)
+end
+
+
+"""
+"""
+function _rectangle(T::DataType, x::Cascade, quantile::Real, args...; kwargs...)
+    data = Waterfall.collect_data(x)
+    perm = Waterfall.collect_permutation(x)
+
+    vsum0 = Waterfall.rowsum(x; shift=-1)
+    vsum1 = Waterfall.rowsum(x; shift=0)
+    vheight = vsum1 .- vsum0
+
+    vlims = vlim(vheight)
+    y1 = scale_y(vsum0, args...; vlims...)
+    y2 = scale_y(vsum1, args...; vlims...)
+
+    x1, x2 = scale_x(data, quantile; kwargs...)
+
+    return T.(sign.(data), Waterfall.vectorize(Luxor.Point.(x1,y1), Luxor.Point.(x2,y2)))
+end
+
 
 
 # """

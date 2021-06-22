@@ -28,6 +28,7 @@ end
 
 
 function rowprod(lst::Vector{M}, v::Matrix{T}) where {M<:AbstractMatrix, T<:Float64}
+    # v is NOT re-ordered.
     return [Waterfall.update_stop!(A * v) for A in lst]
 end
 

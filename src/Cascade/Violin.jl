@@ -4,11 +4,11 @@ mutable struct Violin <: Geometry
 end
 
 
-function Violin(data::Vector{Data}; kwargs...)
-    x, y = scale_kde(get_ending, data)
+# function Violin(data::Vector{Data}; kwargs...)
+#     x, y = scale_kde(get_ending, data)
 
-    return Violin.(
-        sign.(data),
-        vectorize(Luxor.Point.(x,y)),
-    )
-end
+#     return Violin.(
+#         sign.(data),
+#         vectorize(Luxor.Point.(x,y)),
+#     )
+# end

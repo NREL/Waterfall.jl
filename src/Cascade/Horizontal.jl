@@ -4,8 +4,8 @@ mutable struct Horizontal <: Geometry
 end
 
 
-function Horizontal(data::Vector{Data}, p::Float64, args...; kwargs...)
-    return _rectangle(Horizontal, data, p, args...; subdivide=false)
-end
+# function Horizontal(data::Vector{Data}, p::Float64, args...; kwargs...)
+#     return _rectangle(Horizontal, data, p, args...; subdivide=false)
+# end
 
-Horizontal(data::Vector{Data}, args...; kwargs...) = Horizontal(data, 1.0, args...; kwargs...)
+# Horizontal(data::Vector{Data}, args...; kwargs...) = Horizontal(data, 1.0, args...; kwargs...)

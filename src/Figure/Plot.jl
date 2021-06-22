@@ -1,28 +1,35 @@
-mutable struct Plot2{T <: Sampling}
-    Cascade2::Cascade2{T}
+mutable struct Plot{T <: Sampling}
+    cascade::Cascade{T}
     xaxis::Axis
     yaxis::Axis
-    legend::Vector{Legend}
-    annotation::Vector{Annotation}
+    # legend::Vector{Legend}
+    # annotation::Vector{Annotation}
 end
 
 
-function Plot2( ;
-    Cascade2,
+function Plot( ;
+    cascade,
     xaxis, 
     yaxis,
-    legend=Vector{Legend}(),
-    annotation=Vector{Annotation}(),
+    # legend=Vector{Legend}(),
+    # annotation=Vector{Annotation}(),
     kwargs...,
 )
-    return Plot2(Cascade2, xaxis, yaxis, legend, annotation)
+    # return Plot(Cascade, xaxis, yaxis, legend, annotation)
+    return Plot(cascade, xaxis, yaxis)
 end
 
 
-function Plot2{T}(cascade::Cascade2{Data}; xlabel="", ylabel, kwargs...) where T <: Geometry
-    data = collect_data(cascade)
-    xaxis = set_xaxis(data; label=xlabel)
-    yaxis = set_yaxis(data; label=ylabel)
+function Plot(cascade::Cascade{Data}; xlabel="", ylabel, show_permutation=true, kwargs...)
+    # if show_permutation
+    #     idx = Waterfall.collect_permutation(cascade)
+    #     data = Waterfall.collect_data(cascade)[idx]
+    # end
 
-    return Plot2( ; cascade=convert(Cascade2{T}, cascade), xaxis=xaxis, yaxis=yaxis)
+    data = Waterfall.collect_data(cascade)
+    xaxis = Waterfall.set_xaxis(data; label=xlabel)
+    yaxis = Waterfall.set_yaxis(data; label=ylabel)
+
+    return Plot( ; cascade=cascade, xaxis=xaxis, yaxis=yaxis)
+    # return Plot( ; cascade=convert(Cascade{T}, cascade), xaxis=xaxis, yaxis=yaxis)
 end
