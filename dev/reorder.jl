@@ -19,22 +19,42 @@ function plot_cascade(cascade)
     )
 end
 
-
 nstep = 3
 nsample = 2
+nperm = 10
 ncor = 3
 
 df = cutoff(df; nstep=nstep)
 
-cascade = Waterfall.Cascade(df; minrot=0.5,  maxrot=0.7, apply_correlation=true, nsample=nsample, ncor=ncor, kwargs...)
-cascade0 = Waterfall.Cascade(df; minrot=0.5, maxrot=0.7, apply_correlation=false, nsample=nsample, ncor=ncor, kwargs...)
+# cascade = Waterfall.Cascade(df; minrot=0.5,  maxrot=0.7, apply_correlation=true, nsample=nsample, ncor=ncor, kwargs...)
+x = Waterfall.Cascade(df; minrot=0.05, maxrot=0.15, nsample=nsample, ncor=ncor, kwargs...)
+
+v = Waterfall.get_value(Waterfall.collect_data(x))
+A = Waterfall.collect_correlation(x)
+N = length(x.steps)
 
 # Convert cascade
-# plot_cascade(cascade)
-v = Waterfall.get_value(Waterfall.collect_data(cascade0))
-A = Waterfall.collect_correlation(cascade0)
+plot_cascade(cascade)
+# v = Waterfall.get_value(Waterfall.collect_data(cascade0))
+# A = Waterfall.collect_correlation(cascade0)
+# N = size(A,2)
 
-idx = Waterfall.random_index(1:N)
+# lst0 = correlation_factor(A)
 
-lst0 = correlation_factor(A)
-lst = correlation_cumprod(A, idx)
+perm = [[collect(1:N)]; Waterfall.random_permutation(1:N, min(factorial(N),nperm))]
+# perm = [ for x in perm]
+
+# Apply one-at-a-time to observe effects of order.
+function correlation_apply(v, lst)
+    return [Waterfall.update_stop!(mat * v) for mat in lst]
+end
+
+dA = Dict(idx => correlation_cumprod(A, [1; idx.+1; N+2]) for idx in perm)
+dv = Dict(idx => correlation_apply(v, lst) for (idx,lst) in dA)
+
+dvprev = Dict(idx => [v[ii][ii+1,:] for ii in 1:N] for (idx,v) in dv)
+dvcurr = Dict(idx => [v[ii+1][ii+1,:] for ii in 1:N] for (idx,v) in dv)
+
+# Get values at some step, ii.
+ii = 2
+getindex.(values(dvcurr),ii)

@@ -18,10 +18,8 @@
 function random_samples(value; fuzzy_correlation=false, kwargs...)
     dim = length(value)
     translation = random_translation(dim; kwargs...)
-    correlation = random_correlation(dim; kwargs...)
-
-    fuzzy_correlation && (translation = translation * correlation)
-    # return correlation * translation .+ value
+    # correlation = random_correlation(dim; kwargs...)
+    # fuzzy_correlation && (translation = translation * correlation)
     return translation .+ value
 end
 
@@ -173,8 +171,6 @@ function random_rotation(dim::Integer, args...; seed=1234, minrot=0.0, maxrot=1.
     return _fill!(rot, idx.=>val; kwargs...)
 end
 
-# random_rotation(dim; ncor)
-
 
 """
     _fill!(mat, x; kwargs...)
@@ -195,6 +191,20 @@ end
 function _fill!(mat, lst; kwargs...)
     [mat = _fill!(mat, x; kwargs...) for x in lst]
     return mat
+end
+
+
+"""
+    random_permutation(rng::UnitRange, nperm::Int; kwargs...)
+This function returns an `nperm`-element list of unique permutations of `rng`.
+
+# Keyword arguments
+- `seed=1234`
+"""
+function random_permutation(rng::UnitRange, nperm::Int; seed=1234)
+    Random.seed!(seed)
+    idx = StatsBase.sample(1:factorial(rng.stop), nperm; replace=false)
+    return [Combinatorics.nthperm(rng, ii) for ii in idx]
 end
 
 
@@ -298,5 +308,4 @@ julia> Waterfall.pick(1:2, 4)
 ```
 """
 pick(idx, dim) = SparseArrays.sparse(fill([idx;],2)..., 1, fill(dim,2)...)
-
 pick(dim) = [pick(ii,dim) for ii in 1:dim]

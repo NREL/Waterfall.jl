@@ -1,5 +1,6 @@
 mutable struct Data <: Sampling
     label::String
+    sublabel::String
     order::Vector{Integer}
     value::Vector{Real}
 end
@@ -11,15 +12,16 @@ This method allows for field order-independent Cascade-definition.
 # Keyword arguments
 - `order=[]`: If unspecified, default to `1:length(value)`
 """
-function Data( ; label, value, order=[], kwargs...)
+function Data( ; label, value, sublabel="", order=[], kwargs...)
     isempty(order) && (order = collect(1:length(value)))
     
-    return Data(label, order, value)
+    return Data(label, sublabel, order, value)
 end
 
 
-function Data(sdf::DataFrames.SubDataFrame; label, value=VALUE_COL, kwargs...)
-    return Data( ; label=sdf[1,label], value=sdf[:,value], kwargs...)
+function Data(sdf::DataFrames.SubDataFrame; label, sublabel="", value=VALUE_COL, kwargs...)
+    sublabel!=="" && (sublabel = sdf[1,sublabel])
+    return Data( ; label=sdf[1,label], sublabel=sublabel, value=sdf[:,value], kwargs...)
 end
 
 
@@ -28,6 +30,7 @@ end
 
 "Get properties"
 get_label(x::Data) = x.label
+get_sublabel(x::Data) = x.sublabel
 
 get_order(x::Data) = x.order
 get_order(args...) = _get(get_order, args...)
@@ -41,6 +44,7 @@ _get(fun::Function, data::Vector) = LinearAlgebra.Matrix(hcat(fun.(data)...,)')
 
 "Set properties"
 set_label!(x::Data, label) = begin x.label = label; return x end
+set_sublabel!(x::Data, sublabel) = begin x.sublabel = sublabel; return x end
 
 set_value!(x::Data, value) = begin x.value = value; return x end
 set_value!(args...) = _set(set_value!, args...)

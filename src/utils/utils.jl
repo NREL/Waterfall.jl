@@ -39,9 +39,13 @@ as property property names.
 """
 function Base.convert(::Type{DataFrames.DataFrame}, x::Waterfall.Cascade)
     data = Waterfall.collect_data(x)
+    sublabel = getindex.(match.(r"(\S*)", Waterfall.get_sublabel.(data)),1)
     label = Waterfall.get_label.(data)
+    [label[ii] = "$(label[ii]) ($(sublabel[ii]))" for ii in [1,length(data)]]
+
     value = Waterfall.get_value(data)
-    return DataFrames.DataFrame(value', label)
+
+    return DataFrames.DataFrame(value', label; makeunique=true)
 end
 
 
