@@ -27,7 +27,7 @@ function rowprod(A::M, order::Vector{T}) where {M<:AbstractMatrix, T<:Int}
 end
 
 
-function rowprod(lst::Vector{M}, v::Matrix{T}) where {M<:AbstractMatrix, T<:Float64}
+function rowprod(lst::Vector{M}, v::Matrix{T}) where {M<:AbstractMatrix, T<:Real}
     # v is NOT re-ordered.
     return [Waterfall.update_stop!(A * v) for A in lst]
 end

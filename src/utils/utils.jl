@@ -19,6 +19,20 @@ Base.length(x::T) where T <: Axis = length(x.ticks)
 Base.length(x::Plot{T}) where T<:Geometry = length(x.cascade)
 
 
+Base.values(x::Data) = _values(x)
+Base.values(x::Cascade) = _values(x)
+Base.values(x::Axis) = _values(x)
+Base.values(x::Plot) = _values(x)
+_values(x::T) where T <: Any = Tuple([getproperty(x, f) for f in fieldnames(T)])
+
+
+Base.copy(x::Axis) = _copy(x)
+Base.copy(x::Data) = _copy(x)
+Base.copy(x::Cascade) = _copy(x)
+Base.copy(x::Plot) = Plot(copy.(Waterfall._values(x))...)
+_copy(x::T) where T <: Any = T(values(x)...)
+
+
 "This function returns all permutations of the elements in the input vectors or vector of vectors"
 permute(x::Vector{Vector{T}}) where T<: Any = permute(x...)
 permute(x::Vararg{Any}) = vec(collect(collect.(Iterators.product(x...))))
@@ -36,9 +50,80 @@ end
 
 """
 """
-function Base.convert(::Type{Plot{T}}, p::Plot{Data}) where T <: Geometry
-    return Plot(convert(Cascade{T}, p.cascade), p.xaxis, p.yaxis)
+Base.convert(::Type{Matrix}, lst::AbstractVector; dims=2) = _convert(Matrix, lst, dims)
+
+_convert(::Type{Matrix}, lst, dims) = LinearAlgebra.Matrix(cat(lst...; dims=dims)')
+
+
+"""
+```jldoctest
+julia> order = [1,3,2];
+
+julia> sparse_matrix = convert(SparseArrays.SparseMatrixCSC, order)
+3×3 SparseArrays.SparseMatrixCSC{Int64,Int64} with 3 stored entries:
+  [1, 1]  =  1
+  [3, 2]  =  1
+  [2, 3]  =  1
+
+julia> Matrix(sparse_matrix)
+  3×3 Array{Int64,2}:
+   1  0  0
+   0  0  1
+   0  1  0
+
+julia> sparse_matrix * collect(1:length(order)) == order
+   true
+```
+"""
+function Base.convert(::Type{SparseArrays.SparseMatrixCSC}, order::T) where T <: AbstractVector{Int}
+    N = length(order)
+    mat = SparseArrays.sparse(1:N, order, fill(1,N))
+    # check: mat * collect(1:N) == v
+    return mat
 end
+
+
+"""
+"""
+function Base.convert(::Type{Plot{T}}, x::Plot{Data}; kwargs...) where T <: Geometry
+    return _convert(T, x; kwargs...)
+end
+
+function Base.convert(::Type{Cascade{T}}, x::Cascade{Data}; kwargs...) where T <: Geometry
+    return _convert(T, x; kwargs...)
+end
+
+
+"""
+"""
+_convert(::Type{Parallel}, x; kwargs...) = _convert!(Parallel, copy(x), 1.0; subdivide=false, space=false, kwargs...)
+
+_convert(::Type{Vertical}, x; kwargs...) = _convert!(Vertical, copy(x), 1.0; subdivide=true, space=true, kwargs...)
+
+
+"""
+"""
+function _convert!(T::DataType, x::Cascade{Data}, quantile::Real, args...; kwargs...)
+
+    v1, v2 = cumulative_v!(x; kwargs...)
+    data = Waterfall.collect_data(x)
+    vlims = Waterfall.vlim(v1)
+
+    y1 = Waterfall.scale_y(v1, args...; vlims...)
+    y2 = Waterfall.scale_y(v2, args...; vlims...)
+
+    x1, x2 = Waterfall.scale_x(data, quantile; kwargs...)
+
+    data = T.(sign.(data), Waterfall.vectorize(Luxor.Point.(x1,y1), Luxor.Point.(x2,y2)))
+    return Cascade(first(data), last(data), data[2:end-1], x.ncor, x.permutation, x.correlation)
+end
+
+
+function _convert!(T::DataType, p::Plot{Data}, args...; kwargs...)
+    x = _convert!(T, p.cascade, args...; kwargs...)
+    return Plot(x, Waterfall.set_xaxis(p.cascade), p.yaxis)
+end
+
 
 """
     convert(::Type{DataFrames.DataFrame}, x::Waterfall.Cascade)
@@ -55,41 +140,6 @@ function Base.convert(::Type{DataFrames.DataFrame}, x::Waterfall.Cascade)
 
     return DataFrames.DataFrame(value', label; makeunique=true)
 end
-
-
-function Base.convert(::Type{Cascade{T}}, x::Cascade{Data}, args...; kwargs...) where T <: Waterfall.Geometry
-    data = _rectangle(T, x, args...; kwargs...)
-    return Cascade(first(data), last(data), data[2:end-1], x.ncor, x.permutation, x.correlation)
-end
-
-function Base.convert(::Type{Cascade{Parallel}}, x::Cascade{Data})
-    return Base.convert(Cascade{Parallel}, x, 1.0; subdivide=false, space=false)
-end
-
-function Base.convert(::Type{Cascade{Vertical}}, x::Cascade{Data})
-    return Base.convert(Cascade{Vertical}, x, 1.0; subdivide=true)
-end
-
-
-"""
-"""
-function _rectangle(T::DataType, x::Cascade, quantile::Real, args...; kwargs...)
-    data = Waterfall.collect_data(x)
-    perm = Waterfall.collect_permutation(x)
-
-    vsum0 = Waterfall.rowsum(x; shift=-1)
-    vsum1 = Waterfall.rowsum(x; shift=0)
-    vheight = vsum1 .- vsum0
-
-    vlims = vlim(vheight)
-    y1 = scale_y(vsum0, args...; vlims...)
-    y2 = scale_y(vsum1, args...; vlims...)
-
-    x1, x2 = scale_x(data, quantile; kwargs...)
-
-    return T.(sign.(data), Waterfall.vectorize(Luxor.Point.(x1,y1), Luxor.Point.(x2,y2)))
-end
-
 
 
 # """

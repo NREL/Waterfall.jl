@@ -65,7 +65,7 @@ end
 This function returns a list of all [`Waterfall.Data`](@ref) Types stored in `x`,
 ordered [`x.start; x.steps, x.stop]`.
 """
-collect_data(x::Cascade) = Vector{Data}([x.start; x.steps; x.stop])
+collect_data(x::Cascade) = Vector{}([x.start; x.steps; x.stop])
 
 
 """
@@ -110,6 +110,9 @@ get_stop(x::Cascade) = x.stop
 set_start!(x::Cascade, start) = begin x.start = start; return x end
 set_steps!(x::Cascade, steps) = begin x.steps = steps; return x end
 set_stop!(x::Cascade, stop) = begin x.stop = stop; return x end
+
+
+set_permutation!(x::Cascade) = begin x.steps = x.steps[x.permutation]; return x end
 
 
 """

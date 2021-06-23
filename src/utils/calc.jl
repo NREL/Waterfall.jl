@@ -22,6 +22,35 @@ dropzero(vec::Array{T,1}) where T <: Real = vec[vec.!==0.0]
 
 """
 """
+function cumulative_v(x::Cascade, shift; permute, kwargs...)
+    v = Waterfall.rowprod(x)
+    N = length(v)
+
+    perm = permute ? Waterfall.collect_permutation(x) : 1:N
+
+    vii = Waterfall.update_stop!(convert(Matrix, broadcast(getindex, v, 1:N, :)))
+
+    L = Waterfall.lower_triangular(N) + shift*I
+    order = convert(SparseArrays.SparseMatrixCSC, perm)
+
+    return L * order * vii
+end
+
+cumulative_v(x::Cascade; kwargs...) = cumulative_v!(copy(x); kwargs...)
+
+
+"""
+"""
+function cumulative_v!(x::Cascade; permute, kwargs...)
+    v1 = cumulative_v(x, -1.0; permute=permute, kwargs...)
+    v2 = cumulative_v(x,  0.0; permute=permute, kwargs...)
+    permute && set_permutation!(x)
+    return v1, v2
+end
+
+
+"""
+"""
 function rowsum(x::Cascade; shift)
     v = Waterfall.rowprod(x)
     N, M = size(v[1])

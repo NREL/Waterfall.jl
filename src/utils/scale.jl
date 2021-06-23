@@ -21,12 +21,12 @@ function scale_y(data::Vector{Data}, args...)
     return y1, y2
 end
 
-scale_y(v::VecOrMat{T}; vmin, vscale, vmax) where T<:Real = -vscale * (max.(v,vmin) .- vmax)
+Waterfall.scale_y(v::AbstractArray; vmin, vscale, vmax) = -vscale * (max.(v,vmin) .- vmax)
 
-function scale_y(fun::Function, data::Vector{Data})
-    vlims = NamedTuple{(:vmin,:vmax,:vscale)}(vlim(data))
-    return scale_y(fun(data); vlims...)
-end
+# function scale_y(fun::Function, data::Vector{Data})
+#     vlims = NamedTuple{(:vmin,:vmax,:vscale)}(vlim(data))
+#     return scale_y(fun(data); vlims...)
+# end
 
 scale_y(fun::Function, cascade::Cascade) = scale_y(fun, collect_data(cascade))
 scale_y(fun::Function, cascade::Cascade, vlims) = scale_y(fun, collect_data(cascade), vlims)
@@ -80,8 +80,8 @@ y-axis ticks.
 - `vmax::Float64`: (rounded) minimum data value
 - `vscale::Float64`: scaling factor to convert value coordinates to drawing coordinates.
 """
-function vlim(mat::Matrix)
-    vmax = 20.5
+function Waterfall.vlim(mat::Matrix)
+    vmax = 22.5
     vmin = 15.0
     
     vscale = Waterfall.HEIGHT/(vmax-vmin)

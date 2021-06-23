@@ -25,9 +25,6 @@ function Data(sdf::DataFrames.SubDataFrame; label, sublabel="", value=VALUE_COL,
 end
 
 
-# Base.copy(x::Data) = Data(x.label, copy.(x.order), copy.(x.value))
-
-
 "Get properties"
 get_label(x::Data) = x.label
 get_sublabel(x::Data) = x.sublabel
@@ -38,8 +35,8 @@ get_order(args...) = _get(get_order, args...)
 get_value(x::Data) = x.value
 get_value(args...) = _get(get_value, args...)
 
-_get(fun::Function, data::Vector) = LinearAlgebra.Matrix(hcat(fun.(data)...,)')
-# _get(fun::Function, data::Vector{Data}) = LinearAlgebra.Matrix(hcat(fun.(data)...,)')
+_get(fun::Function, data::Vector) = convert(Matrix, fun.(data))
+# _get(fun::Function, data::Vector) = LinearAlgebra.Matrix(hcat(fun.(data)...,)')
 
 
 "Set properties"
@@ -50,12 +47,14 @@ set_value!(x::Data, value) = begin x.value = value; return x end
 set_value!(args...) = _set(set_value!, args...)
 
 function set_order!(x::Data, order)
+    tmp = Dict(k => v for (k,v) in zip(x.order, x.value))
     x.order = order
-    x.value = x.value[order]
+    set_value!(x, [tmp[k] for k in order])
     return x
 end
 
-set_order!(args...) = _set(set_order!, args...)
+set_order!(x::Vector{Data}, order) = [set_order!(x[ii], order) for ii in 1:length(x)]
+
 
 ""
 function _set(fun::Function, data::Vector{Data}, mat::Matrix{T}) where T<:Real
