@@ -29,7 +29,7 @@ _values(x::T) where T <: Any = Tuple([getproperty(x, f) for f in fieldnames(T)])
 Base.copy(x::Axis) = _copy(x)
 Base.copy(x::Data) = _copy(x)
 Base.copy(x::Cascade) = _copy(x)
-Base.copy(x::Plot) = Plot(copy.(Waterfall._values(x))...)
+Base.copy(x::Plot) = Plot(copy.(_values(x))...)
 _copy(x::T) where T <: Any = T(values(x)...)
 
 
@@ -85,58 +85,70 @@ end
 
 """
 """
-function Base.convert(::Type{Plot{T}}, x::Plot{Data}; kwargs...) where T <: Geometry
-    return _convert(T, x; kwargs...)
+function Base.convert(::Type{Plot{T}}, x::Plot{Data}, args...; kwargs...) where T <: Geometry
+    return _convert(T, x, args...; kwargs...)
 end
 
-function Base.convert(::Type{Cascade{T}}, x::Cascade{Data}; kwargs...) where T <: Geometry
-    return _convert(T, x; kwargs...)
+function Base.convert(::Type{Cascade{T}}, x::Cascade{Data}, args...; kwargs...) where T <: Geometry
+    return _convert(T, x, args...; kwargs...)
 end
 
 
 """
 """
-_convert(::Type{Parallel}, x; kwargs...) = _convert!(Parallel, copy(x), 1.0; subdivide=false, space=false, kwargs...)
+function _convert(::Type{Parallel}, x, args...; kwargs...)
+    return _convert!(Parallel, copy(x), 1.0, args...; subdivide=false, space=false, kwargs...)
+end
 
-_convert(::Type{Vertical}, x; kwargs...) = _convert!(Vertical, copy(x), 1.0; subdivide=true, space=true, kwargs...)
+function _convert(::Type{Vertical}, x, args...; kwargs...)
+    return _convert!(Vertical, copy(x), 1.0, args...; subdivide=true, space=true, kwargs...)
+end
+
+function _convert(::Type{Horizontal}, x, quantile::Float64, args...; kwargs...)
+    return _convert!(Horizontal, copy(x), quantile, args...; subdivide=false, space=true, kwargs...)
+end
+
+function _convert(::Type{Horizontal}, x, args...; kwargs...)
+    return _convert(Horizontal, copy(x), 1.0, args...; kwargs...)
+end
 
 
 """
 """
-function _convert!(T::DataType, x::Cascade{Data}, quantile::Real, args...; kwargs...)
+function _convert!(T::DataType, x::Cascade{Data}, quantile::Float64, args...; kwargs...)
 
     v1, v2 = cumulative_v!(x; kwargs...)
-    data = Waterfall.collect_data(x)
-    vlims = Waterfall.vlim(v1)
+    data = collect_data(x)
+    vlims = vlim(v1)
 
-    y1 = Waterfall.scale_y(v1, args...; vlims...)
-    y2 = Waterfall.scale_y(v2, args...; vlims...)
+    y1 = scale_y(v1, args...; vlims...)
+    y2 = scale_y(v2, args...; vlims...)
 
-    x1, x2 = Waterfall.scale_x(data, quantile; kwargs...)
+    x1, x2 = scale_x(data, quantile; kwargs...)
 
-    data = T.(sign.(data), Waterfall.vectorize(Luxor.Point.(x1,y1), Luxor.Point.(x2,y2)))
+    data = T.(sign.(data), vectorize(Luxor.Point.(x1,y1), Luxor.Point.(x2,y2)))
     return Cascade(first(data), last(data), data[2:end-1], x.ncor, x.permutation, x.correlation)
 end
 
 
 function _convert!(T::DataType, p::Plot{Data}, args...; kwargs...)
     x = _convert!(T, p.cascade, args...; kwargs...)
-    return Plot(x, Waterfall.set_xaxis(p.cascade), p.yaxis)
+    return Plot(x, set_xaxis(p.cascade), p.yaxis)
 end
 
 
 """
-    convert(::Type{DataFrames.DataFrame}, x::Waterfall.Cascade)
+    convert(::Type{DataFrames.DataFrame}, x::Cascade)
 This function converts `x` into a "sample-by-step"-dimension DataFrame with the step labels
 as property property names.
 """
-function Base.convert(::Type{DataFrames.DataFrame}, x::Waterfall.Cascade)
-    data = Waterfall.collect_data(x)
-    sublabel = getindex.(match.(r"(\S*)", Waterfall.get_sublabel.(data)),1)
-    label = Waterfall.get_label.(data)
+function Base.convert(::Type{DataFrames.DataFrame}, x::Cascade)
+    data = collect_data(x)
+    sublabel = getindex.(match.(r"(\S*)", get_sublabel.(data)),1)
+    label = get_label.(data)
     [label[ii] = "$(label[ii]) ($(sublabel[ii]))" for ii in [1,length(data)]]
 
-    value = Waterfall.get_value(data)
+    value = get_value(data)
 
     return DataFrames.DataFrame(value', label; makeunique=true)
 end

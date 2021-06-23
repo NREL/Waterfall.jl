@@ -80,7 +80,7 @@ y-axis ticks.
 - `vmax::Float64`: (rounded) minimum data value
 - `vscale::Float64`: scaling factor to convert value coordinates to drawing coordinates.
 """
-function Waterfall.vlim(mat::Matrix)
+function vlim(mat::Matrix)
     vmax = 22.5
     vmin = 15.0
     
@@ -89,6 +89,6 @@ function Waterfall.vlim(mat::Matrix)
 end
 
 
-function Waterfall.vlim(data::Vector{Data})
-    return Waterfall.vlim(Waterfall.get_value(data))
+function vlim(data::Vector{Data})
+    return vlim(Waterfall.get_value(data))
 end

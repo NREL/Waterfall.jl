@@ -24,7 +24,7 @@ end
 
 
 nstep = 3
-nsample = 1
+nsample = 3
 nperm = 10
 ncor = 1000
 N = 13
@@ -34,20 +34,21 @@ perms = [[collect(1:N)]; Waterfall.random_permutation(1:N, min(factorial(N),nper
 perm = perms[2]
 # args = (quantile=1.0,)
 
-for perm in perms
-    x = Cascade(df; permutation=perm, minrot=0.01, maxrot=0.3, nsample=nsample, ncor=ncor, kwargs...)
-    
-    T = Parallel
-    p = Plot(copy(x); ylabel="Efficiency")
+# for T in [Parallel,Horizontal,Vertical]
+for T in [Horizontal]
+    for perm in perms
+        x = Cascade(df; permutation=perm, minrot=0.01, maxrot=0.3, nsample=nsample, ncor=ncor, kwargs...)
+        
+        pdata = Plot(copy(x); ylabel="Efficiency (%)")
+        p = convert(Plot{Horizontal}, pdata, 1.0; permute=true)
 
-    pv = convert(Plot{Vertical}, p; permute=true)
+        Luxor.@png begin
+            Luxor.fontsize(18)
+            Luxor.setmatrix([1 0 0 1 LEFT_BORDER TOP_BORDER])
 
-    Luxor.@png begin
-        Luxor.fontsize(18)
-        Luxor.setmatrix([1 0 0 1 LEFT_BORDER TOP_BORDER])
-
-        draw(pv; distribution=distribution, samples=nsample)
-    end WIDTH+LEFT_BORDER+RIGHT_BORDER HEIGHT+TOP_BORDER+BOTTOM_BORDER filename(pv)
+            draw(p; distribution=distribution, samples=nsample)
+        end WIDTH+LEFT_BORDER+RIGHT_BORDER HEIGHT+TOP_BORDER+BOTTOM_BORDER filename(p)
+    end
 end
 
 # # _convert(::Type{T}, x, args...; kwargs...) where T<:Geometry = _convert!(T, copy(x), args...; kwargs...)

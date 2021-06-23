@@ -30,6 +30,7 @@ export Geometry
 export Sampling
 export Parallel
 export Vertical
+export Horizontal
 export Axis
 
 export Attributes

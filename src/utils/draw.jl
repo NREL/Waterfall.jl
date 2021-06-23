@@ -110,9 +110,9 @@ function draw(x::Vertical, args...; kwargs...)
     return _draw_with(x, draw_box, Blending, args...; kwargs...)
 end
 
-# function draw(x::Horizontal, args...; kwargs...)
-#     return _draw_with(x, draw_box, Coloring, args...; kwargs...)
-# end
+function draw(x::Horizontal, args...; kwargs...)
+    return _draw_with(x, draw_box, Coloring, args...; kwargs...)
+end
 
 function draw(x::Parallel, args...; kwargs...)
     return _draw_with(x, draw_line, Coloring, args...; factor=1.0, kwargs...)
