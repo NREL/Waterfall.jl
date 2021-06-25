@@ -1,6 +1,6 @@
 mutable struct Legend
     label::String
-    attributes::Attributes
+    attributes::Attribute
 end
 
 Legend( ; label, attributes) = Legend(label, attributes)

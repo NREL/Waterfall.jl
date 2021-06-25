@@ -19,13 +19,15 @@ function filename(x::Cascade{T}) where T <: Geometry
     path = joinpath(WATERFALL_DIR,"fig","perm",lowercase(string(T)))
     !isdir(path) && mkpath(path)
     order = [Printf.@sprintf("-%02d", perm) for perm in x.permutation]
-    return joinpath(path, lowercase(string(T, order..., ".png")))
+    file = lowercase(string(T, order..., ".png"))
+    path = joinpath(path, file)
+    println("Saving $path")
+    return path
 end
 
-
 nstep = 3
-nsample = 3
-nperm = 10
+nsample = 1
+nperm = 8
 ncor = 1000
 N = 13
 permute = true
@@ -35,12 +37,12 @@ perm = perms[2]
 # args = (quantile=1.0,)
 
 # for T in [Parallel,Horizontal,Vertical]
-for T in [Horizontal]
+for T in [Vertical]
     for perm in perms
         x = Cascade(df; permutation=perm, minrot=0.01, maxrot=0.3, nsample=nsample, ncor=ncor, kwargs...)
         
         pdata = Plot(copy(x); ylabel="Efficiency (%)")
-        p = convert(Plot{Horizontal}, pdata, 1.0; permute=true)
+        p = convert(Plot{T}, pdata, 1.0; permute=true)
 
         Luxor.@png begin
             Luxor.fontsize(18)

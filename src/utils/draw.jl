@@ -79,10 +79,10 @@ function draw(p::Plot, args...; showaxis=true, distribution, samples, kwargs...)
     #     "N = $(length(p))",
     # )
     if showaxis
-        _draw_xaxis(p.xaxis)
+        # _draw_xaxis(p.xaxis)
         _draw_yaxis(p.yaxis)
     end
-    draw(p.cascade, args...; kwargs...)
+    draw(p.cascade, args...; labs=p.xaxis.ticklabels, kwargs...)
     return nothing
 end
 
@@ -93,8 +93,14 @@ function draw(x::Cascade{T}, args...; kwargs...) where T <: Geometry
 end
 
 
-function draw(x::Cascade{T}, steps_only::Bool, args...; kwargs...) where T <: Geometry
-    draw(x.steps, args...; kwargs...)
+function draw(x::Cascade{T}, steps_only::Bool, args...; labs=[], kwargs...) where T <: Geometry
+    if T==Vertical
+        labs = labs[2:end-1]
+        saturation = reverse((parse.(Float64, labs).-30) ./ 30)
+        draw(x.steps, saturation, args...; kwargs...)
+    else
+        draw(x.steps, args...; kwargs...)
+    end
 
     if !steps_only
         draw(x.start, args...; hue="black", kwargs...)
@@ -102,12 +108,13 @@ function draw(x::Cascade{T}, steps_only::Bool, args...; kwargs...) where T <: Ge
     end
 end
 
-
 draw(vec::Vector, args...; kwargs...) = [draw(x, args...; kwargs...) for x in vec]
+draw(vec::Vector, saturation::Vector, args...; kwargs...) = [draw(x, args...; saturation=sat, kwargs...) for (x,sat) in zip(vec,saturation)]
 
 
 function draw(x::Vertical, args...; kwargs...)
-    return _draw_with(x, draw_box, Blending, args...; kwargs...)
+    # return _draw_with(x, draw_box, Blending, args...; kwargs...)
+    return _draw_with(x, draw_box, Coloring, args...; opacity=1.0, saturation=-0.5, kwargs...)
 end
 
 function draw(x::Horizontal, args...; kwargs...)

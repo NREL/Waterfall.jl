@@ -32,8 +32,9 @@ export Parallel
 export Vertical
 export Horizontal
 export Axis
+export Violin
 
-export Attributes
+export Attribute
 # export Legend
 # export Annotation
 

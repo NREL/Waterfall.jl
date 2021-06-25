@@ -19,17 +19,23 @@ import LinearAlgebra, LinearAlgebra.I
 abstract type Sampling end
 abstract type Geometry <: Sampling end
 
+abstract type Attribute end
+
 include(joinpath(WATERFALL_DIR,"src","Cascade","Data.jl"))
 include(joinpath(WATERFALL_DIR,"src","Cascade","Cascade.jl"))
-include(joinpath(WATERFALL_DIR,"src","Cascade","Horizontal.jl"))
-include(joinpath(WATERFALL_DIR,"src","Cascade","Parallel.jl"))
-include(joinpath(WATERFALL_DIR,"src","Cascade","Vertical.jl"))
-include(joinpath(WATERFALL_DIR,"src","Cascade","Violin.jl"))
+include(joinpath(WATERFALL_DIR,"src","Cascade","Geometry","Horizontal.jl"))
+include(joinpath(WATERFALL_DIR,"src","Cascade","Geometry","Parallel.jl"))
+include(joinpath(WATERFALL_DIR,"src","Cascade","Geometry","Vertical.jl"))
+include(joinpath(WATERFALL_DIR,"src","Cascade","Geometry","Violin.jl"))
 
-include(joinpath(WATERFALL_DIR,"src","Figure","Coloring.jl"))
-include(joinpath(WATERFALL_DIR,"src","Figure","Blending.jl"))
+include(joinpath(WATERFALL_DIR,"src","Figure","Formatting","Coloring.jl"))
+include(joinpath(WATERFALL_DIR,"src","Figure","Formatting","Blending.jl"))
 
-include(joinpath(WATERFALL_DIR,"src","Figure","Attributes.jl"))
+include(joinpath(WATERFALL_DIR,"src","Figure","Attribute","Box.jl"))
+include(joinpath(WATERFALL_DIR,"src","Figure","Attribute","Line.jl"))
+include(joinpath(WATERFALL_DIR,"src","Figure","Attribute","Point.jl"))
+include(joinpath(WATERFALL_DIR,"src","Figure","Attribute","Poly.jl"))
+
 include(joinpath(WATERFALL_DIR,"src","Figure","Axis.jl"))
 # include(joinpath(WATERFALL_DIR,"src","Figure","Legend.jl"))
 # include(joinpath(WATERFALL_DIR,"src","Figure","Annotation.jl"))

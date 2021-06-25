@@ -15,22 +15,7 @@ end
 """
     scale_y(data::Data)
 """
-function scale_y(data::Vector{Data}, args...)
-    y1 = scale_y(get_beginning, data, args...)
-    y2 = scale_y(get_ending, data, args...)
-    return y1, y2
-end
-
-Waterfall.scale_y(v::AbstractArray; vmin, vscale, vmax) = -vscale * (max.(v,vmin) .- vmax)
-
-# function scale_y(fun::Function, data::Vector{Data})
-#     vlims = NamedTuple{(:vmin,:vmax,:vscale)}(vlim(data))
-#     return scale_y(fun(data); vlims...)
-# end
-
-scale_y(fun::Function, cascade::Cascade) = scale_y(fun, collect_data(cascade))
-scale_y(fun::Function, cascade::Cascade, vlims) = scale_y(fun, collect_data(cascade), vlims)
-scale_y(fun::Function, data::Vector{Data}, vlims) = scale_y(fun(data); vlims...)
+scale_y(v::AbstractArray; vmin, vscale, vmax) = -vscale * (max.(v,vmin) .- vmax)
 
 
 """
@@ -44,6 +29,19 @@ function scale_kde(fun::Function, data::Vector{Data})
     y = scale_y(y; vlims...)
 
     xl, xr = scale_density(value; steps=length(data),)
+    return hcat(xl,xr), hcat(y,y)
+end
+
+
+function Waterfall.scale_kde(cascade::Cascade; kwargs...)
+    v1, v2 = Waterfall.cumulative_v!(cascade; permute=false, kwargs...)
+    value = Waterfall.calculate_kde.(Waterfall.vectorize(convert.(Float64, v2)))
+    vlims = Waterfall.vlim(data)
+
+    y = getproperty.(value,:x)
+    y = convert(Matrix, Waterfall.scale_y.(y; vlims...))
+
+    xl, xr = Waterfall.scale_density(value; steps=length(data),)
     return hcat(xl,xr), hcat(y,y)
 end
 
@@ -84,7 +82,7 @@ function vlim(mat::Matrix)
     vmax = 22.5
     vmin = 15.0
     
-    vscale = Waterfall.HEIGHT/(vmax-vmin)
+    vscale = HEIGHT/(vmax-vmin)
     return (vmin=vmin, vmax=vmax, vscale=vscale)
 end
 
@@ -92,3 +90,5 @@ end
 function vlim(data::Vector{Data})
     return vlim(Waterfall.get_value(data))
 end
+
+calculate_kde(v::Vector{T}) where T <: Real = KernelDensity.kde(v)

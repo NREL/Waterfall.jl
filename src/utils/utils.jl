@@ -115,18 +115,24 @@ end
 
 """
 """
-function _convert!(T::DataType, x::Cascade{Data}, quantile::Float64, args...; kwargs...)
+function _convert!(T::DataType, x::Cascade{Data}, quantile::Float64, args...; vmin=missing, vmax=missing, kwargs...)
 
-    v1, v2 = cumulative_v!(x; kwargs...)
-    data = collect_data(x)
-    vlims = vlim(v1)
+    v1, v2 = Waterfall.cumulative_v!(x; kwargs...)
+    data = Waterfall.collect_data(x)
 
-    y1 = scale_y(v1, args...; vlims...)
-    y2 = scale_y(v2, args...; vlims...)
+    # Allows for diy vlims.
+    vlims = if ismissing(vmin)*ismissing(vmax)
+        Waterfall.vlim(v1)
+    else
+        (vmin=vmin, vmax=vmax, vscale=HEIGHT/(vmax-vmin))
+    end
 
-    x1, x2 = scale_x(data, quantile; kwargs...)
+    y1 = Waterfall.scale_y(v1; vlims...)
+    y2 = Waterfall.scale_y(v2; vlims...)
 
-    data = T.(sign.(data), vectorize(Luxor.Point.(x1,y1), Luxor.Point.(x2,y2)))
+    x1, x2 = Waterfall.scale_x(data, quantile; kwargs...)
+
+    data = T.(sign.(data), Waterfall.vectorize(Luxor.Point.(x1,y1), Luxor.Point.(x2,y2)))
     return Cascade(first(data), last(data), data[2:end-1], x.ncor, x.permutation, x.correlation)
 end
 

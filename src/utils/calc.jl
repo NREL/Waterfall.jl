@@ -50,22 +50,6 @@ end
 
 
 """
-"""
-function rowsum(x::Cascade; shift)
-    v = Waterfall.rowprod(x)
-    N, M = size(v[1])
-
-    m = [vcat(zeros(1,M), v[ii]) for ii in 1:N]
-    m = [zeros(N+1,M), m...]
-
-    shift+=1
-    vsum = zeros(size(v[1]))
-    [vsum[ii,:] = Statistics.cumsum(m[ii+shift]; dims=1)[ii+shift,:] for ii in 1:N]
-    return vsum
-end
-
-
-"""
 This function calculates the graphical width of each bar based on the number of cascade
 steps, ``N_{step}``:
 ```math
@@ -181,5 +165,5 @@ _cumulative(fun::Function, data::Vector{Data}, args...) = fun(get_value(data), a
 
 # """
 # """
-# calculate_kde(v::Vector{T}) where T <: Real = KernelDensity.kde(v)
+calculate_kde(v::Vector{T}) where T <: Any = KernelDensity.kde(v)
 # calculate_kde(fun::Function, data::Data) = calculate_kde(fun(data))
