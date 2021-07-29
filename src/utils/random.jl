@@ -147,7 +147,7 @@ R_{i,j} = R_{j,i} = x
 # Example
 
 ```jldoctest
-julia> Waterfall.random_rotation(4, 3)
+julia> random_rotation(4, 3)
 4×4 LinearAlgebra.UnitLowerTriangular{Float64,Array{Float64,2}}:
  1.0         ⋅         ⋅    ⋅ 
  0.766797   1.0        ⋅    ⋅ 
@@ -202,6 +202,9 @@ This function returns an `nperm`-element list of unique permutations of `rng`.
 - `seed=1234`
 """
 function random_permutation(rng::UnitRange, nperm::Int; seed=1234)
+    # Ensure the input number of permutations is feasible.
+    nperm = min(factorial(last(rng)), nperm)
+
     Random.seed!(seed)
     idx = StatsBase.sample(1:factorial(rng.stop), nperm; replace=false)
     return [Combinatorics.nthperm(rng, ii) for ii in idx]
@@ -225,7 +228,7 @@ This function returns a list of random indices for which `x` is defined.
 - `idx::Vector` of indices
 
 ```jldoctest
-julia> Waterfall.random_index(Waterfall.lower_triangular(8), 4)
+julia> random_index(lower_triangular(8), 4)
 4-element Array{Array{Int64,1},1}:
  [7, 3]
  [5, 1]
@@ -271,7 +274,7 @@ end
 This function returns a sorted list of all vector or matrix indices.
 
 ```jldoctest
-julia> Waterfall.list_index(Waterfall.lower_triangular(3))
+julia> list_index(lower_triangular(3))
 9-element Array{Array{Int64,1},1}:
  [1, 1]
  [1, 2]
@@ -297,11 +300,11 @@ end
 
 """
 ```jldoctest
-julia> Waterfall.pick(3, 4)
+julia> pick(3, 4)
 4×4 SparseArrays.SparseMatrixCSC{Int64,Int64} with 1 stored entry:
   [3, 3]  =  1
 
-julia> Waterfall.pick(1:2, 4)
+julia> pick(1:2, 4)
 4×4 SparseArrays.SparseMatrixCSC{Int64,Int64} with 2 stored entries:
   [1, 1]  =  1
   [2, 2]  =  1

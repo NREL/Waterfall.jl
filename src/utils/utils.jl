@@ -10,13 +10,15 @@ get_density(x::KernelDensity.UnivariateKDE) = x.density
 get_density(args...) = _get(get_density, args...)
 
 
-Base.sign(data::T) where T <: Data = Integer.(sign.(get_value(data)))
+Base.sign(data::T) where T <: Data = sign.(get_value(data))
+Base.sign(cascade::Cascade{Data}) = sign.(collect_data(cascade))
 
 
-Base.length(x::T) where T <: Geometry = length(x.sign)
+Base.length(x::Data) = length(x.order)
+Base.length(x::T) where T <: Geometry = length(x.attribute)
 Base.length(x::T) where T <: Cascade = length(x.start)
-Base.length(x::T) where T <: Axis = length(x.ticks)
-Base.length(x::Plot{T}) where T<:Geometry = length(x.cascade)
+Base.length(x::T) where T <: Plot = length(x.cascade)
+# Base.length(x::T) where T <: Axis = length(x.ticks)
 
 
 Base.values(x::Data) = _values(x)
@@ -83,6 +85,16 @@ function Base.convert(::Type{SparseArrays.SparseMatrixCSC}, order::T) where T <:
 end
 
 
+
+
+
+
+
+
+
+
+
+
 """
 """
 function Base.convert(::Type{Plot{T}}, x::Plot{Data}, args...; kwargs...) where T <: Geometry
@@ -94,47 +106,32 @@ function Base.convert(::Type{Cascade{T}}, x::Cascade{Data}, args...; kwargs...) 
 end
 
 
-"""
-"""
-function _convert(::Type{Parallel}, x, args...; kwargs...)
-    return _convert!(Parallel, copy(x), 1.0, args...; subdivide=false, space=false, kwargs...)
-end
+# """
+# """
+# function _convert!(T::DataType, x::Cascade{Data}, quantile::Float64, args...; kwargs...)
+# #     vmin=missing,
+# #     vmax=missing,
+# #     kwargs...,
+# # )
+#     # Calculate y-values, allowing for diy vlims.
+#     v1, v2 = cumulative_v!(x; kwargs...)
 
-function _convert(::Type{Vertical}, x, args...; kwargs...)
-    return _convert!(Vertical, copy(x), 1.0, args...; subdivide=true, space=true, kwargs...)
-end
+#     vlims = if ismissing(vmin)*ismissing(vmax)
+#         vlim(v1)
+#     else
+#         (vmin=vmin, vmax=vmax, vscale=HEIGHT/(vmax-vmin))
+#     end
 
-function _convert(::Type{Horizontal}, x, quantile::Float64, args...; kwargs...)
-    return _convert!(Horizontal, copy(x), quantile, args...; subdivide=false, space=true, kwargs...)
-end
+#     y1 = scale_y(v1; vlims...)
+#     y2 = scale_y(v2; vlims...)
 
-function _convert(::Type{Horizontal}, x, args...; kwargs...)
-    return _convert(Horizontal, copy(x), 1.0, args...; kwargs...)
-end
+#     # Calculate x-values. Here is where kwargs matter.
+#     data = collect_data(x)
+#     x1, x2 = scale_x(data, quantile; kwargs...)
 
-
-"""
-"""
-function _convert!(T::DataType, x::Cascade{Data}, quantile::Float64, args...; vmin=missing, vmax=missing, kwargs...)
-
-    v1, v2 = Waterfall.cumulative_v!(x; kwargs...)
-    data = Waterfall.collect_data(x)
-
-    # Allows for diy vlims.
-    vlims = if ismissing(vmin)*ismissing(vmax)
-        Waterfall.vlim(v1)
-    else
-        (vmin=vmin, vmax=vmax, vscale=HEIGHT/(vmax-vmin))
-    end
-
-    y1 = Waterfall.scale_y(v1; vlims...)
-    y2 = Waterfall.scale_y(v2; vlims...)
-
-    x1, x2 = Waterfall.scale_x(data, quantile; kwargs...)
-
-    data = T.(sign.(data), Waterfall.vectorize(Luxor.Point.(x1,y1), Luxor.Point.(x2,y2)))
-    return Cascade(first(data), last(data), data[2:end-1], x.ncor, x.permutation, x.correlation)
-end
+#     data = T.(sign.(data), vectorize(Luxor.Point.(x1,y1), Luxor.Point.(x2,y2)))
+#     return Cascade(first(data), last(data), data[2:end-1], x.ncor, x.permutation, x.correlation)
+# end
 
 
 function _convert!(T::DataType, p::Plot{Data}, args...; kwargs...)

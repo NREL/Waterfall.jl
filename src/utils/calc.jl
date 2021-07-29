@@ -22,15 +22,16 @@ dropzero(vec::Array{T,1}) where T <: Real = vec[vec.!==0.0]
 
 """
 """
-function cumulative_v(x::Cascade, shift; permute, kwargs...)
-    v = Waterfall.rowprod(x)
+function cumulative_v(x::Cascade, shift; permute=true, kwargs...)
+    v = rowprod(x)
     N = length(v)
 
-    perm = permute ? Waterfall.collect_permutation(x) : 1:N
+    println("Calculating cumulative value WITH THE PERMUTATION.")
+    perm = permute ? collect_permutation(x) : 1:N
 
-    vii = Waterfall.update_stop!(convert(Matrix, broadcast(getindex, v, 1:N, :)))
+    vii = update_stop!(convert(Matrix, broadcast(getindex, v, 1:N, :)))
 
-    L = Waterfall.lower_triangular(N) + shift*I
+    L = lower_triangular(N) + shift*I
     order = convert(SparseArrays.SparseMatrixCSC, perm)
 
     return L * order * vii
@@ -41,7 +42,7 @@ cumulative_v(x::Cascade; kwargs...) = cumulative_v!(copy(x); kwargs...)
 
 """
 """
-function cumulative_v!(x::Cascade; permute, kwargs...)
+function cumulative_v!(x::Cascade; permute=true, kwargs...)
     v1 = cumulative_v(x, -1.0; permute=permute, kwargs...)
     v2 = cumulative_v(x,  0.0; permute=permute, kwargs...)
     permute && set_permutation!(x)

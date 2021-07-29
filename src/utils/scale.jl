@@ -2,14 +2,33 @@ get_order(x::T) where T<:Real = parse(Int, match(r"e(.*)", Printf.@sprintf("%e",
 
 
 """
+"""
+function scale_point(cascade::Cascade, quantile::T, args...; kwargs...) where T <: Real
+    v1, v2 = cumulative_v!(cascade; kwargs...)
+    
+    # Allows for diy vlims.
+    vlims = vlim(v1; kwargs...)
+
+    y1 = scale_y(v1; vlims...)
+    y2 = scale_y(v2; vlims...)
+
+    x1, x2 = scale_x(cascade, quantile; kwargs...)
+
+    return vectorize(Luxor.Point.(x1,y1), Luxor.Point.(x2,y2))
+end
+
+
+"""
     scale_x(data::Data, quantile::Real=1; kwargs...)
 This function scales 
 """
-function scale_x(data, quantile::Real=1; kwargs...)
-    x1 = Waterfall.cumulative_x(data, -(1-(1-quantile)/2); kwargs...)
-    x2 = Waterfall.cumulative_x(data,    -(1-quantile)/2; kwargs...)
+function scale_x(data::Vector{Data}, quantile::Real=1; kwargs...)
+    x1 = cumulative_x(data, -(1-(1-quantile)/2); kwargs...)
+    x2 = cumulative_x(data,    -(1-quantile)/2; kwargs...)
     return x1, x2
 end
+
+scale_x(cascade::T, args...; kwargs...) where T <: Cascade = scale_x(collect_data(cascade), args...; kwargs...)
 
 
 """
@@ -33,16 +52,20 @@ function scale_kde(fun::Function, data::Vector{Data})
 end
 
 
-function Waterfall.scale_kde(cascade::Cascade; kwargs...)
-    v1, v2 = Waterfall.cumulative_v!(cascade; permute=false, kwargs...)
-    value = Waterfall.calculate_kde.(Waterfall.vectorize(convert.(Float64, v2)))
-    vlims = Waterfall.vlim(data)
+function scale_kde(cascade::Cascade; kwargs...)
+    v1, v2 = cumulative_v!(cascade; permute=false, kwargs...)
+    value = calculate_kde.(vectorize(convert.(Float64, v2)))
+
+    data = collect_data(cascade)
+    vlims = vlim(data; kwargs...)
 
     y = getproperty.(value,:x)
-    y = convert(Matrix, Waterfall.scale_y.(y; vlims...))
+    y = convert(Matrix, scale_y.(y; vlims...))
 
-    xl, xr = Waterfall.scale_density(value; steps=length(data),)
-    return hcat(xl,xr), hcat(y,y)
+    xl, xr = scale_density(value; steps=length(data),)
+
+    x, y = hcat(xl,xr), hcat(y,y)
+    return vectorize(Luxor.Point.(x,y))
 end
 
 
@@ -78,17 +101,19 @@ y-axis ticks.
 - `vmax::Float64`: (rounded) minimum data value
 - `vscale::Float64`: scaling factor to convert value coordinates to drawing coordinates.
 """
-function vlim(mat::Matrix)
-    vmax = 22.5
-    vmin = 15.0
+function vlim(mat::Matrix; vmin=missing, vmax=missing, kwargs...)
+    if ismissing(vmin)*ismissing(vmax)
+        vmax = 22.5
+        vmin = 13.0
+    end
     
     vscale = HEIGHT/(vmax-vmin)
     return (vmin=vmin, vmax=vmax, vscale=vscale)
 end
 
 
-function vlim(data::Vector{Data})
-    return vlim(Waterfall.get_value(data))
+function vlim(data::Vector{Data}; kwargs...)
+    return vlim(get_value(data); kwargs...)
 end
 
 calculate_kde(v::Vector{T}) where T <: Real = KernelDensity.kde(v)

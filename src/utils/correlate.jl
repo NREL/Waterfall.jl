@@ -29,24 +29,24 @@ end
 
 function rowprod(lst::Vector{M}, v::Matrix{T}) where {M<:AbstractMatrix, T<:Real}
     # v is NOT re-ordered.
-    return [Waterfall.update_stop!(A * v) for A in lst]
+    return [update_stop!(A * v) for A in lst]
 end
 
 
-function rowprod(x::Waterfall.Cascade)
-    A = Waterfall.collect_correlation(x)
-    v = Waterfall.get_value(Waterfall.collect_data(x))
-    perm = Waterfall.collect_permutation(x)
+function rowprod(x::Cascade)
+    A = collect_correlation(x)
+    v = get_value(collect_data(x))
+    perm = collect_permutation(x)
     
     lst = rowprod(A, perm)
     return rowprod(lst, v)
 end
 
 
-function rowprod!(x::Waterfall.Cascade, idx=missing)
-    data = Waterfall.collect_data(x)
+function rowprod!(x::Cascade, idx=missing)
+    data = collect_data(x)
     ismissing(idx) && (idx=length(data))
-    Waterfall.set_value!(data, rowprod(x)[idx])
+    set_value!(data, rowprod(x)[idx])
     return x
 end
 
@@ -68,7 +68,7 @@ with the exception of those in row `ii`, set to zero.
 
 # Arguments
 - `A <: AbstractMatrix`, a random correlation matrix ``A \\in \\mathbb{R}^{N\\times N}``,
-    produced by [`Waterfall.random_rotation`]
+    produced by [`random_rotation`]
 - `ii::Int`, non-zero row
 
 # Returns
@@ -79,7 +79,7 @@ A_i = S_i A' + I
 ```
 
 where
-- ``S_i \\in \\mathbb{Z}^{N\\times N}`` is a sparse matrix produced by [`Waterfall.pick`](@ref)
+- ``S_i \\in \\mathbb{Z}^{N\\times N}`` is a sparse matrix produced by [`pick`](@ref)
     with `[i,i]=1`
 - ``A' \\in \\mathbb{R}^{N\\times N}`` is defined:
 
@@ -101,7 +101,7 @@ function select_row(A, ii)
     # so we will add these back at each step in the iteration.
     LinearAlgebra.tr(A)==N && (A -= I)
 
-    return Waterfall.pick(ii,N) * A + I
+    return pick(ii,N) * A + I
 end
 
 select_row(A) = [select_row(A,ii) for ii in 1:size(A,1)]
