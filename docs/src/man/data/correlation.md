@@ -1,8 +1,8 @@
 ```@docs
-Waterfall.correlate
-Waterfall.correlate!
-Waterfall.pick
-Waterfall.random_correlation
-Waterfall.random_rotation
-Waterfall.random_index
+correlate
+correlate!
+pick
+random_correlation
+random_rotation
+random_index
 ```

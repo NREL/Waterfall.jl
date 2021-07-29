@@ -1,7 +1,7 @@
 ```@docs
-Waterfall.Data
+Data
 ```
 
 ```@docs
-Waterfall.Cascade
+Cascade
 ```

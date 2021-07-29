@@ -1,5 +1,5 @@
 ```@docs
-Waterfall.fuzzify
-Waterfall.random_samples
-Waterfall.random_translation
+fuzzify
+random_samples
+random_translation
 ```

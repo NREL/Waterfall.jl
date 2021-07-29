@@ -2,17 +2,17 @@
 
 ## Distributional
 ```@docs
-Waterfall.random_uniform
-Waterfall.random_normal
+random_uniform
+random_normal
 ```
 
 ## Positional
 ```@docs
-Waterfall.random_index
-Waterfall.list_index
-Waterfall.make_seed
-Waterfall._fill!
-Waterfall._random_index
-Waterfall._constrain_index
-Waterfall._shuffle
+random_index
+list_index
+make_seed
+_fill!
+_random_index
+_constrain_index
+_shuffle
 ```
