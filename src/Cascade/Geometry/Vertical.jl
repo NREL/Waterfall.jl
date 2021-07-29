@@ -1,9 +1,4 @@
-mutable struct Vertical <: Waterfall.Geometry
-    sign::Vector{Integer}
-    points::Vector{Tuple{Luxor.Point,Luxor.Point}}
+mutable struct Vertical <: Geometry
+    label::String
+    attribute::Vector{Box}
 end
-
-
-# function Vertical(data::Vector{Data}, args...; kwargs...)
-#     return _rectangle(Vertical, data, 1.0, args...; subdivide=true)
-# end

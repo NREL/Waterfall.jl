@@ -1,4 +1,4 @@
-mutable struct Parallel <: Waterfall.Geometry
-    sign::Vector{Integer}
-    points::Vector{Tuple{Luxor.Point,Luxor.Point}}
+mutable struct Parallel <: Geometry
+    label::String
+    attribute::Vector{Line}
 end

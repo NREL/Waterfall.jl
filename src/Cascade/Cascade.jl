@@ -25,7 +25,7 @@ end
 
 # # Keyword arguments
 # - `label::Symbol`: `df` column to use to label information
-# - See `Waterfall.fuzzify` and `Waterfall.Data`
+# - See `fuzzify` and `Data`
 
 # # Returns
 # - `Cascade{Data}`
@@ -44,25 +44,25 @@ function Cascade( ; start, stop, steps, ncor, correlation=[], permutation=[], kw
 end
 
 
-function Cascade(df::DataFrames.DataFrame; kwargs...)
-    gdf = fuzzify(df; kwargs...)
+# function Cascade(df::DataFrames.DataFrame; kwargs...)
+#     gdf = fuzzify(df; kwargs...)
 
-    start = Data(first(gdf); kwargs...)
-    stop = Data(last(gdf); kwargs...)
-    steps = [Data(gdf[ii]; kwargs...) for ii in 2:gdf.ngroups-1]
+#     start = Data(first(gdf); kwargs...)
+#     stop = Data(last(gdf); kwargs...)
+#     steps = [Data(gdf[ii]; kwargs...) for ii in 2:gdf.ngroups-1]
 
-    # Sort "start" samples by magnitude. Ensure consistent ordering in all subsequent steps.
-    data = [start; steps; stop]
-    iiorder = sortperm(get_value(data[1]))
-    [set_order!(data[ii], iiorder) for ii in 1:length(data)]
+#     # Sort "start" samples by magnitude. Ensure consistent ordering in all subsequent steps.
+#     data = [start; steps; stop]
+#     iiorder = sortperm(get_value(data[1]))
+#     [set_order!(data[ii], iiorder) for ii in 1:length(data)]
     
-    return Cascade( ; start=start, stop=stop, steps=steps, kwargs...)
-end
+#     return Cascade( ; start=start, stop=stop, steps=steps, kwargs...)
+# end
 
 
 """
     collect_data(x::Cascade)
-This function returns a list of all [`Waterfall.Data`](@ref) Types stored in `x`,
+This function returns a list of all [`Data`](@ref) Types stored in `x`,
 ordered [`x.start; x.steps, x.stop]`.
 """
 collect_data(x::Cascade) = Vector{}([x.start; x.steps; x.stop])
@@ -73,7 +73,7 @@ collect_data(x::Cascade) = Vector{}([x.start; x.steps; x.stop])
 This function extends the correlation matrix ``A \\in \\mathbb{R}^{N,N}`` stored in
 `x.correlation` by defining ``A' \\in \\mathbb{R}^{N+2,N+2}`` to account for
 `x.start` and `x.stop` for consistent dimensionality with the vector returned by
-[`Waterfall.collect_data`](@ref).
+[`collect_data`](@ref).
 
 ```math
 A' = 
@@ -99,7 +99,8 @@ end
 
 """
 """
-collect_permutation(x) = [1; x.permutation.+1; length(x.permutation)+2]
+collect_permutation(x::T) where T<:Cascade = collect_permutation(x.permutation)
+collect_permutation(lst::AbstractArray) = [1; lst.+1; length(lst)+2]
 
 
 get_start(x::Cascade) = x.start
@@ -139,8 +140,8 @@ This function applies a correlation matrix `A` to the vector `v`.
 \\vec{x}' = \\prod_{i=N}^1 \\left(S_{i,i} A+I\\right) \\vec{x}
 ```
 
-where ``S_{i,i}``, defined using [`Waterfall.pick`](@ref), is a sparse matrix `[i,i]=1`,
-``A`` is a random rotation matrix produced by [`Waterfall.random_rotation`](@ref).
+where ``S_{i,i}``, defined using [`pick`](@ref), is a sparse matrix `[i,i]=1`,
+``A`` is a random rotation matrix produced by [`random_rotation`](@ref).
 ``S_{i,i} A`` selects the ``i^\\text{th}`` row of ``A``, which defines how steps `1:i-1`
 impact step `i`. Once correlations have been applied to the `i`th step,
 this new value will be used when applying correlations between steps `i` and `i+1`.
@@ -161,7 +162,7 @@ end
 """
     correlate!(x::Cascade)
 This function applies the correlation matrix defined in `x.correlation` to
-the values in `x.steps` using [`Waterfall.correlate`](@ref)
+the values in `x.steps` using [`correlate`](@ref)
 
 # Returns
 - `x::Cascade` with the following updates:

@@ -1,11 +1,17 @@
 mutable struct Horizontal <: Geometry
-    sign::Vector{Integer}
-    points::Vector{Tuple{Luxor.Point,Luxor.Point}}
+    label::String
+    attribute::Vector{Box}
 end
 
 
-# function Horizontal(data::Vector{Data}, p::Float64, args...; kwargs...)
-#     return _rectangle(Horizontal, data, p, args...; subdivide=false)
+# function horizontal(label::)
 # end
 
-# Horizontal(data::Vector{Data}, args...; kwargs...) = Horizontal(data, 1.0, args...; kwargs...)
+
+# select ii-th order in color cycle from x.permutation???
+
+
+# hue = _hue.(v)
+# opacity = _opacity(v)
+
+
