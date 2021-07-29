@@ -19,7 +19,20 @@ import LinearAlgebra, LinearAlgebra.I
 abstract type Sampling end
 abstract type Geometry <: Sampling end
 
-abstract type Attribute end
+abstract type Shape end
+abstract type Asset end
+abstract type Axis end
+
+include(joinpath(WATERFALL_DIR,"src","Figure","Formatting","Coloring.jl"))
+include(joinpath(WATERFALL_DIR,"src","Figure","Formatting","Blending.jl"))
+
+include(joinpath(WATERFALL_DIR,"src","Figure","Asset","Stroke.jl"))
+include(joinpath(WATERFALL_DIR,"src","Figure","Asset","Face.jl"))
+
+include(joinpath(WATERFALL_DIR,"src","Figure","Shape","Box.jl"))
+include(joinpath(WATERFALL_DIR,"src","Figure","Shape","Line.jl"))
+include(joinpath(WATERFALL_DIR,"src","Figure","Shape","Point.jl"))
+include(joinpath(WATERFALL_DIR,"src","Figure","Shape","Poly.jl"))
 
 include(joinpath(WATERFALL_DIR,"src","Cascade","Data.jl"))
 include(joinpath(WATERFALL_DIR,"src","Cascade","Cascade.jl"))
@@ -28,15 +41,15 @@ include(joinpath(WATERFALL_DIR,"src","Cascade","Geometry","Parallel.jl"))
 include(joinpath(WATERFALL_DIR,"src","Cascade","Geometry","Vertical.jl"))
 include(joinpath(WATERFALL_DIR,"src","Cascade","Geometry","Violin.jl"))
 
-include(joinpath(WATERFALL_DIR,"src","Figure","Formatting","Coloring.jl"))
-include(joinpath(WATERFALL_DIR,"src","Figure","Formatting","Blending.jl"))
 
-include(joinpath(WATERFALL_DIR,"src","Figure","Attribute","Box.jl"))
-include(joinpath(WATERFALL_DIR,"src","Figure","Attribute","Line.jl"))
-include(joinpath(WATERFALL_DIR,"src","Figure","Attribute","Point.jl"))
-include(joinpath(WATERFALL_DIR,"src","Figure","Attribute","Poly.jl"))
 
-include(joinpath(WATERFALL_DIR,"src","Figure","Axis.jl"))
+include(joinpath(WATERFALL_DIR,"src","Figure","Shape","Box.jl"))
+include(joinpath(WATERFALL_DIR,"src","Figure","Shape","Line.jl"))
+include(joinpath(WATERFALL_DIR,"src","Figure","Shape","Point.jl"))
+include(joinpath(WATERFALL_DIR,"src","Figure","Shape","Poly.jl"))
+
+include(joinpath(WATERFALL_DIR,"src","Figure","XAxis.jl"))
+include(joinpath(WATERFALL_DIR,"src","Figure","YAxis.jl"))
 # include(joinpath(WATERFALL_DIR,"src","Figure","Legend.jl"))
 # include(joinpath(WATERFALL_DIR,"src","Figure","Annotation.jl"))
 include(joinpath(WATERFALL_DIR,"src","Figure","Plot.jl"))
@@ -44,10 +57,13 @@ include(joinpath(WATERFALL_DIR,"src","Figure","Plot.jl"))
 include(joinpath(WATERFALL_DIR,"src","definitions.jl"))
 include(joinpath(WATERFALL_DIR,"src","options.jl"))
 
+include(joinpath(WATERFALL_DIR,"src","utils","attributes.jl"))
 include(joinpath(WATERFALL_DIR,"src","utils","io.jl"))
 include(joinpath(WATERFALL_DIR,"src","utils","calc.jl"))
 include(joinpath(WATERFALL_DIR,"src","utils","correlate.jl"))
-# include(joinpath(WATERFALL_DIR,"src","utils","draw.jl"))
+include(joinpath(WATERFALL_DIR,"src","utils","draw.jl"))
 include(joinpath(WATERFALL_DIR,"src","utils","random.jl"))
 include(joinpath(WATERFALL_DIR,"src","utils","scale.jl"))
 include(joinpath(WATERFALL_DIR,"src","utils","utils.jl"))
+
+include(joinpath(WATERFALL_DIR,"src","utils","define.jl"))

@@ -23,3 +23,7 @@ const DEFAULT_FUZZINESS = (0.01,0.3)
 const DEFAULT_DISTRIBUTION = :normal      # linear, normal, triangular
 const DEFAULT_NSAMPLE = 5
 const DEFAULT_NCOR = 2
+
+# https://arxiv.org/abs/2107.02270
+# https://github.com/mpetroff/accessible-color-cycles
+COLORCYCLE = ["#3f90da", "#ffa90e", "#bd1f01", "#94a4a2", "#832db6", "#a96b59", "#e76300", "#b9ac70", "#717581", "#92dadd"]
