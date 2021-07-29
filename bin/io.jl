@@ -12,6 +12,8 @@ import StatsPlots
 
 DATA_DIR = joinpath(WATERFALL_DIR,"data","pvrd")
 df = CSV.read(joinpath(DATA_DIR,"pvrd2-investment-metrics.csv"), DataFrames.DataFrame)
+df = df[[1:11;15],:]
+
 df[!,:Label] .= string.(titlecase.(df[:,:Process])," (",df[:,:Step],")")
 df[!,:Units] .= "Efficiency (%)"
 
@@ -22,14 +24,18 @@ sample=:Sample
 value=:Value
 label=:Step
 sublabel=:Process
-nsample=2
+nsample=5
 ncor=2
+minrot=0.01
+maxrot=0.3
 
 kwargs = (
     label=label,
     sublabel=sublabel,
     distribution=distribution,
     fuzziness=fuzziness,
+    minrot=minrot,
+    maxrot=maxrot,
     # ncor=ncor,
     # nsample=nsample,
 )

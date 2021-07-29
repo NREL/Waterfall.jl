@@ -4,12 +4,13 @@ include(joinpath(WATERFALL_DIR,"src","utils","correlate.jl"))
 
 function cutoff(df::DataFrames.DataFrame; nstep=6, value=:Value)
     ii = [1; sortperm(abs.(df[2:end-1,value]); rev=true)[1:nstep].+1; size(df,1)]
+    ii = 1:nstep
     return df[ii,:]
 end
 
 function plot(x::Waterfall.Cascade)
     A = copy.(x.correlation-I)
-    df = convert(DataFrames.DataFrame, rowprod!(x))
+    df = convert(DataFrames.DataFrame, Waterfall.rowprod!(x))
     N = size(df,2)
 
     StatsPlots.gr(size=(1000,1000), markerstrokewidth=1)
