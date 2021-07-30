@@ -12,16 +12,8 @@ This method allows for field order-independent Cascade-definition.
 # Keyword arguments
 - `order=[]`: If unspecified, default to `1:length(value)`
 """
-function Data( ; label, value, sublabel="", order=[], kwargs...)
-    isempty(order) && (order = collect(1:length(value)))
-    
+function Data( ; label, value, sublabel, order)
     return Data(label, sublabel, order, value)
-end
-
-
-function Data(sdf::DataFrames.SubDataFrame; label, sublabel="", value=VALUE_COL, kwargs...)
-    sublabel!=="" && (sublabel = sdf[1,sublabel])
-    return Data( ; label=sdf[1,label], sublabel=sublabel, value=sdf[:,value], kwargs...)
 end
 
 
@@ -36,7 +28,6 @@ get_value(x::Data) = x.value
 get_value(args...) = _get(get_value, args...)
 
 _get(fun::Function, data::Vector) = convert(Matrix, fun.(data))
-# _get(fun::Function, data::Vector) = LinearAlgebra.Matrix(hcat(fun.(data)...,)')
 
 
 "Set properties"
@@ -57,7 +48,4 @@ set_order!(x::Vector{Data}, order) = [set_order!(x[ii], order) for ii in 1:lengt
 
 
 ""
-function _set(fun::Function, data::Vector{Data}, mat::Matrix{T}) where T<:Real
-    vec = collect(collect.(eachrow(mat)))
-    return fun.(data, vec)
-end
+_set(fun::Function, data::Vector{Data}, mat::AbstractMatrix) = fun.(data, vectorize(mat))
