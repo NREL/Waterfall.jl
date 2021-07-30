@@ -19,10 +19,11 @@ const HEX_LOSS = "#EE442F"
 const HEX_GAIN = "#63ACBE"
 
 # Default input editing
+const SEED = 1234
 const DEFAULT_FUZZINESS = (0.01,0.3)
 const DEFAULT_DISTRIBUTION = :normal      # linear, normal, triangular
 const DEFAULT_NSAMPLE = 5
-const DEFAULT_NCOR = 2
+const DEFAULT_NCOR = true
 
 # https://arxiv.org/abs/2107.02270
 # https://github.com/mpetroff/accessible-color-cycles
