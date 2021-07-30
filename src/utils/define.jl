@@ -1,3 +1,5 @@
+import Base
+
 """
 This function returns position
 """
@@ -5,56 +7,93 @@ function _calculate_position(cascade, ::Type{Violin},  args...; kwargs...)
     return scale_kde(cascade)
 end
 
-function _calculate_position(cascade, ::Type{T}, args...; kwargs...) where T<:Geometry
-    return scale_point(cascade, args...; kwargs...)
+function _calculate_position(cascade, ::Type{T}; kwargs...) where T<:Geometry
+    return scale_point(cascade; kwargs...)
 end
-
 
 
 """
     define_from(::Type{Cascade{Data}}, df)
     define_from(::Type{Plot{Data}}, cascade)
-
     define_from(::Type{T}, cascade::Cascade{Data}; kwargs...) where T<:Axis
 """
-function define_from(::Type{Cascade{Data}}, df::DataFrames.DataFrame; kwargs...)
-    gdf = fuzzify(df; kwargs...)
+function define_from(::Type{Cascade{Data}}, df::DataFrames.DataFrame;
+    ncor=false,
+    permutation=[],
+    permute=false,
+    correlate=false,
+    kwargs...,
+)
+    data = define_from(Vector{Data}, df; kwargs...)
+    nstep = length(data)-2
     
-    start = Data(first(gdf); kwargs...)
-    stop = Data(last(gdf); kwargs...)
-    steps = [Data(gdf[ii]; kwargs...) for ii in 2:gdf.ngroups-1]
+    cascade = Cascade(
+        start = first(data),
+        stop = last(data),
+        steps = data[2:end-1],
+        permutation = isempty(permutation) ? collect(1:nstep) : permutation,
+        correlation = random_rotation(nstep, ncor; kwargs...),
+        ispermuted = false,
+        iscorrelated = false,
+    )
 
+    correlate && correlate!(cascade)
+    permute && permute!(cascade)
+    
+    return cascade
+end
+
+
+function define_from(::Type{Data}, sdf::DataFrames.SubDataFrame;
+    label,
+    sublabel,
+    value=VALUE_COL,
+    order=[],
+    kwargs...,
+)
+    return Data( ; 
+        label = sdf[1,label],
+        sublabel = sdf[1,sublabel],
+        value = sdf[:,value],
+        order = isempty(order) ? collect(1:size(sdf,1)) : order,
+    )
+end
+
+
+function define_from(::Type{Vector{Data}}, df::DataFrames.DataFrame; kwargs...)
+    gdf = fuzzify(df; kwargs...)
+    data = [define_from(Data, sdf; kwargs...) for sdf in gdf]
+    
     # Sort "start" samples by magnitude. Ensure consistent ordering in all subsequent steps.
-    data = [start; steps; stop]
     iiorder = sortperm(get_value(data[1]))
     [set_order!(data[ii], iiorder) for ii in 1:length(data)]
-    
-    return Cascade( ; start=start, stop=stop, steps=steps, kwargs...)
+
+    return data
 end
 
 
 function define_from(::Type{Plot{Data}}, cascade::Cascade{Data}; kwargs...)
     axes = [
-        define_from2(XAxis, cascade; kwargs...);
-        define_from2(YAxis, cascade; kwargs...);
+        define_from(XAxis, cascade; kwargs...);
+        define_from(YAxis, cascade; kwargs...);
     ]
 
     return Plot(cascade, axes)
 end
 
 
-function define_from2(::Type{XAxis}, cascade::Cascade{Data}; xlabel="", kwargs...)
+function define_from(::Type{XAxis}, cascade::Cascade{Data}; xlabel="", kwargs...)
     data = collect_data(cascade)
     perm = collect_permutation(cascade)
     # cascade::Cascade{Data}
     N = length(data)
     xticklabels = get_label.(data)[perm]
     xticksublabels = get_sublabel.(data)[perm]
-    xticks = cumulative_x(; steps=N)
+    xticks = cumulative_x( ; steps=N)
     return XAxis( ; label=xlabel, ticklabels=xticklabels, ticksublabels=xticksublabels, ticks=xticks, lim=(1,N))
 end
 
-function define_from2(::Type{YAxis}, cascade::Cascade{Data}; ylabel, kwargs...)
+function define_from(::Type{YAxis}, cascade::Cascade{Data}; ylabel, kwargs...)
     data = collect_data(cascade)
     vlims = vlim(data)
     vmin, vmax, vscale = vlims
@@ -68,35 +107,29 @@ end
 # end
 
 
-
-
-
-
-
-
 """
 """
-function _set_geometry(cascade::Cascade{Data}, Geometry, Shape, Color, args...;
+function _set_geometry(cascade::Cascade{Data}, Geometry, Shape, Color;
     colorcycle::Bool=false,
     kwargs...,
 )
-    position = _calculate_position(cascade, Geometry, args...; kwargs...)
+    position = _calculate_position(cascade, Geometry; kwargs...)
     sgn = sign(cascade)
 
-    # return _define_from(Shape, Color, position, sgn; kwargs...)
-    start = _define_from(Shape, Color, first(position), first(sgn); hue="black", kwargs...)
-    stop = _define_from(Shape, Color, last(position), last(sgn); hue="black", kwargs...)
-    steps = _define_from(Shape, Color, position[2:end-1], sgn[2:end-1]; kwargs...)
-
-    println(colorcycle)
-    colorcycle && set_hue!.(steps, cascade.permutation)
-
+    attr = _define_from(Shape, Color, position, sgn; style=:fill, kwargs...)
     label = get_label.(collect_data(cascade))
-    attr = [[start]; steps; [stop]]
 
     data = Geometry.(label, attr)
 
-    return Cascade(first(data), last(data), data[2:end-1], cascade.ncor, cascade.permutation, cascade.correlation)
+    return Cascade(
+        start = set_hue!(first(data), "black"),
+        stop = set_hue!(last(data), "black"),
+        steps = colorcycle ? set_hue!.(data[2:end-1], cascade.permutation) : data[2:end-1],
+        permutation = cascade.permutation,
+        correlation = cascade.correlation,
+        ispermuted = cascade.ispermuted,
+        iscorrelated = cascade.iscorrelated,
+    )
 end
 
 
@@ -222,8 +255,8 @@ function set_geometry(cascade, ::Type{Violin}; kwargs...)
     return _set_geometry(cascade, Violin, Poly, Coloring; style=:fill, kwargs...)
 end
 
-function set_geometry(cascade, ::Type{Vertical}, args...; kwargs...)
-    return _set_geometry(cascade, Vertical, Box, Blending, 1.0;
+function set_geometry(cascade, ::Type{Vertical}; kwargs...)
+    return _set_geometry(cascade, Vertical, Box, Blending;
         style=:fill,
         subdivide=true,
         space=true, 
@@ -231,8 +264,8 @@ function set_geometry(cascade, ::Type{Vertical}, args...; kwargs...)
     )
 end
 
-function set_geometry(cascade, ::Type{Horizontal}, quantile::Float64=1.0; kwargs...)
-    return _set_geometry(cascade, Horizontal, Box, Coloring, quantile;
+function set_geometry(cascade, ::Type{Horizontal}; kwargs...)
+    return _set_geometry(cascade, Horizontal, Box, Coloring;
         alpha=length(cascade),
         style=:fill,
         subdivide=false,
@@ -242,12 +275,13 @@ function set_geometry(cascade, ::Type{Horizontal}, quantile::Float64=1.0; kwargs
 end
 
 
-function set_geometry(cascade, ::Type{Parallel}, slope::Bool=true; kwargs...)
-    return _set_geometry(cascade, Parallel, Line, Coloring, convert(Float64, slope);
-        alpha=length(cascade),
-        style=:stroke,
-        subdivide=false,
-        space=false,
+function set_geometry(cascade, ::Type{Parallel}; slope::Bool=true, kwargs...)
+    return _set_geometry(cascade, Parallel, Line, Coloring;
+        quantile = convert(Float64, slope),
+        alpha = length(cascade),
+        style = :stroke,
+        subdivide = false,
+        space = false,
         kwargs...,
     )
 end

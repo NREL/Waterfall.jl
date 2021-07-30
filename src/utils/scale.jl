@@ -3,7 +3,7 @@ get_order(x::T) where T<:Real = parse(Int, match(r"e(.*)", Printf.@sprintf("%e",
 
 """
 """
-function scale_point(cascade::Cascade, quantile::T, args...; kwargs...) where T <: Real
+function scale_point(cascade::Cascade; kwargs...)
     v1, v2 = cumulative_v!(cascade; kwargs...)
     
     # Allows for diy vlims.
@@ -12,7 +12,7 @@ function scale_point(cascade::Cascade, quantile::T, args...; kwargs...) where T 
     y1 = scale_y(v1; vlims...)
     y2 = scale_y(v2; vlims...)
 
-    x1, x2 = scale_x(cascade, quantile; kwargs...)
+    x1, x2 = scale_x(cascade; kwargs...)
 
     return vectorize(Luxor.Point.(x1,y1), Luxor.Point.(x2,y2))
 end
@@ -22,13 +22,13 @@ end
     scale_x(data::Data, quantile::Real=1; kwargs...)
 This function scales 
 """
-function scale_x(data::Vector{Data}, quantile::Real=1; kwargs...)
-    x1 = cumulative_x(data, -(1-(1-quantile)/2); kwargs...)
-    x2 = cumulative_x(data,    -(1-quantile)/2; kwargs...)
+function scale_x(data::Vector{Data}; quantile=1.0, kwargs...)
+    x1 = cumulative_x(data; shift = -(1-(1-quantile)/2), kwargs...)
+    x2 = cumulative_x(data; shift =    -(1-quantile)/2,  kwargs...)
     return x1, x2
 end
 
-scale_x(cascade::T, args...; kwargs...) where T <: Cascade = scale_x(collect_data(cascade), args...; kwargs...)
+scale_x(cascade::T; kwargs...) where T <: Cascade = scale_x(collect_data(cascade); kwargs...)
 
 
 """
@@ -104,7 +104,7 @@ y-axis ticks.
 function vlim(mat::Matrix; vmin=missing, vmax=missing, kwargs...)
     if ismissing(vmin)*ismissing(vmax)
         vmax = 22.5
-        vmin = 13.0
+        vmin = 15.0
     end
     
     vscale = HEIGHT/(vmax-vmin)

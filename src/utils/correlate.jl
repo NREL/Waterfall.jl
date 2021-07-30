@@ -15,6 +15,7 @@ lst =
 function rowprod(A::M, order::Vector{T}) where {M<:AbstractMatrix, T<:Int}
     lst = select_row(A)
 
+    # Begin
     idxprod = [[order[1]]]
     lstprod = [lst[order[1]]]
 
@@ -36,9 +37,9 @@ end
 function rowprod(x::Cascade)
     A = collect_correlation(x)
     v = get_value(collect_data(x))
-    perm = collect_permutation(x)
+    order = collect_permutation(x)
     
-    lst = rowprod(A, perm)
+    lst = rowprod(A, order)
     return rowprod(lst, v)
 end
 
@@ -105,3 +106,8 @@ function select_row(A, ii)
 end
 
 select_row(A) = [select_row(A,ii) for ii in 1:size(A,1)]
+
+
+function select_row(lst::Vector{Matrix{Any}}, idx::AbstractVector)
+    return convert(Matrix, getindex.(lst, idx, :))
+end

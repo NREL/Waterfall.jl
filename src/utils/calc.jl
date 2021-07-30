@@ -61,9 +61,16 @@ width(steps::Integer) = (WIDTH-(steps+1)*SEP)/steps
 
 
 """
-    cumulative_x(shift::Float64)
+    cumulative_x( ; kwargs...)
 """
-function cumulative_x(shift::Float64=-0.5; subdivide=true, samples=1, space=true, steps, kwargs...)
+function cumulative_x( ;
+    steps,
+    shift::Float64=-0.5,
+    samples=1,
+    subdivide=true,
+    space=true,
+    kwargs...,
+)
     ROW, COL = steps, (subdivide ? samples : 1)
     extend = -sign(-0.5-shift) * (0.5*SEP * !space * !subdivide)
 
@@ -84,12 +91,12 @@ function cumulative_x(shift::Float64=-0.5; subdivide=true, samples=1, space=true
     return subdivide ? result : hcat(fill(result, samples)...)
 end
 
-function cumulative_x(data::Vector{Data}, args...; kwargs...)
+function cumulative_x(data::Vector{Data}; kwargs...)
     STEPS, SAMPLES = size(get_value(data))
-    return cumulative_x(args...; steps=STEPS, samples=SAMPLES, kwargs...)
+    return cumulative_x( ; steps=STEPS, samples=SAMPLES, kwargs...)
 end
 
-cumulative_x(args...) = _cumulative(cumulative_x, args...)
+cumulative_x(args...; kwargs...) = _cumulative(cumulative_x, args...; kwargs...)
 
 
 # """
@@ -113,8 +120,8 @@ cumulative_x(args...) = _cumulative(cumulative_x, args...)
 
 
 "Helper function for different types of calculation inputs"
-_cumulative(fun::Function, cascade::Cascade, args...) = fun(collect_data(cascade), args...)
-_cumulative(fun::Function, data::Vector{Data}, args...) = fun(get_value(data), args...)
+_cumulative(fun::Function, cascade::Cascade, args...; kwargs...) = fun(collect_data(cascade), args...; kwargs...)
+# _cumulative(fun::Function, data::Vector{Data}, args...; kwargs...) = fun(get_value(data), args...; kwargs...)
 
 
 # """

@@ -13,7 +13,7 @@ function fuzzify(df;
     kwargs...,
 )
     val = random_samples(df[:,value]; kwargs...)
-    val[end,:] .= -Statistics.cumsum(val; dims=1)[end-1,:]
+    update_stop!(val)
 
     df = DataFrames.crossjoin(df, DataFrames.DataFrame(SAMPLE_COL=>1:size(val,2)))
     df[!,value] .= vcat(val'...)

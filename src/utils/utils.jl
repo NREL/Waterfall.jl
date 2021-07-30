@@ -85,61 +85,6 @@ function Base.convert(::Type{SparseArrays.SparseMatrixCSC}, order::T) where T <:
 end
 
 
-
-
-
-
-
-
-
-
-
-
-"""
-"""
-function Base.convert(::Type{Plot{T}}, x::Plot{Data}, args...; kwargs...) where T <: Geometry
-    return _convert(T, x, args...; kwargs...)
-end
-
-function Base.convert(::Type{Cascade{T}}, x::Cascade{Data}, args...; kwargs...) where T <: Geometry
-    return _convert(T, x, args...; kwargs...)
-end
-
-
-# """
-# """
-# function _convert!(T::DataType, x::Cascade{Data}, quantile::Float64, args...; kwargs...)
-# #     vmin=missing,
-# #     vmax=missing,
-# #     kwargs...,
-# # )
-#     # Calculate y-values, allowing for diy vlims.
-#     v1, v2 = cumulative_v!(x; kwargs...)
-
-#     vlims = if ismissing(vmin)*ismissing(vmax)
-#         vlim(v1)
-#     else
-#         (vmin=vmin, vmax=vmax, vscale=HEIGHT/(vmax-vmin))
-#     end
-
-#     y1 = scale_y(v1; vlims...)
-#     y2 = scale_y(v2; vlims...)
-
-#     # Calculate x-values. Here is where kwargs matter.
-#     data = collect_data(x)
-#     x1, x2 = scale_x(data, quantile; kwargs...)
-
-#     data = T.(sign.(data), vectorize(Luxor.Point.(x1,y1), Luxor.Point.(x2,y2)))
-#     return Cascade(first(data), last(data), data[2:end-1], x.ncor, x.permutation, x.correlation)
-# end
-
-
-function _convert!(T::DataType, p::Plot{Data}, args...; kwargs...)
-    x = _convert!(T, p.cascade, args...; kwargs...)
-    return Plot(x, set_xaxis(p.cascade), p.yaxis)
-end
-
-
 """
     convert(::Type{DataFrames.DataFrame}, x::Cascade)
 This function converts `x` into a "sample-by-step"-dimension DataFrame with the step labels

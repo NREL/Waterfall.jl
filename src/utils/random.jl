@@ -30,10 +30,10 @@ function random_translation(dim;
     nsample=DEFAULT_NSAMPLE,
     distribution=DEFAULT_DISTRIBUTION,
     fuzziness=DEFAULT_FUZZINESS,
-    seed=1234,
+    seed=SEED,
     kwargs...,
 )
-    Random.seed!(seed)
+    Random.seed!(SEED)
     offset = nsample==1 ? fill(0.0,dim) : random_uniform(fuzziness..., dim)
     return _random_translation(nsample, distribution, offset)
 end
@@ -155,10 +155,10 @@ julia> random_rotation(4, 3)
  0.0        0.0       0.0  1.0
 ```
 """
-function random_rotation(dim::Integer, args...; seed=1234, minrot=0.0, maxrot=1.0, kwargs...)
+function random_rotation(dim::Integer, nrot; seed=1234, minrot=0.0, maxrot=1.0, kwargs...)
     # Select indices overwhich to apply the rotation.
     rot = lower_triangular(dim, 0.)
-    idx = random_index(rot, args...)
+    idx = random_index(rot, nrot)
     N = length(idx)
 
     # Generate random values.
@@ -236,6 +236,8 @@ julia> random_index(lower_triangular(8), 4)
  [6, 4]
 ```
 """
+random_index(x, N::Bool; kwargs...) = N ? random_index(x; kwargs...) : []
+
 function random_index(x, N::Int; kwargs...)
     idx = random_index(x; kwargs...)
     return idx[1:min(length(idx),N)]

@@ -123,7 +123,26 @@ end
 function _draw_ticklabels(ax::XAxis; y=HEIGHT+SEP)
     lab = ax.ticklabels
     x = ax.ticks
-    _draw_label.(lab, Luxor.Point.(x, y); valign=:top, halign=:center)
+    _draw_label.(ax.ticklabels, Luxor.Point.(x, y); valign=:top, halign=:center)
+
+    Luxor.fontsize(10.2)
+    # _draw_label.(ax.ticksublabels, Luxor.Point.(x, y+SEP); valign=:top, halign=:right, angle=-pi/6)
+
+    N = length(ax.ticksublabels)
+    x = cumulative_x( ; steps=N)
+
+    for ii in 1:N
+        str = Luxor.textlines(ax.ticksublabels[ii], width(N))
+        str = str[.!isempty.(str)]
+
+        Luxor.textbox(str, Luxor.Point(x[ii], y+1.5*SEP); leading=0, alignment=:center)
+        # textbox(lines::Array, pos::Point=O;
+        #     leading = 12,
+        #     linefunc::Function = (linenumber, linetext, startpos, height) -> (),
+        #     alignment=:left)
+    end
+
+    Luxor.fontsize(14)
     return nothing
 end
 
