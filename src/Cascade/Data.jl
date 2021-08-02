@@ -34,8 +34,14 @@ _get(fun::Function, data::Vector) = convert(Matrix, fun.(data))
 set_label!(x::Data, label) = begin x.label = label; return x end
 set_sublabel!(x::Data, sublabel) = begin x.sublabel = sublabel; return x end
 
-set_value!(x::Data, value) = begin x.value = value; return x end
+function set_value!(x::Data, value)
+    x.value = value
+    x.order = 1:length(value)
+    return x
+end
+
 set_value!(args...) = _set(set_value!, args...)
+
 
 function set_order!(x::Data, order)
     tmp = Dict(k => v for (k,v) in zip(x.order, x.value))

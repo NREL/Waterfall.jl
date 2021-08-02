@@ -65,12 +65,12 @@ get_start(x::Cascade) = x.start
 get_steps(x::Cascade) = x.steps
 get_stop(x::Cascade) = x.stop
 
-function get_permutation(x::Cascade; permute=true, kwargs...)
-    return permute ? x.permutation : collect(1:length(x.steps))
+function get_permutation(x::Cascade; kwargs...)
+    return x.ispermuted ? x.permutation : collect(1:length(x.steps))
 end
 
 function get_correlation(x::Cascade; kwargs...)
-    return x.correlation[get_permutation(x; kwargs..., permute=false), :]
+    return x.correlation[get_permutation(x; kwargs...), :]
 end
 
 set_start!(x::Cascade, start) = begin x.start = start; return x end

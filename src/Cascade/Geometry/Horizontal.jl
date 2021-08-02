@@ -1,6 +1,7 @@
 mutable struct Horizontal <: Geometry
     label::String
     attribute::Vector{Box}
+    nsample::Int
 end
 
 
