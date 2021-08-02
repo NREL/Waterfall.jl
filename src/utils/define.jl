@@ -86,9 +86,10 @@ function define_from(::Type{XAxis}, cascade::Cascade{Data}; xlabel="", kwargs...
     data = collect_data(cascade)
     perm = collect_permutation(cascade)
     # cascade::Cascade{Data}
+
     N = length(data)
-    xticklabels = get_label.(data)[perm]
-    xticksublabels = get_sublabel.(data)[perm]
+    xticklabels = get_label.(data)
+    xticksublabels = get_sublabel.(data)
     xticks = cumulative_x( ; steps=N)
     return XAxis( ; label=xlabel, ticklabels=xticklabels, ticksublabels=xticksublabels, ticks=xticks, lim=(1,N))
 end
@@ -119,12 +120,15 @@ function _set_geometry(cascade::Cascade{Data}, Geometry, Shape, Color;
     attr = _define_from(Shape, Color, position, sgn; style=:fill, kwargs...)
     label = get_label.(collect_data(cascade))
 
-    data = Geometry.(label, attr)
+    data = Geometry.(label, attr, length(cascade))
 
     return Cascade(
         start = set_hue!(first(data), "black"),
         stop = set_hue!(last(data), "black"),
         steps = colorcycle ? set_hue!.(data[2:end-1], cascade.permutation) : data[2:end-1],
+        # start = first(data),
+        # stop = last(data),
+        # steps = data[2:end-1],
         permutation = cascade.permutation,
         correlation = cascade.correlation,
         ispermuted = cascade.ispermuted,
@@ -150,7 +154,7 @@ function _define_hue(x; hue=missing, colorcycleindex::Union{Missing,Integer}=mis
 
     # Adjust saturation.
     saturation = _define_saturation( ; kwargs...)
-    return parse(Luxor.Colorant, hue)
+    return scale_saturation(parse(Luxor.Colorant, hue); kwargs...)
 end
 
 _define_hue(idx::Integer; kwargs...) = _define_hue(COLORCYCLE[idx]; kwargs...)
@@ -159,8 +163,25 @@ _define_hue(sgn::Float64; kwargs...) = _define_hue(sgn>0 ? HEX_LOSS : HEX_GAIN; 
 function _define_hue(sgn::Vector{Float64}; kwargs...)
     rgb = _define_hue.(sgn; kwargs...)
     rgb_average = [Statistics.mean(getproperty.(rgb, f)) for f in fieldnames(Luxor.RGB)]
-    return Luxor.Colors.RGB(rgb_average...)
+    return scale_saturation(Luxor.Colors.RGB(rgb_average...); kwargs...)
 end
+
+
+
+
+function scale_saturation(rgb::Luxor.RGB; kwargs...)
+    hsv = scale_saturation(Luxor.convert(Luxor.Colors.HSV, rgb); kwargs...)
+    return Luxor.convert(Luxor.Colors.RGB, hsv)
+end
+
+function scale_saturation(hsv::Luxor.HSV; saturation=0.0, kwargs...)
+    if saturation!==0.0
+        saturation = saturation<0 ? hsv.s * (1+saturation) : (1-hsv.s)*saturation + hsv.s
+        hsv = Luxor.Colors.HSV(hsv.h, saturation, hsv.v)
+    end
+    return hsv
+end
+
 
 
 """
@@ -223,8 +244,10 @@ end
 
 
 function _define_from(::Type{Vector{Blending}}, sign, position; kwargs...)
-    c1 = _define_from.(Coloring, sign; alpha=1.0, saturation=-0.2)
-    c2 = _define_from.(Coloring, sign; alpha=1.0, saturation=-0.7)
+    # c1 = _define_from.(Coloring, sign; alpha=1.0, saturation=-0.2)
+    # c2 = _define_from.(Coloring, sign; alpha=1.0, saturation=-0.7)
+    c1 = _define_from.(Coloring, sign; alpha=1.0, saturation=0.)
+    c2 = _define_from.(Coloring, sign; alpha=1.0, saturation=0.)
 
     xmid = getindex.([Luxor.midpoint(x...) for x in position],1)
 
@@ -234,17 +257,6 @@ function _define_from(::Type{Vector{Blending}}, sign, position; kwargs...)
 
     return Blending.(Luxor.Point.(xmid, y1), Luxor.Point.(xmid, y2), c1, c2)
 end
-
-
-
-
-
-
-
-# pos_violin = _calculate_position(cascade, Violin)
-# pos_vert = _calculate_position(cascade, Vertical, 1.0; subdivide=true, space=true)
-# pos_horiz = _calculate_position(cascade, Horizontal, 1.0; subdivide=false, space=true)
-# pos_parallel = _calculate_position(cascade, Parallel, 1.0; subdivide=false, space=false)
 
 
 """

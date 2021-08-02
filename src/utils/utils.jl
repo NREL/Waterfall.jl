@@ -15,7 +15,7 @@ Base.sign(cascade::Cascade{Data}) = sign.(collect_data(cascade))
 
 
 Base.length(x::Data) = length(x.order)
-Base.length(x::T) where T <: Geometry = length(x.attribute)
+Base.length(x::T) where T <: Geometry = x.nsample
 Base.length(x::T) where T <: Cascade = length(x.start)
 Base.length(x::T) where T <: Plot = length(x.cascade)
 # Base.length(x::T) where T <: Axis = length(x.ticks)
@@ -30,7 +30,8 @@ _values(x::T) where T <: Any = Tuple([getproperty(x, f) for f in fieldnames(T)])
 
 Base.copy(x::Axis) = _copy(x)
 Base.copy(x::Data) = _copy(x)
-Base.copy(x::Cascade) = _copy(x)
+Base.copy(x::Vector{Data}) = _copy.(x)
+Base.copy(x::Cascade) = Cascade(copy.(_values(x))...)
 Base.copy(x::Plot) = Plot(copy.(_values(x))...)
 _copy(x::T) where T <: Any = T(values(x)...)
 

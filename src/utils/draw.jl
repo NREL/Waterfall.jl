@@ -6,6 +6,12 @@ function set(color::Coloring)
     return nothing
 end
 
+function set(color::Blending)
+    println("HI.")
+    Luxor.setblend(Luxor.blend(color.point1, color.point2, color.color1.hue, color.color2.hue))
+    return nothing
+end
+
 
 """
     draw(attr::Box)
@@ -30,9 +36,15 @@ end
 
 
 function draw(shape::Line)
-    println("line")
-    # set(shape.color)
+    set(shape.color)
     Luxor.line(shape.position[1], shape.position[2], shape.style)
+    return nothing
+end
+
+
+function draw(shape::Poly)
+    set(shape.color)
+    Luxor.poly(shape.position, close=true, shape.style)
     return nothing
 end
 
@@ -42,6 +54,7 @@ function draw(ax::T) where T <: Axis
     _draw_ticks(ax)
     # T==YAxis && _draw_ticklabels(ax)
     _draw_ticklabels(ax)
+    _draw_label(ax)
 end
 
 
@@ -53,7 +66,7 @@ draw(lst::AbstractArray) = [draw(x) for x in lst]
 """
 """
 function _draw_title(plot::T) where T <: Plot
-    _draw_label("N = $(length(plot))", Luxor.Point(WIDTH/2, 0); valign=:top)
+    # _draw_label("N = $(length(plot))", Luxor.Point(WIDTH/2, 0); valign=:top)
     return nothing
 end
 
@@ -117,6 +130,29 @@ function _draw_label(label::Float64, args...; kwargs...)
 end
 
 
+function _draw_label(ax::YAxis; angle=-pi/2, x=-(LEFT_BORDER-SEP))
+    _draw_label(
+        uppercase(ax.label),
+        Luxor.midpoint(Luxor.Point(x,ax.ticks[2]), Luxor.Point(x,ax.ticks[end]));
+        angle=angle,
+        valign=:middle,
+        halign=:center,
+        # kwargs...,
+    )
+
+    # _draw_label(
+    #     ax.label * " top",
+    #     Luxor.midpoint(Luxor.Point(x,ax.ticks[1]), Luxor.Point(x,ax.ticks[end]));
+    #     angle=angle,
+    #     valign=:top,
+    #     halign=:center,
+    #     # kwargs...,
+    # )
+end
+
+_draw_label(ax::XAxis) = nothing
+
+
 """
     _draw_ticklabels(ax::T) where T <: Axis
 """
@@ -125,24 +161,26 @@ function _draw_ticklabels(ax::XAxis; y=HEIGHT+SEP)
     x = ax.ticks
     _draw_label.(ax.ticklabels, Luxor.Point.(x, y); valign=:top, halign=:center)
 
-    Luxor.fontsize(10.2)
     # _draw_label.(ax.ticksublabels, Luxor.Point.(x, y+SEP); valign=:top, halign=:right, angle=-pi/6)
-
+    
+    font_tmp = Luxor.get_fontsize()
+    font = 8
     N = length(ax.ticksublabels)
     x = cumulative_x( ; steps=N)
+    Luxor.fontsize(font)
 
     for ii in 1:N
-        str = Luxor.textlines(ax.ticksublabels[ii], width(N))
+        str = Luxor.textlines(uppercase(ax.ticksublabels[ii]), width(N))
         str = str[.!isempty.(str)]
 
-        Luxor.textbox(str, Luxor.Point(x[ii], y+1.5*SEP); leading=0, alignment=:center)
+        Luxor.textbox(str, Luxor.Point(x[ii], y+1.5*SEP); leading=1.25*font, alignment=:center)
         # textbox(lines::Array, pos::Point=O;
         #     leading = 12,
         #     linefunc::Function = (linenumber, linetext, startpos, height) -> (),
         #     alignment=:left)
     end
 
-    Luxor.fontsize(14)
+    Luxor.fontsize(font_tmp)
     return nothing
 end
 

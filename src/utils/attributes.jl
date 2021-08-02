@@ -1,7 +1,14 @@
-set_hue!(x::Coloring, h) = begin x.hue = _set_hue(h); return x end
+function set_hue!(x::Coloring, h)
+    x.hue = scale_saturation(_set_hue(h); saturation=x.saturation)
+    return x
+end
+
+set_hue!(x::T, h) where T<:Geometry = begin set_hue!(x.attribute, h); return x end
+
 set_hue!(x::T, h) where T<:Shape = begin set_hue!(x.color, h); return x end
-set_hue!(x::T, h) where T<:Geometry = begin set_hue!.(x.attribute, h); return x end
 set_hue!(x::Vector{T}, h) where T<:Box = begin set_hue!.(x, h); return x end
+# set_hue!(x::Vector{T}, h) where T<:Poly = begin set_hue!.(x, h); return x end
+
 # set_hue!(x::T, h) where T<:AbstractArray = begin set_hue!.(x, h); return x end
 
 set_alpha!(x, a) = begin x.alpha = _set_alpha(a); return x end
@@ -101,19 +108,23 @@ set_saturation!(x, s) = begin x.saturation=s; return x end
 
 # """
 # """
-# function scale_saturation(rgb::Luxor.RGB, args...)
-#     hsv = scale_saturation(Luxor.convert(Luxor.Colors.HSV, rgb), args...)
-#     return Luxor.convert(Luxor.Colors.RGB, hsv)
-# end
 
-# function scale_saturation(hsv::Luxor.HSV, f=0.0)
-#     if f!==0.0
-#         saturation = f<0 ? hsv.s * (1+f) : (1-hsv.s)*f + hsv.s
-#         hsv = Luxor.Colors.HSV(hsv.h, saturation, hsv.v)
-#     end
-#     return hsv
-# end
 
+
+
+rgb = Luxor.RGB(0,0,0)
+sat = -0.2
+
+
+hsv = Luxor.convert(Luxor.Colors.HSV, rgb)
+
+
+
+function set_hue!(x::Blending, h)
+    set_hue!(x.color1, h)
+    set_hue!(x.color2, h)
+    return x
+end
 
 
 
@@ -188,6 +199,3 @@ set_saturation!(x, s) = begin x.saturation=s; return x end
 # # end
 
 # # attribute(::Type{T}, data::Data) where T <: Geometry = attribute(T, get_value(data))
-
-
-
