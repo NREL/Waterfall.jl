@@ -1,3 +1,58 @@
+function _define_label(str::String, width; font)
+    tmp = Luxor.get_fontsize()
+    Luxor.fontsize(font)
+
+    str = uppercase(str)
+    lst = Luxor.textlines.(Luxor.textlines(str, width), width)
+
+    idx = .!.&(isempty.(getindex.(lst,1)), length.(lst).==1)
+    lst = lst[idx]
+
+    idx = length.(lst).==2
+
+    if any(idx)
+        lst[idx] = Luxor.textlines.(_break(getindex.(lst[idx],2)), width)
+        lst = vcat(lst...)
+        lst = Luxor.textlines(string(lst[.!isempty.(lst)] .* " "...), width)
+    else
+        lst = vcat(lst...)
+    end
+    
+    lst = vcat(lst...)
+    Luxor.fontsize(tmp)
+
+    return lst[.!isempty.(lst)]
+end
+
+
+_break(str) = occursin("/",str) ? _break_slash(str) : _break_suffix(str)
+
+function _break(lst::AbstractVector)
+    return occursin("/",string(lst...)) ? _break_slash.(lst) : _break_suffix.(lst)
+end
+
+function _break_suffix(str)
+    suff = ["ANT","ING","ION"]
+    # rep = Pair.(Regex.(suff), string.("- ".*suff))
+    rep = [
+        Pair.(Regex.(suff.*"\\s"), string.("- ".*suff.*" "));
+        Pair.(Regex.(suff.*"\$"), string.("- ".*suff));
+    ]
+
+    return reduce(replace, rep, init=str)
+end
+
+_break_slash(str) = reduce(replace, [Pair(r"/", "/ ")], init=str)
+
+
+
+
+
+
+
+
+
+
 function set_hue!(x::Coloring, h)
     x.hue = scale_saturation(_set_hue(h); saturation=x.saturation)
     return x

@@ -13,7 +13,6 @@ get_density(args...) = _get(get_density, args...)
 Base.sign(data::T) where T <: Data = sign.(get_value(data))
 Base.sign(cascade::Cascade{Data}) = sign.(collect_data(cascade))
 
-
 Base.length(x::Data) = length(x.order)
 Base.length(x::T) where T <: Geometry = x.nsample
 Base.length(x::T) where T <: Cascade = length(x.start)
@@ -27,13 +26,19 @@ Base.values(x::Axis) = _values(x)
 Base.values(x::Plot) = _values(x)
 _values(x::T) where T <: Any = Tuple([getproperty(x, f) for f in fieldnames(T)])
 
-
 Base.copy(x::Axis) = _copy(x)
 Base.copy(x::Data) = _copy(x)
 Base.copy(x::Vector{Data}) = _copy.(x)
 Base.copy(x::Cascade) = Cascade(copy.(_values(x))...)
 Base.copy(x::Plot) = Plot(copy.(_values(x))...)
 _copy(x::T) where T <: Any = T(values(x)...)
+
+
+Base.maximum(lst::Vector{T}; dims) where T<:Luxor.Point = maximum(getindex.(lst,dims))
+Base.maximum(lst::Vector{T}; kwargs...) where T<:Tuple = maximum(vcat(collect.(lst)...); kwargs...)
+
+Base.minimum(lst::Vector{T}; dims) where T<:Luxor.Point = minimum(getindex.(lst,dims))
+Base.minimum(lst::Vector{T}; kwargs...) where T<:Tuple = minimum(vcat(collect.(lst)...); kwargs...)
 
 
 "This function returns all permutations of the elements in the input vectors or vector of vectors"

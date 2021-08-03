@@ -18,7 +18,7 @@ end
     define_from(::Type{T}, cascade::Cascade{Data}; kwargs...) where T<:Axis
 """
 function define_from(::Type{Cascade{Data}}, df::DataFrames.DataFrame;
-    ncor=false,
+    ncor=DEFAULT_NCOR,
     permutation=[],
     permute=false,
     correlate=false,
@@ -38,7 +38,7 @@ function define_from(::Type{Cascade{Data}}, df::DataFrames.DataFrame;
     )
 
     correlate && correlate!(cascade)
-    permute && permute!(cascade)
+    permute && (cascade = permute!(cascade))
     
     return cascade
 end
@@ -77,14 +77,20 @@ function define_from(::Type{Plot{Data}}, cascade::Cascade{Data}; kwargs...)
         define_from(XAxis, cascade; kwargs...);
         define_from(YAxis, cascade; kwargs...);
     ]
-
+    
     return Plot(cascade, axes)
+end
+
+
+function define_from(::Type{Plot{T}}, cascade::Cascade{Data}; kwargs...) where T<:Geometry
+    plot = define_from(Plot{Data}, copy(cascade); kwargs...)
+    return set_geometry(plot, T; kwargs...)
 end
 
 
 function define_from(::Type{XAxis}, cascade::Cascade{Data}; xlabel="", kwargs...)
     data = collect_data(cascade)
-    perm = collect_permutation(cascade)
+    # perm = collect_permutation(cascade)
     # cascade::Cascade{Data}
 
     N = length(data)
@@ -109,6 +115,70 @@ end
 
 
 """
+    _define_from(Shape, Color, position, sgn; kwargs...)
+    _define_from(::Type{T}, sign, position; kwargs...) where T<:Vector{Blending}
+    _define_from(::Type{T}, sign; kwargs...) where T<:Union{Vector{Coloring},Coloring}
+
+# Keywords:
+- `style`
+"""
+function _define_from(Shape, Color, position::Vector{T1}, sgn::Vector{T2};
+    kwargs...,
+) where {T1<:AbstractArray, T2<:AbstractArray}
+    return _define_from.(Shape, Color, position, sgn; kwargs...)
+end
+
+function _define_from(Shape, Color, position::Vector{T}, sgn;
+    style, kwargs...) where T <: Luxor.Point
+    return Shape(position, _define_from(Color, sgn, position; kwargs...), style)
+end
+
+function _define_from(Shape, Color, position::Vector{T}, sgn;
+    style, kwargs...) where T <: Tuple
+    return Shape.(position, _define_from(Vector{Color}, sgn, position; kwargs...), style)
+end
+
+
+function _define_from(::Type{Coloring}, sign, args...; alpha=0.8, kwargs...)
+    hue = _define_hue(sign; kwargs...)
+    saturation = _define_saturation( ; kwargs...)
+    alpha = _define_alpha(alpha; kwargs...)
+    return Coloring(hue, alpha, saturation)
+end
+
+function _define_from(::Type{Vector{Coloring}}, args...; kwargs...)
+    return _define_from.(Coloring, args...; kwargs...)
+end
+
+
+function _define_from(::Type{Vector{Blending}}, sign, position; kwargs...)
+    c1 = _define_from.(Coloring, sign; alpha=1.0, saturation=0.0)
+    c2 = _define_from.(Coloring, sign; alpha=1.0, saturation=-0.5)
+    # c1 = _define_from.(Coloring, sign; alpha=1.0, saturation=0.)
+    # c2 = _define_from.(Coloring, sign; alpha=1.0, saturation=0.)
+
+    xmid = getindex.([Luxor.midpoint(x...) for x in position],1)
+
+    # SEPARATE BASED ON SIGN.
+    y1 = minimum(getindex.(getindex.(position,1),2))
+    y2 = maximum(getindex.(getindex.(position,2),2))
+
+    return Blending.(Luxor.Point.(xmid, y1), Luxor.Point.(xmid, y2), c1, c2)
+end
+
+
+
+
+
+
+
+
+
+
+
+
+
+"""
 """
 function _set_geometry(cascade::Cascade{Data}, Geometry, Shape, Color;
     colorcycle::Bool=false,
@@ -120,12 +190,12 @@ function _set_geometry(cascade::Cascade{Data}, Geometry, Shape, Color;
     attr = _define_from(Shape, Color, position, sgn; style=:fill, kwargs...)
     label = get_label.(collect_data(cascade))
 
-    data = Geometry.(label, attr, length(cascade))
+    data = Geometry.(label, attr, length(cascade), missing)
 
     return Cascade(
         start = set_hue!(first(data), "black"),
         stop = set_hue!(last(data), "black"),
-        steps = colorcycle ? set_hue!.(data[2:end-1], cascade.permutation) : data[2:end-1],
+        steps = colorcycle ? set_hue!.(data[2:end-1], get_permutation(cascade)) : data[2:end-1],
         # start = first(data),
         # stop = last(data),
         # steps = data[2:end-1],
@@ -206,57 +276,7 @@ _define_saturation( ; saturation=missing, kwargs...) = ismissing(saturation) ? 1
 # _define_from()
 
 
-"""
-    _define_from(Geometry, Shape, Color, cascade::Cascade{Data}, args...; kwargs...)
 
-    _define_from(Shape, Color, position, sign; kwargs...)
-
-# Keywords:
-- `style`
-"""
-function _define_from(Shape, Color, position::Vector{T1}, sgn::Vector{T2};
-    kwargs...,
-) where {T1<:AbstractArray, T2<:AbstractArray}
-    return _define_from.(Shape, Color, position, sgn; kwargs...)
-end
-
-function _define_from(Shape, Color, position::Vector{T}, sgn;
-    style, kwargs...) where T <: Luxor.Point
-    return Shape(position, _define_from(Color, sgn, position; kwargs...), style)
-end
-
-function _define_from(Shape, Color, position::Vector{T}, sgn;
-    style, kwargs...) where T <: Tuple
-    return Shape.(position, _define_from(Vector{Color}, sgn, position; kwargs...), style)
-end
-
-
-function _define_from(::Type{Coloring}, sign, args...; alpha=0.8, kwargs...)
-    hue = _define_hue(sign; kwargs...)
-    saturation = _define_saturation( ; kwargs...)
-    alpha = _define_alpha(alpha; kwargs...)
-    return Coloring(hue, alpha, saturation)
-end
-
-function _define_from(::Type{Vector{Coloring}}, args...; kwargs...)
-    return _define_from.(Coloring, args...; kwargs...)
-end
-
-
-function _define_from(::Type{Vector{Blending}}, sign, position; kwargs...)
-    # c1 = _define_from.(Coloring, sign; alpha=1.0, saturation=-0.2)
-    # c2 = _define_from.(Coloring, sign; alpha=1.0, saturation=-0.7)
-    c1 = _define_from.(Coloring, sign; alpha=1.0, saturation=0.)
-    c2 = _define_from.(Coloring, sign; alpha=1.0, saturation=0.)
-
-    xmid = getindex.([Luxor.midpoint(x...) for x in position],1)
-
-    # SEPARATE BASED ON SIGN.
-    y1 = minimum(getindex.(getindex.(position,1),2))
-    y2 = maximum(getindex.(getindex.(position,2),2))
-
-    return Blending.(Luxor.Point.(xmid, y1), Luxor.Point.(xmid, y2), c1, c2)
-end
 
 
 """

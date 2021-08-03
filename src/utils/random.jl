@@ -138,8 +138,7 @@ R_{i,j} = R_{j,i} = x
 # Keyword arguments
 - `seed=1234` for random number generator set before picking the values with which to fill
     the rotation matrix.
-- `minrot=0.0` minimum rotation ``x_{min}``
-- `maxrot=1.0` maximum rotation ``x_{max}``
+- `interactivity=(0.0,0.1)` the range of minimum and maximum allowed rotation
 
 # Returns
 - `mat::Matrix` rotation matrix
@@ -155,7 +154,7 @@ julia> random_rotation(4, 3)
  0.0        0.0       0.0  1.0
 ```
 """
-function random_rotation(dim::Integer, nrot; seed=1234, minrot=0.0, maxrot=1.0, kwargs...)
+function random_rotation(dim::Integer, nrot; seed=1234, interactivity=(0.0,0.1), kwargs...)
     # Select indices overwhich to apply the rotation.
     rot = lower_triangular(dim, 0.)
     idx = random_index(rot, nrot)
@@ -164,8 +163,8 @@ function random_rotation(dim::Integer, nrot; seed=1234, minrot=0.0, maxrot=1.0, 
     # Generate random values.
     Random.seed!(seed)
     val = [
-        random_uniform( minrot,  maxrot, Integer(ceil(N/2)));
-        random_uniform(-maxrot, -minrot, Integer(floor(N/2)));
+        random_uniform( interactivity..., Integer(ceil(N/2)));
+        random_uniform(-reverse(collect(interactivity))..., Integer(floor(N/2)));
     ]
 
     return _fill!(rot, idx.=>val; kwargs...)
@@ -245,6 +244,7 @@ end
 
 random_index(x; kwargs...) = _shuffle(list_index(x); kwargs...)
 
+random_index(eye::LinearAlgebra.Diagonal)
 random_index(L::LinearAlgebra.UnitLowerTriangular; kwargs...) = _random_index(L, <; kwargs...)
 random_index(U::LinearAlgebra.UnitUpperTriangular; kwargs...) = _random_index(U, >; kwargs...)
 random_index(L::LinearAlgebra.LowerTriangular; kwargs...) = _random_index(L, <=; kwargs...)

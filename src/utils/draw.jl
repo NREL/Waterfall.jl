@@ -7,7 +7,6 @@ function set(color::Coloring)
 end
 
 function set(color::Blending)
-    println("HI.")
     Luxor.setblend(Luxor.blend(color.point1, color.point2, color.color1.hue, color.color2.hue))
     return nothing
 end
@@ -17,11 +16,11 @@ end
     draw(attr::Box)
 This function draws the input
 """
-function draw(plot::T) where T <: Plot
+function draw(plot::T; kwargs...) where T <: Plot
     draw(plot.cascade)
 
     Luxor.setcolor(Luxor.sethue("black")..., 1.0)
-    _draw_title(plot)
+    _draw_title(plot; kwargs...)
     draw(plot.axes)
     
     return nothing
@@ -65,8 +64,18 @@ draw(lst::AbstractArray) = [draw(x) for x in lst]
 
 """
 """
-function _draw_title(plot::T) where T <: Plot
-    # _draw_label("N = $(length(plot))", Luxor.Point(WIDTH/2, 0); valign=:top)
+function _draw_title(plot::T; interactivity, fuzziness, kwargs...) where T <: Plot
+    N = length(plot)
+    idx = [true, plot.cascade.iscorrelated, N>1]
+
+    str = [
+        "$N SAMPLE" * (N>1 ? "S" : ""),
+        "CORRELATION COEFFICIENT: min=$(interactivity[1]), max=$(interactivity[2])",
+        "UNIFORM SAMPLE DISTRIBUTION: f(x; a>$(fuzziness[1]), b<$(fuzziness[2]))"
+    ][idx]
+
+    font = Luxor.get_fontsize()
+    Luxor.textbox(str, Luxor.Point(WIDTH/2, 0); leading=1.25*font, alignment=:center)
     return nothing
 end
 
@@ -170,8 +179,9 @@ function _draw_ticklabels(ax::XAxis; y=HEIGHT+SEP)
     Luxor.fontsize(font)
 
     for ii in 1:N
-        str = Luxor.textlines(uppercase(ax.ticksublabels[ii]), width(N))
-        str = str[.!isempty.(str)]
+        str = _define_label(ax.ticksublabels[ii], width(N; space=2); font=8)
+        # str = Luxor.textlines(uppercase(ax.ticksublabels[ii]), width(N))
+        # str = str[.!isempty.(str)]
 
         Luxor.textbox(str, Luxor.Point(x[ii], y+1.5*SEP); leading=1.25*font, alignment=:center)
         # textbox(lines::Array, pos::Point=O;

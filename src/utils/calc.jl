@@ -1,3 +1,24 @@
+
+function calculate!(cascade::Cascade{Data}, args...; kwargs...)
+    data = collect_data(cascade)
+    set_value!(data, calculate(data, args...; kwargs...))
+    return cascade
+end
+
+function calculate(v::AbstractMatrix, fun::Function; dims=2, kwargs...)
+    return update_stop!(fun(v; dims=dims))
+end
+
+function calculate(v::AbstractMatrix, fun::Function, args...; dims=2, kwargs...)
+    N = size(v,1)
+    return reshape(update_stop!(fun.(vectorize(v), args...)), N, 1)
+end
+
+calculate(cascade, args...; kwargs...) = calculate!(copy(cascade), args...; kwargs...)
+calculate(data::Vector{Data}, args...; kwargs...) = calculate(get_value(data), args...; kwargs...)
+
+
+
 "Returns an NxN lower-triangular matrix."
 lower_triangular(N::Integer; kwargs...) = lower_triangular(N, 1; kwargs...)
 
@@ -22,32 +43,22 @@ dropzero(vec::Array{T,1}) where T <: Real = vec[vec.!==0.0]
 
 """
 """
-function cumulative_v(x::Cascade, shift; permute=true, kwargs...)
-    v = rowprod(x)
-    N = length(v)
-
-    println("Calculating cumulative value WITH THE PERMUTATION.")
-    perm = permute ? collect_permutation(x) : 1:N
-
-    vii = update_stop!(convert(Matrix, broadcast(getindex, v, 1:N, :)))
-
+function cumulative_v(v::AbstractArray; shift=0.0, kwargs...)
+    N = size(v,1)
     L = lower_triangular(N) + shift*I
-    order = convert(SparseArrays.SparseMatrixCSC, perm)
-
-    return L * order * vii
+    return L * v
 end
 
-cumulative_v(x::Cascade; kwargs...) = cumulative_v!(copy(x); kwargs...)
+cumulative_v(x::Cascade{Data}; kwargs...) = cumulative_v(get_value(collect_data(x)); kwargs...)
 
 
-"""
-"""
-function cumulative_v!(x::Cascade; permute=true, kwargs...)
-    v1 = cumulative_v(x, -1.0; permute=permute, kwargs...)
-    v2 = cumulative_v(x,  0.0; permute=permute, kwargs...)
-    permute && set_permutation!(x)
-    return v1, v2
-end
+# """
+# """
+# function cumulative_v!(x::Cascade; kwargs...)
+#     v1 = cumulative_v(x; shift=-1.0, kwargs...)
+#     v2 = cumulative_v(x; shift= 0.0, kwargs...)
+#     return v1, v2
+# end
 
 
 """
@@ -57,7 +68,7 @@ steps, ``N_{step}``:
 w_{step} = \\dfrac{WIDTH - \\left(N_{step}+1\\right) SEP}{N_{step}}
 ```
 """
-width(steps::Integer) = (WIDTH-(steps+1)*SEP)/steps
+width(steps::Integer; space=SEP, margin=SEP/2) = (WIDTH - 2*margin - space*steps)/steps
 
 
 """

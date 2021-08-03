@@ -4,7 +4,8 @@ get_order(x::T) where T<:Real = parse(Int, match(r"e(.*)", Printf.@sprintf("%e",
 """
 """
 function scale_point(cascade::Cascade; kwargs...)
-    v1, v2 = cumulative_v!(cascade; kwargs...)
+    v1 = cumulative_v(cascade; shift=-1.0, kwargs...)
+    v2 = cumulative_v(cascade; shift= 0.0, kwargs...)
     
     # Allows for diy vlims.
     vlims = vlim(v1; kwargs...)
@@ -53,7 +54,9 @@ end
 
 
 function scale_kde(cascade::Cascade; kwargs...)
-    v1, v2 = cumulative_v!(cascade; permute=false, kwargs...)
+    v1 = cumulative_v(cascade; shift=-1.0, kwargs...)
+    v2 = cumulative_v(cascade; shift= 0.0, kwargs...)
+
     value = calculate_kde.(vectorize(convert.(Float64, v2)))
 
     data = collect_data(cascade)
@@ -104,7 +107,7 @@ y-axis ticks.
 function vlim(mat::Matrix; vmin=missing, vmax=missing, kwargs...)
     if ismissing(vmin)*ismissing(vmax)
         vmax = 22.5
-        vmin = 15.0
+        vmin = 14.0
     end
     
     vscale = HEIGHT/(vmax-vmin)
