@@ -47,7 +47,7 @@ function collect_correlation(x::Cascade; kwargs...)
     mat = x.correlation
     N = size(mat,1)
 
-    L = lower_triangular(N+2, 0.)
+    L = 1.0*Matrix(I(N+2))
     L[2:N+1, 2:N+1] .= mat
     return L
 end
@@ -73,11 +73,11 @@ function get_correlation(x::Cascade; kwargs...)
     return x.correlation[get_permutation(x; kwargs...), :]
 end
 
-set_start!(x::Cascade, start) = begin x.start = start; return x end
-set_steps!(x::Cascade, steps) = begin x.steps = steps; return x end
-set_stop!(x::Cascade, stop) = begin x.stop = stop; return x end
+# set_start!(x::Cascade, start) = begin x.start = start; return x end
+# set_steps!(x::Cascade, steps) = begin x.steps = steps; return x end
+# set_stop!(x::Cascade, stop) = begin x.stop = stop; return x end
 
-set_permutation!(x::Cascade) = begin x.steps = x.steps[x.permutation]; return x end
+# set_permutation!(x::Cascade) = begin x.steps = x.steps[x.permutation]; return x end
 
 
 """
@@ -117,13 +117,13 @@ this new value will be used when applying correlations between steps `i` and `i+
 Taking this approach applies correlations to ``A`` sequentially to propagate nonlinearities
 to subsequent steps.
 """
-function correlate(v::AbstractArray, A::AbstractMatrix, permutation::AbstractVector{Int})
+function correlate(v::AbstractArray, A::AbstractMatrix, order::AbstractVector{Int})
     N = size(v,1)
 
     # Save a list of the A1 = A[ii,:] matrix, where each row ii is individually selected and
     # consistent with the natural order. Then, reorder this list to match the permutation order.
     lst_A = select_row(A)
-    lst_A = lst_A[permutation]
+    lst_A = lst_A[order]
 
     # Apply the interaction defined in each row individually and sequentially.
     # If A is a 3x3 matrix, ordered [2,3,1], this would look like.
@@ -132,7 +132,8 @@ function correlate(v::AbstractArray, A::AbstractMatrix, permutation::AbstractVec
     #   v[3] = A[1,:] * A[3,,:] * A[2,:] * v
     # Note how the interactions defined in A are applied in the permuted order,
     # but the order in which the VALUES are stored remains unchanged.
-    lst_v = [*(reverse(lst_A[1:ii])...) * v for ii in 1:N]
+    prod_A = [*(lst_A[ii:-1:1]...) for ii in 1:N]
+    lst_v = [*(lst_A[ii:-1:1]...) * v for ii in 1:N]
     
     # Now, populate the final, correlated value with the iith ROW (the current investment)
     # of the iith list element (the impact of ALL investments, IN THE PERMUTED ORDER)
@@ -159,10 +160,10 @@ function correlate!(cascade::Cascade{Data}; kwargs...)
 
         v = get_value(data)
         A = collect_correlation(cascade)
-        order = collect_permutation(cascade; permute=true)
+        order = collect_permutation(cascade.permutation)
 
         set_value!(data, correlate(v, A, order))
-        cascade.iscorrelated=true
+        cascade.iscorrelated = true
     end
 
     return cascade
@@ -176,7 +177,6 @@ function Base.permute!(cascade::Cascade; kwargs...)
         cascade.steps = cascade.steps[cascade.permutation]
         cascade.ispermuted = true
     end
-
     return cascade
 end
 
@@ -224,18 +224,24 @@ All diagonal elements of ``A`` are set to zero prior to performing any calculati
 selecting a row using ``S_i`` zeros all other elements on the diagonal. Explicitly adding
 ``I`` ensures that applying correlations to the `i`th step will not impact any other steps.
 """
-function select_row(A, ii)
+function select_row(A, ii::Int)
     N = size(A,1)
     # Ensure that, if A has ones on the diagonal, these are made zero.
     # When one row is "picked", this will zero the other elements on the diagonal,
     # so we will add these back at each step in the iteration.
-    LinearAlgebra.tr(A)==N && (A -= I)
+    # LinearAlgebra.tr(A)==N && (A -= I)
+    A -= I
 
     return pick(ii,N) * A + I
+    # return isempty(order) ? A : A[order,:]
+end
+
+
+function select_row(A)
+    return [select_row(A,ii) for ii in 1:size(A,1)]
+    # return isempty(order) ? lst : lst[order]
 end
 
 function select_row(lst::Vector{Matrix{Any}}, idx::AbstractVector)
     return convert(Matrix, getindex.(lst, idx, :))
 end
-
-select_row(A) = [select_row(A,ii) for ii in 1:size(A,1)]
