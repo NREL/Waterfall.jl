@@ -57,13 +57,12 @@ end
 
 
 """
-"""
-Base.convert(::Type{Matrix}, lst::AbstractVector; dims=2) = _convert(Matrix, lst, dims)
+    Base.convert(::Type{SparseArrays.SparseMatrixCSC}, order::AbstractVector{Int})
+This method converts an `Nx1` list of indices into a sparce matrix ``S`` that,
+if multiplied by a matrix `A`:
+- ``S \\cdot A`` will reorder the **rows** of ``A`` to `order`
+- ``A \\cdot S`` will reorder the **columns** of ``A`` to `order`
 
-_convert(::Type{Matrix}, lst, dims) = LinearAlgebra.Matrix(cat(lst...; dims=dims)')
-
-
-"""
 ```jldoctest
 julia> order = [1,3,2];
 
@@ -82,20 +81,21 @@ julia> Matrix(sparse_matrix)
 julia> sparse_matrix * collect(1:length(order)) == order
    true
 ```
+
+
+    convert(::Type{DataFrames.DataFrame}, cascade::Cascade)
+This method converts `cascade` into a "sample-by-step"-dimension DataFrame with the step
+labels as property property names.
+
+
+    Base.convert(::Type{Matrix}, lst::AbstractVector; dims=2)
 """
 function Base.convert(::Type{SparseArrays.SparseMatrixCSC}, order::T) where T <: AbstractVector{Int}
     N = length(order)
-    mat = SparseArrays.sparse(1:N, order, fill(1,N))
-    # check: mat * collect(1:N) == v
-    return mat
+    return SparseArrays.sparse(1:N, order, fill(1,N))
 end
 
 
-"""
-    convert(::Type{DataFrames.DataFrame}, x::Cascade)
-This function converts `x` into a "sample-by-step"-dimension DataFrame with the step labels
-as property property names.
-"""
 function Base.convert(::Type{DataFrames.DataFrame}, x::Cascade)
     data = collect_data(x)
     sublabel = getindex.(match.(r"(\S*)", get_sublabel.(data)),1)
@@ -107,6 +107,11 @@ function Base.convert(::Type{DataFrames.DataFrame}, x::Cascade)
     return DataFrames.DataFrame(value', label; makeunique=true)
 end
 
+
+# !!!! check???
+Base.convert(::Type{Matrix}, lst::AbstractVector; dims=2) = _convert(Matrix, lst, dims)
+
+_convert(::Type{Matrix}, lst, dims) = LinearAlgebra.Matrix(cat(lst...; dims=dims)')
 
 # """
 # This function returns a filename

@@ -52,23 +52,93 @@ _break_slash(str) = reduce(replace, [Pair(r"/", "/ ")], init=str)
 
 
 
-
+"""
+    set_hue!(x, h)
+"""
 function set_hue!(x::Coloring, h)
-    x.hue = scale_saturation(_set_hue(h); saturation=x.saturation)
+    # x.hue = scale_saturation(_define_hue(h); saturation=x.saturation)
+    # x.hue = _define_hue(h; saturation=x.saturation)
+    # x.hue = _define_hue(h)
+    return x
+end
+
+function set_hue!(x::Blending, h)
+    set_hue!(x.color1, h)
+    set_hue!(x.color2, h)
     return x
 end
 
 set_hue!(x::T, h) where T<:Geometry = begin set_hue!(x.attribute, h); return x end
-
 set_hue!(x::T, h) where T<:Shape = begin set_hue!(x.color, h); return x end
 set_hue!(x::Vector{T}, h) where T<:Box = begin set_hue!.(x, h); return x end
-# set_hue!(x::Vector{T}, h) where T<:Poly = begin set_hue!.(x, h); return x end
 
-# set_hue!(x::T, h) where T<:AbstractArray = begin set_hue!.(x, h); return x end
 
-set_alpha!(x, a) = begin x.alpha = _set_alpha(a); return x end
+"""
+"""
+function _define_hue(x; hue=missing, colorcycleindex::Union{Missing,Integer}=missing, kwargs...)
+    # Select hue.
+    hue = if !ismissing(hue);           hue
+    elseif !ismissing(colorcycleindex); _define_hue(colorcycleindex)
+    else;                               x
+    end
 
+    # Adjust saturation.
+    saturation = _define_saturation( ; kwargs...)
+    return scale_saturation(parse(Luxor.Colorant, hue); kwargs...)
+end
+
+_define_hue(idx::Integer; kwargs...) = _define_hue(COLORCYCLE[idx]; kwargs...)
+_define_hue(sgn::Float64; kwargs...) = _define_hue(sgn>0 ? HEX_LOSS : HEX_GAIN; kwargs...)
+
+function _define_hue(sgn::Vector{Float64}; kwargs...)
+    rgb = _define_hue.(sgn; kwargs...)
+    rgb_average = [Statistics.mean(getproperty.(rgb, f)) for f in fieldnames(Luxor.RGB)]
+    return scale_saturation(Luxor.Colors.RGB(rgb_average...); kwargs...)
+end
+
+
+"""
+    set_alpha!(x, a)
+"""
+set_alpha!(x, a) = begin x.alpha = _define_alpha(a); return x end
+
+
+"""
+    _define_alpha()
+"""
+function _define_alpha(N::Integer; factor::Real=0.25, fun::Function=log, kwargs...)
+    return min(factor/fun(N) ,1.0)
+end
+
+_define_alpha(x; kwargs...) = x
+
+
+"""
+    set_saturation!(x, s)
+"""
 set_saturation!(x, s) = begin x.saturation=s; return x end
+
+
+"""
+    _define_saturation( ; kwargs...)
+"""
+_define_saturation( ; saturation=missing, kwargs...) = ismissing(saturation) ? 1.0 : saturation
+
+
+"""
+"""
+function scale_saturation(rgb::Luxor.RGB; kwargs...)
+    hsv = scale_saturation(Luxor.convert(Luxor.Colors.HSV, rgb); kwargs...)
+    return Luxor.convert(Luxor.Colors.RGB, hsv)
+end
+
+function scale_saturation(hsv::Luxor.HSV; saturation=0.0, kwargs...)
+    if saturation!==0.0
+        saturation = saturation<0 ? hsv.s * (1+saturation) : (1-hsv.s)*saturation + hsv.s
+        hsv = Luxor.Colors.HSV(hsv.h, saturation, hsv.v)
+    end
+    return hsv
+end
 
 # """
 # """
@@ -175,11 +245,7 @@ hsv = Luxor.convert(Luxor.Colors.HSV, rgb)
 
 
 
-function set_hue!(x::Blending, h)
-    set_hue!(x.color1, h)
-    set_hue!(x.color2, h)
-    return x
-end
+
 
 
 

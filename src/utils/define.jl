@@ -167,120 +167,8 @@ function _define_from(::Type{Vector{Blending}}, sign, position; kwargs...)
 end
 
 
-
-
-
-
-
-
-
-
-
-
-
 """
-"""
-function _set_geometry(cascade::Cascade{Data}, Geometry, Shape, Color;
-    colorcycle::Bool=false,
-    kwargs...,
-)
-    position = _calculate_position(cascade, Geometry; kwargs...)
-    sgn = sign(cascade)
-
-    attr = _define_from(Shape, Color, position, sgn; style=:fill, kwargs...)
-    label = get_label.(collect_data(cascade))
-
-    data = Geometry.(label, attr, length(cascade), missing)
-
-    return Cascade(
-        start = set_hue!(first(data), "black"),
-        stop = set_hue!(last(data), "black"),
-        steps = colorcycle ? set_hue!.(data[2:end-1], get_permutation(cascade)) : data[2:end-1],
-        # start = first(data),
-        # stop = last(data),
-        # steps = data[2:end-1],
-        permutation = cascade.permutation,
-        correlation = cascade.correlation,
-        ispermuted = cascade.ispermuted,
-        iscorrelated = cascade.iscorrelated,
-    )
-end
-
-
-function _set_geometry(plot::Plot{Data}, Geometry::DataType, args...; kwargs...)
-    cascade = _set_geometry(plot.cascade, Geometry, args...; kwargs...)
-    return Plot(cascade, plot.axes)
-end
-
-
-"""
-"""
-function _define_hue(x; hue=missing, colorcycleindex::Union{Missing,Integer}=missing, kwargs...)
-    # Select hue.
-    hue = if !ismissing(hue);           hue
-    elseif !ismissing(colorcycleindex); _define_hue(colorcycleindex)
-    else;                               x
-    end
-
-    # Adjust saturation.
-    saturation = _define_saturation( ; kwargs...)
-    return scale_saturation(parse(Luxor.Colorant, hue); kwargs...)
-end
-
-_define_hue(idx::Integer; kwargs...) = _define_hue(COLORCYCLE[idx]; kwargs...)
-_define_hue(sgn::Float64; kwargs...) = _define_hue(sgn>0 ? HEX_LOSS : HEX_GAIN; kwargs...)
-
-function _define_hue(sgn::Vector{Float64}; kwargs...)
-    rgb = _define_hue.(sgn; kwargs...)
-    rgb_average = [Statistics.mean(getproperty.(rgb, f)) for f in fieldnames(Luxor.RGB)]
-    return scale_saturation(Luxor.Colors.RGB(rgb_average...); kwargs...)
-end
-
-
-
-
-function scale_saturation(rgb::Luxor.RGB; kwargs...)
-    hsv = scale_saturation(Luxor.convert(Luxor.Colors.HSV, rgb); kwargs...)
-    return Luxor.convert(Luxor.Colors.RGB, hsv)
-end
-
-function scale_saturation(hsv::Luxor.HSV; saturation=0.0, kwargs...)
-    if saturation!==0.0
-        saturation = saturation<0 ? hsv.s * (1+saturation) : (1-hsv.s)*saturation + hsv.s
-        hsv = Luxor.Colors.HSV(hsv.h, saturation, hsv.v)
-    end
-    return hsv
-end
-
-
-
-"""
-"""
-function _define_alpha(N::Integer;
-    factor::Real=0.25,
-    fun::Function=log,
-    kwargs...,
-)
-    return min(factor/fun(N) ,1.0)
-end
-
-_define_alpha(x; kwargs...) = x
-
-
-"""
-"""
-_define_saturation( ; saturation=missing, kwargs...) = ismissing(saturation) ? 1.0 : saturation
-
-
-
-# _define_from()
-
-
-
-
-
-"""
-    set_geometry()
+    set_geometry(cascade, ::Type{T}; kwargs...) where T<:Geometry
 Given a cascade and geometry, return a cascade with an updated type.
 """
 function set_geometry(cascade, ::Type{Violin}; kwargs...)
@@ -316,4 +204,41 @@ function set_geometry(cascade, ::Type{Parallel}; slope::Bool=true, kwargs...)
         space = false,
         kwargs...,
     )
+end
+
+
+"""
+    _set_geometry(cascade::Cascade{Data}, Geometry, Shape, Color; kwargs...)
+    _set_geometry(plot::Plot{Data}, Geometry, Shape, Color; kwargs...)
+"""
+function _set_geometry(cascade::Cascade{Data}, Geometry, Shape, Color;
+    colorcycle::Bool=false,
+    kwargs...,
+)
+    position = _calculate_position(cascade, Geometry; kwargs...)
+    sgn = sign(cascade)
+
+    attr = _define_from(Shape, Color, position, sgn; style=:fill, kwargs...)
+    label = get_label.(collect_data(cascade))
+
+    data = Geometry.(label, attr, length(cascade), missing)
+
+    return Cascade(
+        start = set_hue!(first(data), "black"),
+        stop = set_hue!(last(data), "black"),
+        steps = colorcycle ? set_hue!.(data[2:end-1], get_permutation(cascade)) : data[2:end-1],
+        # start = first(data),
+        # stop = last(data),
+        # steps = data[2:end-1],
+        permutation = cascade.permutation,
+        correlation = cascade.correlation,
+        ispermuted = cascade.ispermuted,
+        iscorrelated = cascade.iscorrelated,
+    )
+end
+
+
+function _set_geometry(plot::Plot{Data}, Geometry::DataType, args...; kwargs...)
+    cascade = _set_geometry(plot.cascade, Geometry, args...; kwargs...)
+    return Plot(cascade, plot.axes)
 end

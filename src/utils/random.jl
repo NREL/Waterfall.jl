@@ -244,7 +244,7 @@ end
 
 random_index(x; kwargs...) = _shuffle(list_index(x); kwargs...)
 
-random_index(eye::LinearAlgebra.Diagonal)
+# random_index(eye::LinearAlgebra.Diagonal)
 random_index(L::LinearAlgebra.UnitLowerTriangular; kwargs...) = _random_index(L, <; kwargs...)
 random_index(U::LinearAlgebra.UnitUpperTriangular; kwargs...) = _random_index(U, >; kwargs...)
 random_index(L::LinearAlgebra.LowerTriangular; kwargs...) = _random_index(L, <=; kwargs...)

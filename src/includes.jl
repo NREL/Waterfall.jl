@@ -34,6 +34,8 @@ include(joinpath(WATERFALL_DIR,"src","Figure","Shape","Line.jl"))
 include(joinpath(WATERFALL_DIR,"src","Figure","Shape","Point.jl"))
 include(joinpath(WATERFALL_DIR,"src","Figure","Shape","Poly.jl"))
 
+include(joinpath(WATERFALL_DIR,"src","Figure","Label.jl"))
+
 include(joinpath(WATERFALL_DIR,"src","Cascade","Data.jl"))
 include(joinpath(WATERFALL_DIR,"src","Cascade","Cascade.jl"))
 include(joinpath(WATERFALL_DIR,"src","Cascade","Geometry","Horizontal.jl"))
@@ -47,7 +49,6 @@ include(joinpath(WATERFALL_DIR,"src","Figure","Shape","Box.jl"))
 include(joinpath(WATERFALL_DIR,"src","Figure","Shape","Line.jl"))
 include(joinpath(WATERFALL_DIR,"src","Figure","Shape","Point.jl"))
 include(joinpath(WATERFALL_DIR,"src","Figure","Shape","Poly.jl"))
-include(joinpath(WATERFALL_DIR,"src","Figure","Label.jl"))
 
 include(joinpath(WATERFALL_DIR,"src","Figure","XAxis.jl"))
 include(joinpath(WATERFALL_DIR,"src","Figure","YAxis.jl"))
