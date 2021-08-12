@@ -106,8 +106,8 @@ y-axis ticks.
 """
 function vlim(mat::Matrix; vmin=missing, vmax=missing, kwargs...)
     if ismissing(vmin)*ismissing(vmax)
-        vmax = 22.5
-        vmin = 14.0
+        vmax = VMAX
+        vmin = VMIN
     end
     
     vscale = HEIGHT/(vmax-vmin)

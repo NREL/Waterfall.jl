@@ -55,16 +55,17 @@ _break_slash(str) = reduce(replace, [Pair(r"/", "/ ")], init=str)
 """
     set_hue!(x, h)
 """
-function set_hue!(x::Coloring, h)
-    # x.hue = scale_saturation(_define_hue(h); saturation=x.saturation)
-    # x.hue = _define_hue(h; saturation=x.saturation)
-    # x.hue = _define_hue(h)
+function set_hue!(x::Coloring, h; kwargs...)
+    x.hue = define_from(Luxor.RGB, h; kwargs...)
     return x
 end
 
 function set_hue!(x::Blending, h)
-    set_hue!(x.color1, h)
-    set_hue!(x.color2, h)
+    lightness = 0.5
+    x.hue = (
+        define_from(Luxor.RGB, h),
+        define_from(Luxor.RGB, h; s=-lightness, v=lightness),
+    )
     return x
 end
 
@@ -75,36 +76,36 @@ set_hue!(x::Vector{T}, h) where T<:Box = begin set_hue!.(x, h); return x end
 
 """
 """
-function _define_hue(x; hue=missing, colorcycleindex::Union{Missing,Integer}=missing, kwargs...)
-    # Select hue.
-    hue = if !ismissing(hue);           hue
-    elseif !ismissing(colorcycleindex); _define_hue(colorcycleindex)
-    else;                               x
-    end
-
-    # Adjust saturation.
-    saturation = _define_saturation( ; kwargs...)
-    return scale_saturation(parse(Luxor.Colorant, hue); kwargs...)
+function define_from(::Type{T}, x; kwargs...) where T <: Luxor.Colorant
+    return scale_hsv(parse(T, _define_colorant(x)); kwargs...)
 end
 
-_define_hue(idx::Integer; kwargs...) = _define_hue(COLORCYCLE[idx]; kwargs...)
-_define_hue(sgn::Float64; kwargs...) = _define_hue(sgn>0 ? HEX_LOSS : HEX_GAIN; kwargs...)
 
-function _define_hue(sgn::Vector{Float64}; kwargs...)
-    rgb = _define_hue.(sgn; kwargs...)
+"""
+    _define_colorant(idx::Int)
+This method returns the color defined at index `idx` of `COLORCYCLE`
+
+    _define_colorant(sgn::Float64)
+This method returns
+- **Red**, given a negative value or
+- **Blue**, given a positive value.
+
+    _define_colorant(lst::AbstractVector)
+This method returns an average of the colors defined in the `lst`
+"""
+function _define_colorant(lst::AbstractVector)
+    rgb = _define_colorant.(lst)
     rgb_average = [Statistics.mean(getproperty.(rgb, f)) for f in fieldnames(Luxor.RGB)]
-    return scale_saturation(Luxor.Colors.RGB(rgb_average...); kwargs...)
+    return Luxor.Colors.RGB(rgb_average...)
 end
 
-
-"""
-    set_alpha!(x, a)
-"""
-set_alpha!(x, a) = begin x.alpha = _define_alpha(a); return x end
+_define_colorant(idx::Int) = COLORCYCLE[idx]
+_define_colorant(sgn::Float64) = sign(sgn)>0 ? HEX_GAIN : HEX_LOSS
+_define_colorant(x) = parse(Luxor.Colorant, x)
 
 
 """
-    _define_alpha()
+    _define_alpha(x::Int; kwargs...)
 """
 function _define_alpha(N::Integer; factor::Real=0.25, fun::Function=log, kwargs...)
     return min(factor/fun(N) ,1.0)
@@ -114,52 +115,74 @@ _define_alpha(x; kwargs...) = x
 
 
 """
-    set_saturation!(x, s)
+This method scales a value ``v \\in [0,1]`` by a factor ``f \\in [-1,1]``,
+``f<0`` decreases ``v`` and ``f>0`` increases ``v``:
+```math
+v' =
+\\begin{cases}
+\\left(v-v_{min}\\right) f + v & f<0
+\\\\
+\\left(v_{max}-v\\right) f + v
+\\end{cases}
+```
 """
-set_saturation!(x, s) = begin x.saturation=s; return x end
+_scale_by(v, f; on, kwargs...) = (on[sign(f)<0 ? 1 : 2] - v) * abs(f) + v
 
 
 """
-    _define_saturation( ; kwargs...)
+    scale_hsv(color; s=0)
+This function decreases or increases `color` saturation by a factor of ``s \\in [-1,1]``.
 """
-_define_saturation( ; saturation=missing, kwargs...) = ismissing(saturation) ? 1.0 : saturation
-
-
-"""
-"""
-function scale_saturation(rgb::Luxor.RGB; kwargs...)
-    hsv = scale_saturation(Luxor.convert(Luxor.Colors.HSV, rgb); kwargs...)
-    return Luxor.convert(Luxor.Colors.RGB, hsv)
+function scale_hsv(hsv::Luxor.HSV; h=0, s=0, v=0, kwargs...)
+    h = _scale_by(hsv.h, h; on=[0,255])
+    s = _scale_by(hsv.s, s; on=[0,1])
+    v = _scale_by(hsv.v, v; on=[0,1])
+    return Luxor.Colors.HSV(h, s, v)
 end
 
-function scale_saturation(hsv::Luxor.HSV; saturation=0.0, kwargs...)
-    if saturation!==0.0
-        saturation = saturation<0 ? hsv.s * (1+saturation) : (1-hsv.s)*saturation + hsv.s
-        hsv = Luxor.Colors.HSV(hsv.h, saturation, hsv.v)
-    end
-    return hsv
+function scale_hsv(rgb::Luxor.RGB; kwargs...)
+    hsv = scale_hsv(convert(Luxor.HSV, rgb); kwargs...)
+    rgb = convert(Luxor.RGB, hsv)
+    return rgb
 end
 
-# """
-# """
-# function set_data(Geometry::DataType, cascade::Cascade, args...; kwargs...)
-#     points = Geometry==Violin ? scale_kde(cascade) : scale_point(cascade, args...; kwargs...)
-    
-#     start = define_from(Geometry, first(points); hue="black", kwargs...)
-#     stop = define_from(Geometry, last(points); hue="black", kwargs...)
-#     steps = define_from(Geometry, points[2:end-1]; kwargs...)
-#     attr = [[start]; steps; [stop]]
-    
-#     label = get_label.(collect_data(cascade))
-#     data = Geometry.(label, attr)
 
-#     return Cascade(first(data), last(data), data[2:end-1], cascade.ncor, cascade.permutation, cascade.correlation)
-# end
+
 
 
 """
-    define_from()
 """
+function _define_annotation(cascade::Cascade{Data}, Geometry::DataType;
+    textsize=0.9,
+    kwargs...,
+)
+    # Define label text.
+    fun = Statistics.mean
+    v = get_value(collect_data(cascade))
+    vlab = calculate(v, fun; dims=2)
+    lab = [@Printf.sprintf("%+2.2f",x) for x in vlab]
+    N = size(v,1)
+
+    # Remove sign from start, stop:
+    [lab[ii] = string(lab[ii][2:end-1]) for ii in [1,N]]
+    lab = vectorize(lab)
+
+    # Define position
+    wid = width(N)
+
+    # Define x position.
+    xmid = cumulative_x( ; steps=N)
+
+    # Define y position.
+    position = _calculate_position(cascade, Geometry; kwargs...)
+    ymin = minimum.(position; dims=2) .- LEADING*textsize*length.(lab) .- 0.5*SEP
+
+    return Label.(lab, textsize, wid, Luxor.Point.(xmid,ymin), :center)
+end
+
+
+
+
 
 
 
@@ -196,30 +219,6 @@ end
 
 
 
-
-
-# """
-#     set_color()
-# """
-# function _set_color(::Type{Horizontal}, position::T; hue=missing, kwargs...) where T <: Tuple
-#     hue = _set_hue(ismissing(hue) ? position : hue; kwargs...)
-#     return _set_coloring( ; hue=hue, kwargs...)
-# end
-
-# function _set_color(::Type{Vertical}, position::T; hue=missing, kwargs...) where T <: Tuple
-#     hue = _set_hue(ismissing(hue) ? position : hue)
-#     return _set_coloring( ; hue=hue, kwargs...)
-# end
-
-# function _set_color(::Type{Parallel}, position::T; hue=missing, kwargs...) where T <: Tuple
-#     hue = _set_hue(ismissing(hue) ? position : hue)
-#     return _set_coloring( ; hue=hue, kwargs...)
-# end
-
-
-# function _set_color(::Type{T}, lst::AbstractArray; kwargs...) where T <: Geometry
-#     return _set_color.(T, lst; kwargs...)
-# end
 
 
 # """

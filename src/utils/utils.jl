@@ -1,5 +1,8 @@
 import Base
 
+init(T::UnionAll, N) = T(fill(0.0, N, N))
+init(T::LinearAlgebra.UniformScaling, N) = T(N)*1.0
+
 vectorize(x::Matrix) = collect.(collect(eachrow(x)))
 vectorize(mat...) = vectorize(Tuple.(hcat.(mat...)))
 
@@ -33,12 +36,14 @@ Base.copy(x::Cascade) = Cascade(copy.(_values(x))...)
 Base.copy(x::Plot) = Plot(copy.(_values(x))...)
 _copy(x::T) where T <: Any = T(values(x)...)
 
-
 Base.maximum(lst::Vector{T}; dims) where T<:Luxor.Point = maximum(getindex.(lst,dims))
 Base.maximum(lst::Vector{T}; kwargs...) where T<:Tuple = maximum(vcat(collect.(lst)...); kwargs...)
 
 Base.minimum(lst::Vector{T}; dims) where T<:Luxor.Point = minimum(getindex.(lst,dims))
 Base.minimum(lst::Vector{T}; kwargs...) where T<:Tuple = minimum(vcat(collect.(lst)...); kwargs...)
+
+
+mid(lst; kwargs...) = Statistics.mean([minimum(lst; kwargs...), maximum(lst; kwargs...)])
 
 
 "This function returns all permutations of the elements in the input vectors or vector of vectors"
@@ -112,6 +117,18 @@ end
 Base.convert(::Type{Matrix}, lst::AbstractVector; dims=2) = _convert(Matrix, lst, dims)
 
 _convert(::Type{Matrix}, lst, dims) = LinearAlgebra.Matrix(cat(lst...; dims=dims)')
+
+
+"""
+    swapat!(lst::AbstractArray, a, b)
+This function swaps the values of `lst` at elements `a` and `b`.
+"""
+function swapat!(lst::AbstractArray, a::Int, b::Int)
+    tmp = lst[a]
+    lst[a] = lst[b]
+    lst[b] = tmp
+    return lst
+end
 
 # """
 # This function returns a filename

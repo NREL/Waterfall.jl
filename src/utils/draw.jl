@@ -7,7 +7,7 @@ function set(color::Coloring)
 end
 
 function set(color::Blending)
-    Luxor.setblend(Luxor.blend(color.point1, color.point2, color.color1.hue, color.color2.hue))
+    Luxor.setblend(Luxor.blend(color.direction..., color.hue...))
     return nothing
 end
 
@@ -57,10 +57,14 @@ function draw(ax::T) where T <: Axis
 end
 
 
-draw(x::Cascade{T}) where T<:Geometry = draw(collect_data(x))
-draw(x::T) where T<:Geometry = draw(getproperty(x, :attribute))
 draw(lst::AbstractArray) = [draw(x) for x in lst]
+draw(x::Cascade{T}) where T<:Geometry = draw(collect_data(x))
 
+function draw(x::T) where T<:Geometry
+    draw(x.attribute)
+    draw(x.annotation)
+    return nothing
+end
 
 """
 """
@@ -75,7 +79,7 @@ function _draw_title(plot::T; interactivity, fuzziness, kwargs...) where T <: Pl
     ][idx]
 
     font = Luxor.get_fontsize()
-    Luxor.textbox(str, Luxor.Point(WIDTH/2, 0); leading=1.25*font, alignment=:center)
+    Luxor.textbox(str, Luxor.Point(WIDTH/2, -TOP_BORDER); leading=1.25*font, alignment=:center)
     return nothing
 end
 
@@ -139,12 +143,12 @@ function _draw_label(label::Float64, args...; kwargs...)
 end
 
 
-function _draw_label(ax::YAxis; angle=-pi/2, x=-(LEFT_BORDER-SEP))
+function _draw_label(ax::YAxis; angle=-pi/2, x=-(LEFT_BORDER-0.5*SEP))
     _draw_label(
         uppercase(ax.label),
         Luxor.midpoint(Luxor.Point(x,ax.ticks[2]), Luxor.Point(x,ax.ticks[end]));
         angle=angle,
-        valign=:middle,
+        valign=:top,
         halign=:center,
         # kwargs...,
     )
@@ -172,14 +176,15 @@ function _draw_ticklabels(ax::XAxis; y=HEIGHT+SEP)
 
     # _draw_label.(ax.ticksublabels, Luxor.Point.(x, y+SEP); valign=:top, halign=:right, angle=-pi/6)
     
-    font_tmp = Luxor.get_fontsize()
-    font = 8
+    tmp = Luxor.get_fontsize()
+    font = 0.8*tmp
+
     N = length(ax.ticksublabels)
     x = cumulative_x( ; steps=N)
     Luxor.fontsize(font)
 
     for ii in 1:N
-        str = _define_label(ax.ticksublabels[ii], width(N; space=2); font=8)
+        str = _define_label(ax.ticksublabels[ii], width(N; space=2); font=font)
         # str = Luxor.textlines(uppercase(ax.ticksublabels[ii]), width(N))
         # str = str[.!isempty.(str)]
 
@@ -190,9 +195,25 @@ function _draw_ticklabels(ax::XAxis; y=HEIGHT+SEP)
         #     alignment=:left)
     end
 
-    Luxor.fontsize(font_tmp)
+    Luxor.fontsize(tmp)
     return nothing
 end
+
+
+function draw(label::Label)
+    tmp = Luxor.get_fontsize()
+    Luxor.fontsize(tmp*label.textsize)
+
+    Luxor.setcolor(Luxor.sethue("black")...)
+    Luxor.textbox(label.text, label.position; leading=1.25*label.textsize, alignment=label.alignment)
+    Luxor.fontsize(tmp)
+    return nothing
+end
+
+draw(x::Missing) = nothing
+
+
+
 
 function _draw_ticklabels(ax::YAxis; x=0-SEP)
     lab = ax.ticklabels

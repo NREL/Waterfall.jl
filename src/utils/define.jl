@@ -19,22 +19,27 @@ end
 """
 function define_from(::Type{Cascade{Data}}, df::DataFrames.DataFrame;
     ncor=DEFAULT_NCOR,
-    permutation=[],
-    permute=false,
-    correlate=false,
+    maxdim=length(COLORCYCLE),
+    permutation=1:length(COLORCYCLE),
+    correlate=true,
+    permute=true,
     kwargs...,
 )
-    data = define_from(Vector{Data}, df; kwargs...)
-    nstep = length(data)-2
+    # maxdim = min(maxdim, size(df,1)-2)
+    maxdim = size(df,1)
+    permutation = collect(permutation)
+
+    idx = [1;sort(permutation).+1;maxdim]
+    data = define_from(Vector{Data}, df[idx,:]; kwargs...)
     
     cascade = Cascade(
         start = first(data),
         stop = last(data),
         steps = data[2:end-1],
-        permutation = isempty(permutation) ? collect(1:nstep) : permutation,
-        correlation = random_rotation(nstep, ncor; kwargs...),
-        ispermuted = false,
+        correlation = random_rotation(length(permutation), ncor; maxdim=maxdim, permutation=permutation, kwargs...),
+        permutation = permutation,
         iscorrelated = false,
+        ispermuted = false,
     )
 
     correlate && correlate!(cascade)
@@ -109,10 +114,6 @@ function define_from(::Type{YAxis}, cascade::Cascade{Data}; ylabel, kwargs...)
     return YAxis( ; label=ylabel, ticklabels=yticklabels, ticks=yticks, lim=(vmin,vmax))
 end
 
-# function define_from(::Type{T}, cascade::Cascade{Data}; kwargs...) where T<:Axis
-#     define_from(T, collect_data(cascade), cascade.permutation; kwargs...)
-# end
-
 
 """
     _define_from(Shape, Color, position, sgn; kwargs...)
@@ -140,10 +141,9 @@ end
 
 
 function _define_from(::Type{Coloring}, sign, args...; alpha=0.8, kwargs...)
-    hue = _define_hue(sign; kwargs...)
-    saturation = _define_saturation( ; kwargs...)
+    hue = define_from(Luxor.RGB, sign; kwargs...)
     alpha = _define_alpha(alpha; kwargs...)
-    return Coloring(hue, alpha, saturation)
+    return Coloring(hue, alpha)
 end
 
 function _define_from(::Type{Vector{Coloring}}, args...; kwargs...)
@@ -151,19 +151,25 @@ function _define_from(::Type{Vector{Coloring}}, args...; kwargs...)
 end
 
 
-function _define_from(::Type{Vector{Blending}}, sign, position; kwargs...)
-    c1 = _define_from.(Coloring, sign; alpha=1.0, saturation=0.0)
-    c2 = _define_from.(Coloring, sign; alpha=1.0, saturation=-0.5)
-    # c1 = _define_from.(Coloring, sign; alpha=1.0, saturation=0.)
-    # c2 = _define_from.(Coloring, sign; alpha=1.0, saturation=0.)
+function _define_from(::Type{Vector{Blending}}, sgn, position; kwargs...)
+    lightness = 0.5
+    h1 = define_from.(Luxor.RGB, sgn)
+    h2 = define_from.(Luxor.RGB, sgn; s=-lightness, v=lightness)
+    hue = tuple.(h1, h2)
 
-    xmid = getindex.([Luxor.midpoint(x...) for x in position],1)
+    # Calculate direction.
+    xmid = mid(position; dims=1)
 
-    # SEPARATE BASED ON SIGN.
-    y1 = minimum(getindex.(getindex.(position,1),2))
-    y2 = maximum(getindex.(getindex.(position,2),2))
+    ii = Dict(k => sgn.==k for k in [-1,1])
+    ymax = Dict(k => maximum(position[v]; dims=2) for (k,v) in ii)
+    ymin = Dict(k => minimum(position[v]; dims=2) for (k,v) in ii)
 
-    return Blending.(Luxor.Point.(xmid, y1), Luxor.Point.(xmid, y2), c1, c2)
+    begin y1 = fill(0.0, size(sgn)); y2 = fill(0.0, size(sgn)) end
+    begin y1[ii[-1]] .= ymin[-1]; y2[ii[-1]] .= ymax[-1] end
+    begin y1[ii[+1]] .= ymax[+1]; y2[ii[+1]] .= ymin[+1] end
+
+    direction = tuple.(Luxor.Point.(xmid,y1), Luxor.Point.(xmid,y2))
+    return Blending.(direction, hue)
 end
 
 
@@ -221,12 +227,14 @@ function _set_geometry(cascade::Cascade{Data}, Geometry, Shape, Color;
     attr = _define_from(Shape, Color, position, sgn; style=:fill, kwargs...)
     label = get_label.(collect_data(cascade))
 
-    data = Geometry.(label, attr, length(cascade), missing)
+    annot = _define_annotation(cascade, geometry; kwargs...)
+
+    data = Geometry.(label, attr, length(cascade), annot)
 
     return Cascade(
         start = set_hue!(first(data), "black"),
         stop = set_hue!(last(data), "black"),
-        steps = colorcycle ? set_hue!.(data[2:end-1], get_permutation(cascade)) : data[2:end-1],
+        steps = colorcycle ? set_hue!.(data[2:end-1], cascade.permutation) : data[2:end-1],
         # start = first(data),
         # stop = last(data),
         # steps = data[2:end-1],

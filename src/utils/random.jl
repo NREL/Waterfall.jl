@@ -154,10 +154,16 @@ julia> random_rotation(4, 3)
  0.0        0.0       0.0  1.0
 ```
 """
-function random_rotation(dim::Integer, nrot; seed=1234, interactivity=(0.0,0.1), kwargs...)
-    # Select indices overwhich to apply the rotation.
-    rot = lower_triangular(dim, 0.)
-    idx = random_index(rot, nrot)
+function random_rotation(dim::Integer, nrot;
+    maxdim=100,
+    seed=1234,
+    interactivity=(0.0,0.1),
+    permutation=[],
+    type=I,
+    kwargs...,
+)
+    rot = init(type, maxdim)
+    idx = random_index(rot, true)
     N = length(idx)
 
     # Generate random values.
@@ -167,7 +173,25 @@ function random_rotation(dim::Integer, nrot; seed=1234, interactivity=(0.0,0.1),
         random_uniform(-reverse(collect(interactivity))..., Integer(floor(N/2)));
     ]
 
-    return _fill!(rot, idx.=>val; kwargs...)
+    rot = _fill!(rot, idx.=>val; kwargs...)
+    
+    # Now, select elements of the rotation matrix that are relevant to the given permutation.
+    perm = isempty(permutation) ? collect(1:dim) : sort(permutation)
+    return rot[perm,perm]
+
+    # # Select indices overwhich to apply the rotation.
+    # rot = lower_triangular(dim, 0.)
+    # idx = random_index(rot, nrot)
+    # N = length(idx)
+
+    # # Generate random values.
+    # Random.seed!(seed)
+    # val = [
+    #     random_uniform( interactivity..., Integer(ceil(N/2)));
+    #     random_uniform(-reverse(collect(interactivity))..., Integer(floor(N/2)));
+    # ]
+
+    # return _fill!(rot, idx.=>val; kwargs...)
 end
 
 
@@ -192,6 +216,8 @@ function _fill!(mat, lst; kwargs...)
     return mat
 end
 
+
+_fill!(mat::LinearAlgebra.Diagonal, args...; kwargs...) = _fill!(Matrix{}(mat), args...; kwargs...)
 
 """
     random_permutation(rng::UnitRange, nperm::Int; kwargs...)
@@ -244,7 +270,7 @@ end
 
 random_index(x; kwargs...) = _shuffle(list_index(x); kwargs...)
 
-# random_index(eye::LinearAlgebra.Diagonal)
+random_index(D::LinearAlgebra.Diagonal; kwargs...) = _random_index(D, !=; kwargs...)
 random_index(L::LinearAlgebra.UnitLowerTriangular; kwargs...) = _random_index(L, <; kwargs...)
 random_index(U::LinearAlgebra.UnitUpperTriangular; kwargs...) = _random_index(U, >; kwargs...)
 random_index(L::LinearAlgebra.LowerTriangular; kwargs...) = _random_index(L, <=; kwargs...)
@@ -298,19 +324,3 @@ function make_seed(x::Float64, len=4)
     return convert(Integer, round(parse(Float64,
         Printf.@sprintf("%.10e", x)[1:len+1]) * 10^(len-1)))
 end
-
-
-"""
-```jldoctest
-julia> pick(3, 4)
-4×4 SparseArrays.SparseMatrixCSC{Int64,Int64} with 1 stored entry:
-  [3, 3]  =  1
-
-julia> pick(1:2, 4)
-4×4 SparseArrays.SparseMatrixCSC{Int64,Int64} with 2 stored entries:
-  [1, 1]  =  1
-  [2, 2]  =  1
-```
-"""
-pick(idx, dim) = SparseArrays.sparse(fill([idx;],2)..., 1, fill(dim,2)...)
-pick(dim) = [pick(ii,dim) for ii in 1:dim]

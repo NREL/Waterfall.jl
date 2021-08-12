@@ -55,29 +55,32 @@ end
 
 """
 """
-collect_permutation(lst::AbstractArray) = [1; lst.+1; length(lst)+2]
+collect_permutation(lst::AbstractArray) = [1; get_permutation(lst).+1; length(lst)+2]
 
 function collect_permutation(x::T; kwargs...) where T<:Cascade
-    return collect_permutation(get_permutation(x; kwargs...))
+    return collect_permutation(get_permutation(x))
 end
 
 get_start(x::Cascade) = x.start
 get_steps(x::Cascade) = x.steps
 get_stop(x::Cascade) = x.stop
 
-function get_permutation(x::Cascade; kwargs...)
-    return x.ispermuted ? x.permutation : collect(1:length(x.steps))
+function get_permutation(x::Cascade)
+    return x.ispermuted ? get_permutation(x.permutation) : collect(1:length(x.steps))
 end
+
+function get_permutation(idx::AbstractVector{Int})
+    ordered = DataFrames.DataFrame(old=idx,)
+    collapsed = DataFrames.DataFrame(old=sort(idx), new=1:length(idx))
+    df = DataFrames.leftjoin(collapsed, ordered, on=:old)
+    return df[:,:new]
+end
+
+
 
 function get_correlation(x::Cascade; kwargs...)
     return x.correlation[get_permutation(x; kwargs...), :]
 end
-
-# set_start!(x::Cascade, start) = begin x.start = start; return x end
-# set_steps!(x::Cascade, steps) = begin x.steps = steps; return x end
-# set_stop!(x::Cascade, stop) = begin x.stop = stop; return x end
-
-# set_permutation!(x::Cascade) = begin x.steps = x.steps[x.permutation]; return x end
 
 
 """
@@ -119,11 +122,12 @@ to subsequent steps.
 """
 function correlate(v::AbstractArray, A::AbstractMatrix, order::AbstractVector{Int})
     N = size(v,1)
-
+    
     # Save a list of the A1 = A[ii,:] matrix, where each row ii is individually selected and
     # consistent with the natural order. Then, reorder this list to match the permutation order.
-    lst_A = select_row(A)
+    lst_A = pick_from(A; dims=2)
     lst_A = lst_A[order]
+    # lst_A = [[Matrix{Float64}(I(N))]; lst_A[order[1:N-1]]]
 
     # Apply the interaction defined in each row individually and sequentially.
     # If A is a 3x3 matrix, ordered [2,3,1], this would look like.
@@ -138,7 +142,9 @@ function correlate(v::AbstractArray, A::AbstractMatrix, order::AbstractVector{In
     # Now, populate the final, correlated value with the iith ROW (the current investment)
     # of the iith list element (the impact of ALL investments, IN THE PERMUTED ORDER)
     # on ALL values thus far.
-    return update_stop!(select_row(lst_v, 1:N))
+    vout = copy.(v)
+    [vout[ii,:] .= lst[ii,:] for (ii,lst) in zip(order, lst_v)]
+    return update_stop!(convert(Matrix, vout))
 end
 
 
@@ -174,7 +180,7 @@ end
 """
 function Base.permute!(cascade::Cascade; kwargs...)
     if !cascade.ispermuted
-        cascade.steps = cascade.steps[cascade.permutation]
+        cascade.steps = cascade.steps[get_permutation(cascade.permutation)]
         cascade.ispermuted = true
     end
     return cascade
@@ -182,9 +188,25 @@ end
 
 
 """
-    select_row(A)
+```jldoctest
+julia> pick(3, 4)
+4×4 SparseArrays.SparseMatrixCSC{Int64,Int64} with 1 stored entry:
+  [3, 3]  =  1
+
+julia> pick(1:2, 4)
+4×4 SparseArrays.SparseMatrixCSC{Int64,Int64} with 2 stored entries:
+  [1, 1]  =  1
+  [2, 2]  =  1
+```
+"""
+pick(idx, dim) = SparseArrays.sparse(fill([idx;],2)..., 1, fill(dim,2)...)
+pick(dim) = [pick(ii,dim) for ii in 1:dim]
+
+
+"""
+    pick_from(A; kwargs...)
 This method returns a list ``\\vec{A}`` of all correlation factors ``A_i`` calculated using
-`select_row(A,ii)`:
+`pick_from(ii,A; kwargs...)`:
 
 ```math
 \\vec{A} = \\begin{pmatrix}
@@ -192,20 +214,27 @@ A_1 & A_2 & \\dots A_{N}
 \\end{pmatrix}
 ```
 
-    select_row(A, ii)
+    pick_from(ii, A; kwargs)
 This function returns the correlation matrix ``A_i`` with all off-diagonal elements,
-with the exception of those in row `ii`, set to zero.
+with the exception of those in ROW or COLUMN `ii`, set to zero.
 
 # Arguments
 - `A <: AbstractMatrix`, a random correlation matrix ``A \\in \\mathbb{R}^{N\\times N}``,
     produced by [`random_rotation`]
-- `ii::Int`, non-zero row
+- `ii::Int`, non-zero ROW OR COLUMN
+
+# Keywords
+- `dims::Int = 1, 2`: Matrix dimension from which to select.
 
 # Returns
 - `A_i <: AbstractMatrix`, defined as
 
 ```math
-A_i = S_i A' + I
+\\begin{aligned}
+A_{i,\\circ} &= S_i A' + I
+\\\\
+A_{\\circ,j} &= A' S_j + I
+\\end{aligned}
 ```
 
 where
@@ -224,24 +253,18 @@ All diagonal elements of ``A`` are set to zero prior to performing any calculati
 selecting a row using ``S_i`` zeros all other elements on the diagonal. Explicitly adding
 ``I`` ensures that applying correlations to the `i`th step will not impact any other steps.
 """
-function select_row(A, ii::Int)
+function pick_from(ii::Int, A; dims)
     N = size(A,1)
     # Ensure that, if A has ones on the diagonal, these are made zero.
     # When one row is "picked", this will zero the other elements on the diagonal,
     # so we will add these back at each step in the iteration.
     # LinearAlgebra.tr(A)==N && (A -= I)
     A -= I
-
-    return pick(ii,N) * A + I
-    # return isempty(order) ? A : A[order,:]
+    
+    return (dims==1 ? pick(ii,N)*A : A*pick(ii,N)) + I
 end
 
-
-function select_row(A)
-    return [select_row(A,ii) for ii in 1:size(A,1)]
-    # return isempty(order) ? lst : lst[order]
-end
-
-function select_row(lst::Vector{Matrix{Any}}, idx::AbstractVector)
-    return convert(Matrix, getindex.(lst, idx, :))
-end
+pick_from(A; kwargs...) = [pick_from(ii,A; kwargs...) for ii in 1:size(A,1)]
+# function select_row(lst::Vector{Matrix{Any}}, idx::AbstractVector)
+#     return convert(Matrix, getindex.(lst, idx, :))
+# end
