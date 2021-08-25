@@ -1,17 +1,18 @@
 using Waterfall
 import Luxor
 import Base
+
 include(joinpath(WATERFALL_DIR,"bin","io.jl"))
 # include(joinpath(WATERFALL_DIR,"src","utils","correlate.jl"))
-include(joinpath(WATERFALL_DIR,"src","utils","draw.jl"))
+# include(joinpath(WATERFALL_DIR,"src","utils","draw.jl"))
 
 nstep = 3
 nsample = 1
-nperm = 1000
+nperm = 5
 ncor = 1000
 N = 13
 permute = false
-permutations = [[collect(1:N)]; Waterfall.random_permutation(1:N, min(factorial(N),nperm))]
+permutations = [[collect(1:N)]; random_permutation(1:N, min(factorial(N),nperm))]
 
 cascades = Dict()
 heights = Dict()
@@ -21,7 +22,7 @@ for k in permutations
 # k = permutations[1]
     x = Cascade(df; permutation=k, nsample=nsample, ncor=ncor, kwargs...)
     push!(cascades, k => x)
-
+    
     # Calculate the value we will want to add to a NEW cascade. This will come from the
     # HEIGHT of the current cascade.
     v1, v2 = Waterfall.cumulative_v!(x; permute=permute)

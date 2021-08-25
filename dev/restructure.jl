@@ -1,3 +1,4 @@
+# https://discourse.julialang.org/t/generate-random-value-from-a-given-function-out-of-box/5793/3
 using Waterfall
 
 # include("")
@@ -5,21 +6,29 @@ include(joinpath(WATERFALL_DIR,"src","includes.jl"))
 include(joinpath(WATERFALL_DIR,"bin","io.jl"))
 
 
-function define_permute(df, nperm::T; kwargs...) where T<:Integer
-    N = size(df,1)-2
-    lst = [[collect(1:N)]; random_permutation(1:N, min(factorial(N),nperm))]
-    return define_permute(df, lst; kwargs...)
-end
+# function define_permute(df, nperm::T; kwargs...) where T<:Integer
+#     N = size(df,1)-2
+#     lst = [[collect(1:N)]; random_permutation(1:N, min(factorial(N),nperm))]
+#     return define_permute(df, lst; kwargs...)
+# end
 
 function define_permute(df::DataFrames.DataFrame, lst::T; fun::Function=identity, kwargs...) where T<:AbstractArray
     cascades = Dict()
     heights = Dict()
 
     for k in lst
-        cascade = define_from(Cascade{Data}, df; permutation=k, nsample=10, ncor=1000, kwargs...)
+        cascade = define_from(Cascade{Data}, df;
+            permutation=k,
+            nsample=100,
+            correlate=true,
+            permute=false,
+            ncor=true,
+            kwargs...,
+        )
         push!(cascades, k => cascade)
 
-        v1, v2 = cumulative_v!(cascade; kwargs...)
+        v1 = cumulative_v(cascade; shift=-1.0, kwargs...)
+        v2 = cumulative_v(cascade; shift= 0.0, kwargs...)
         push!(heights, k => v2.-v1)
     end
 
@@ -27,61 +36,79 @@ function define_permute(df::DataFrames.DataFrame, lst::T; fun::Function=identity
     cascade = copy(cascades[first(lst)])
     data = collect_data(cascade)
 
-    vals = LinearAlgebra.Matrix(cat([heights[k] for k in lst]...; dims=2))
-    fun!==identity && (vals = fun(vals; dims=2))
+    median = cat([get_value(collect_data(calculate(cascades[k], Statistics.quantile, 0.5))) for k in lst]...; dims=2)
 
-    set_value!.(data, vectorize(vals))
+    # vals = LinearAlgebra.Matrix(cat([heights[k] for k in lst]...; dims=2))
+    # fun!==identity && (vals = fun(vals; dims=2))
+
+    # set_value!.(data, vectorize(vals))
+    set_value!.(data, vectorize(median))
     return cascade
 end
 
+# nperm = 10
+nsample = 5
 
-nperm = 10
+# # xperm = define_permute(df, nperm; fun=Statistics.mean, kwargs...)
+# xperm = cumulative_spread(df; nperm=nperm, nsample=nsample, ncor=ncor, kwargs...)
+# xperm = set_geometry(xperm, Parallel, false; hue="black")
 
-# xperm = define_permute(df, nperm; fun=Statistics.mean, kwargs...)
-xperm = cumulative_spread(df; nperm=nperm, nsample=nsample, ncor=ncor, kwargs...)
-xperm = set_geometry(xperm, Parallel, false; hue="black")
+# # cascade = define_from(Cascade{Data}, df; interactivity(0.01,0.3), nsample=nsample, ncor=ncor, permutation=lst[2], kwargs...)
+# # pdata = define_from(Plot{Data}, copy(cascade); ylabel="Efficiency (%)")
+# # phoriz = set_geometry(pdata, Horizontal; colorcycle=true)
 
-# cascade = define_from(Cascade{Data}, df; minrot=0.01, maxrot=0.3, nsample=nsample, ncor=ncor, permutation=lst[2], kwargs...)
-# pdata = define_from(Plot{Data}, copy(cascade); ylabel="Efficiency (%)")
-# phoriz = set_geometry(pdata, Horizontal; colorcycle=true)
+perms = vcat([[
+    ii,
+    swapat!(copy(ii), 1, 2),
+    # swapat!(copy(ii), 1, length(ii)),
+    # reverse(ii),
+] for ii in [collect(1:4)]]...)
 
-name_perm(x) = Printf.@sprintf("-%02.0f", x)
-name_perm(x::AbstractArray) = string(name_perm.(x)..., ".png")
+for geometry in [Vertical]
+# for geometry in [Parallel]
+    # for nsample in [1,10,50]
+    for nsample in [1]
+        # for colorcycle in [true,false]
+        for colorcycle in [true]
+            for perm in [perms[end]]
 
-name(x::Cascade{T}) where T<:Geometry = "fig/" * lowercase(string(T)) * name_perm(x.permutation)
-name(p::Plot{T}) where T<:Geometry = name(p.cascade)
+                (length(perm)>length(COLORCYCLE) && colorcycle) && continue
 
-# xhoriz = set_geometry(cascade, Horizontal; colorcycle=false)
-# xvert = set_geometry(cascade, Vertical; colorcycle=false)
+                
+                locals = (
+                    nsample = nsample,
+                    permutation = perm,
+                    permute = true,
+                    ncor = true,
+                    correlate = true,
+                    colorcycle = colorcycle,
+                    ylabel = "Efficiency (%)",
+                )
+                
+                global cascade = define_from(Cascade{Data}, df; locals..., kwargs...)
+                global plot = define_from(Plot{geometry}, copy(cascade); locals..., kwargs...)
+                
+                cmean = set_geometry(calculate(copy(cascade), Statistics.mean), Horizontal;
+                style=:stroke, alpha=1.0, locals...,
+                )
+                dmean = collect_data(cmean)
+                [setfield!(x, :annotation, missing) for x in dmean]
+                
+                vlims = vlim(collect_data(cascade); locals..., kwargs...)
+                vmin, vmax, vscale = vlims
 
-N=10
-lst = [[collect(1:N)]; random_permutation(1:N, min(factorial(N),nperm))]
+                Luxor.@png begin
+                    Luxor.fontface("Gill Sans")
+                    Luxor.fontsize(FONTSIZE)
+                    Luxor.setmatrix([1 0 0 1 LEFT_BORDER TOP_BORDER])
+                    
+                    draw(plot)
+                    # draw(plot.title)
 
-# plot = phoriz
-ncor=1000
-
-for ii in 1:N
-
-    cascade = define_from(Cascade{Data}, df; minrot=0.01, maxrot=0.3, nsample=nsample, ncor=ncor, permutation=lst[ii], kwargs...)
-    pdata = define_from(Plot{Data}, copy(cascade); ylabel="Efficiency (%)")
-    plot = set_geometry(pdata, Horizontal; colorcycle=true)
-
-    Luxor.@png begin
-        Luxor.fontsize(14)
-        Luxor.setmatrix([1 0 0 1 LEFT_BORDER TOP_BORDER])
-        
-        draw(plot)
-        
-        # draw(plot.cascade)
-        
-        Luxor.setcolor(Luxor.sethue("black")..., 1.0)
-        draw(xperm)
-        # Luxor.line(xperm.start.attribute[1].position..., xperm.start.attribute[1].style)
-        # _draw_title(plot)
-        # draw(plot.axes)
-
-        # return nothing
-        
-
-    end WIDTH+LEFT_BORDER+RIGHT_BORDER HEIGHT+TOP_BORDER+BOTTOM_BORDER name(plot)
+                    nsample>1 && draw(cmean)
+                    
+                end WIDTH+LEFT_BORDER+RIGHT_BORDER HEIGHT+TOP_BORDER+BOTTOM_BORDER+padding(plot.axes[1]) name(plot; colorcycle=colorcycle)
+            end
+        end
+    end
 end

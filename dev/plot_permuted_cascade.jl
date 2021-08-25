@@ -39,7 +39,7 @@ perm = perms[2]
 # for T in [Parallel,Horizontal,Vertical]
 for T in [Vertical]
     for perm in perms
-        x = Cascade(df; permutation=perm, minrot=0.01, maxrot=0.3, nsample=nsample, ncor=ncor, kwargs...)
+        x = Cascade(df; permutation=perm, interactivity=(0.01,0.3), nsample=nsample, ncor=ncor, kwargs...)
         
         pdata = Plot(copy(x); ylabel="Efficiency (%)")
         p = convert(Plot{T}, pdata, 1.0; permute=true)
@@ -58,7 +58,7 @@ end
 
 
 
-# # function select_row(v::Vector, ii)
+# # function offdiag_rowonal(v::Vector, ii)
 # # end
 
 

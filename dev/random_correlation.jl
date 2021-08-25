@@ -1,6 +1,7 @@
 using StatsPlots
 using IndexedTables
 
+# This demonstrates the PROCESS by plotting a correlation matrix I THINK.
 include(joinpath(WATERFALL_DIR,"src","includes.jl"))
 
 begin value=:Value; label=:Label; sample=:Sample end
