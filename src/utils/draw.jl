@@ -145,7 +145,7 @@ function _draw_label(ax::YAxis; angle=-pi/2, x=-(LEFT_BORDER-0.5*SEP))
 end
 
 
-function draw(lab::Label)
+function draw(lab::Labelbox)
     tmp = Luxor.get_fontsize()
     font = tmp * lab.scale
     Luxor.fontsize(font)

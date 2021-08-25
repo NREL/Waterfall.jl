@@ -34,7 +34,7 @@ include(joinpath(WATERFALL_DIR,"src","Figure","Shape","Line.jl"))
 include(joinpath(WATERFALL_DIR,"src","Figure","Shape","Point.jl"))
 include(joinpath(WATERFALL_DIR,"src","Figure","Shape","Poly.jl"))
 
-include(joinpath(WATERFALL_DIR,"src","Figure","Label.jl"))
+include(joinpath(WATERFALL_DIR,"src","Figure","Labelbox.jl"))
 
 include(joinpath(WATERFALL_DIR,"src","Cascade","Data.jl"))
 include(joinpath(WATERFALL_DIR,"src","Cascade","Cascade.jl"))

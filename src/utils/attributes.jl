@@ -194,7 +194,7 @@ function _define_annotation(cascade::Cascade{Data}, Geometry::DataType;
     position = scale_for(cascade, Geometry; kwargs...)
     ymin = minimum.(position; dims=2) .- annotlead*annotscale*length.(lab) .- 0.5*SEP
 
-    label = Label.(lab, annotscale, Luxor.Point.(xmid,ymin), :center, annotlead)
+    label = Labelbox.(lab, annotscale, Luxor.Point.(xmid,ymin), :center, annotlead)
     Geometry==Violin && (label = [label[1:end-1];missing])
 
     return label
@@ -228,7 +228,7 @@ function _define_from(::Type{Vector{Luxor.Point}}, ::Type{XAxis}, cascade; y=HEI
 end
 
 
-function _define_from(::Type{Vector{Label}}, ::Type{YAxis}, cascade::Cascade{Data};
+function _define_from(::Type{Vector{Labelbox}}, ::Type{YAxis}, cascade::Cascade{Data};
     textscale=0.9,
     kwargs...,
 )
@@ -240,14 +240,14 @@ function _define_from(::Type{Vector{Label}}, ::Type{YAxis}, cascade::Cascade{Dat
 end
 
 
-function _define_from(::Type{Vector{Label}}, ::Type{XAxis}, cascade; y=HEIGHT, kwargs...)
-    ticklabels = _define_from(Vector{Label}, XAxis, cascade, get_label;
+function _define_from(::Type{Vector{Labelbox}}, ::Type{XAxis}, cascade; y=HEIGHT, kwargs...)
+    ticklabels = _define_from(Vector{Labelbox}, XAxis, cascade, get_label;
         y = y+SEP,
         leading = 0.0,
         kwargs...,
     )
 
-    ticksublabels = _define_from(Vector{Label}, XAxis, cascade, get_sublabel;
+    ticksublabels = _define_from(Vector{Labelbox}, XAxis, cascade, get_sublabel;
         y=y+SEP+FONTSIZE,
         textscale=0.8,
         kwargs...,
@@ -257,7 +257,7 @@ function _define_from(::Type{Vector{Label}}, ::Type{XAxis}, cascade; y=HEIGHT, k
 end
 
 
-function _define_from(::Type{Vector{Label}}, ::Type{XAxis}, cascade, fun::Function; y, kwargs...)
+function _define_from(::Type{Vector{Labelbox}}, ::Type{XAxis}, cascade, fun::Function; y, kwargs...)
     lab = fun.(collect_data(cascade))
     pos = _define_from(Vector{Luxor.Point}, XAxis, cascade; y=y, kwargs...)
     return _define_ticklabels(lab, pos; alignment=:center, kwargs...)
@@ -279,7 +279,7 @@ function _define_ticklabels(lab::Vector, pos::Array{Luxor.Point};
     else
         wid = width(N; space=2)
         lab = [wrap_to(x, wid; textscale=textscale) for x in lab]
-        Label.(lab, textscale, pos, alignment, leading)
+        Labelbox.(lab, textscale, pos, alignment, leading)
     end
 end
 
@@ -342,7 +342,7 @@ function _define_title(cascade::Cascade{Data}; nsample,
         _title_distribution( ; kwargs...)
     ][idx]
 
-    return Label(str, titlescale, Luxor.Point(WIDTH/2, -TOP_BORDER), :center, titleleading)
+    return Labelbox(str, titlescale, Luxor.Point(WIDTH/2, -TOP_BORDER), :center, titleleading)
 end
 
 

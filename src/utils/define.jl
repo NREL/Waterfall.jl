@@ -88,7 +88,7 @@ end
 
 function define_from(::Type{XAxis}, cascade::Cascade{Data}; xlabel="", kwargs...)
     
-    ticklabels, ticksublabels = _define_from(Vector{Label}, XAxis, cascade; kwargs...)
+    ticklabels, ticksublabels = _define_from(Vector{Labelbox}, XAxis, cascade; kwargs...)
 
     return XAxis( ;
         ticks = _define_from(Ticks, XAxis, cascade; kwargs...),
@@ -105,7 +105,7 @@ function define_from(::Type{YAxis}, cascade::Cascade{Data}; ylabel, kwargs...)
     return YAxis( ;
         label = ylabel,
         ticks = _define_from(Ticks, YAxis, cascade; kwargs...),
-        ticklabels = _define_from(Vector{Label}, YAxis, cascade; kwargs...),
+        ticklabels = _define_from(Vector{Labelbox}, YAxis, cascade; kwargs...),
         lim = (vmin,vmax),
     )
 end
