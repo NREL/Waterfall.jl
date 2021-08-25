@@ -4,3 +4,8 @@ mutable struct Violin <: Geometry
     nsample::Int
     annotation::Union{Labelbox,Missing}
 end
+
+
+function Violin( ; label, shape, nsample, annotation)
+    return Violin(label, shape, nsample, annotation)
+end

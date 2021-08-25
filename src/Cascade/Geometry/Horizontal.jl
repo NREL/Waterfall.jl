@@ -4,3 +4,8 @@ mutable struct Horizontal <: Geometry
     nsample::Int
     annotation::Union{Labelbox,Missing}
 end
+
+
+function Horizontal( ; label, shape, nsample, annotation)
+    return Horizontal(label, shape, nsample, annotation)
+end

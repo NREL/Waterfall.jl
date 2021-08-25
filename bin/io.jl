@@ -14,7 +14,7 @@ import StatsPlots
 # df = CSV.read(joinpath(DATA_DIR,"pvrd2-investment-metrics.csv"), DataFrames.DataFrame)
 
 DATA_DIR = joinpath(WATERFALL_DIR,"data")
-df = CSV.read(joinpath(DATA_DIR,"investment.csv"), DataFrames.DataFrame)
+df = CSV.read(joinpath(DATA_DIR,"viz","investment.csv"), DataFrames.DataFrame)
 [df[!,ii] .= coalesce.(df[:,ii],missing,"") for ii in 1:size(df,2)]
 # df = df[[1:11;15],:]
 

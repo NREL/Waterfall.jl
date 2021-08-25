@@ -113,10 +113,22 @@ function Base.convert(::Type{DataFrames.DataFrame}, x::Cascade)
 end
 
 
-# # !!!! check???
-# Base.convert(::Type{Matrix}, lst::AbstractVector; dims=2) = _convert(Matrix, lst, dims)
+"""
+    isinteger(x::String)
+This method returns true if `x` can be parsed as an integer.
+"""
+Base.isinteger(x::String) = getindex(match(r"(\d*)", x),1)==x
 
-# _convert(::Type{Matrix}, lst, dims) = LinearAlgebra.Matrix(cat(lst...; dims=dims)')
+
+"""
+    tryinteger(x::String)
+This method parses `x` as an `Int64` if possible, and otherwise returns `x`.
+
+    tryinteger(lst::Vector{String})
+This methods `lst` as `Vector{Int64}` if this is possible for **all** array elements.
+"""
+tryinteger(x::String) = isinteger(x) ? parse(Int64,x) : x
+tryinteger(lst::AbstractArray) = all(isinteger.(lst)) ? parse.(Int64,lst) : lst
 
 
 """

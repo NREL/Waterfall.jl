@@ -1,7 +1,7 @@
 mutable struct XAxis <: Axis
     ticks::Ticks
-    ticklabels::Array{Union{Label,Missing}}
-    ticksublabels::Array{Union{Label,Missing}}
+    ticklabels::Array{Union{Labelbox,Missing}}
+    ticksublabels::Array{Union{Labelbox,Missing}}
     lim::Tuple
 end
 

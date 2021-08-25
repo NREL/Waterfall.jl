@@ -7,5 +7,5 @@ mutable struct Labelbox
 end
 
 function Labelbox( ; text, scale, position, alignment, leading)
-    return Labelbox( ; text, scale, position, alignment, leading)
+    return Labelbox(text, scale, position, alignment, leading)
 end

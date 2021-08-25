@@ -16,20 +16,21 @@ function define_from(::Type{Cascade{Data}}, df::DataFrames.DataFrame;
     kwargs...,
 )
     # maxdim = min(maxdim, size(df,1)-2)
-    maxdim = size(df,1)
+    rows = size(df,1)
+    maxdim = min(rows,length(COLORCYCLE),maxdim)
 
     if ismissing(permutation)
-        permutation = collect(1:m(maxdim,length(COLORCYCLE)))
+        permutation = collect(1:min(rows-2,length(COLORCYCLE)))
     end
-
-    idx = [1;sort(permutation).+1;maxdim]
+    
+    idx = [1; sort(permutation).+1; rows]
     data = define_from(Vector{Data}, df[idx,:]; kwargs...)
     
     cascade = Cascade(
         start = first(data),
         stop = last(data),
         steps = data[2:end-1],
-        correlation = random_rotation(length(permutation), ncor; maxdim=maxdim, permutation=permutation, kwargs...),
+        correlation = random_rotation(length(permutation), ncor; maxdim=rows, permutation=permutation, kwargs...),
         permutation = permutation,
         iscorrelated = false,
         ispermuted = false,
@@ -253,5 +254,6 @@ end
 
 function _set_geometry(plot::Plot{Data}, Geometry::DataType, args...; kwargs...)
     cascade = _set_geometry(plot.cascade, Geometry, args...; kwargs...)
-    return Plot(cascade, plot.axes, plot.title, plot.path)
+    path = _define_path(plot.cascade, Geometry; kwargs...)
+    return Plot(cascade, plot.axes, plot.title, path)
 end

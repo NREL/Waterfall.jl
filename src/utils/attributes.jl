@@ -268,7 +268,7 @@ end
 """
 function _define_ticklabels(lab::Vector, pos::Array{Luxor.Point};
     alignment,
-    leading,
+    leading = 0.0,
     textscale = 0.9,
     kwargs...,
 )
@@ -297,24 +297,48 @@ _define_arrow(::Type{YAxis}; x=0, y=HEIGHT, kwargs...) = (Luxor.Point(x,y), Luxo
 This method defines the path to which to write the file:
     Geometry/Geometry_n<nsample>_colorcycle<0/1>_corr<0/1>_<permutation>.png
 """
-function _define_path(x::Cascade{T}, Geometry; colorcycle, kwargs...) where T<:Any
+function _define_path(x::Cascade, Geometry;
+    colorcycle,
+    ext = ".png",
+    figdir = "fig",
+    maxsample = 50,
+    separator = "_",
+    kwargs...,
+)
     Geometry = lowercase(string(Geometry))
-    space = "_"
 
-    str = joinpath(WATERFALL_DIR,"fig", Geometry, string(
+    # Define the path name and create the directory if it doesn't already exist.
+    path = joinpath(WATERFALL_DIR, figdir, Geometry)
+
+    if !isdir(path)
+        @info("Creating directory: $path")
+        mkpath(path)
+    end
+
+    str = joinpath(path, join([
         Geometry,
-        space, "n", name(length(x)),
-        space, "colorcycle", name(colorcycle),
-        space, "corr", name(x.iscorrelated),
-        space, name(x.permutation),".png")
-    )
+        "n" * _define_path(length(x); maxchar=get_order(maxsample)+1), # number of samples
+        _define_path(get_label.(x.steps); kwargs...),                  # labels, in order
+        "corr"       * _define_path(x.iscorrelated),                   # is it correlated?
+        "colorcycle" * _define_path(colorcycle),                       # colorscheme?
+        ], separator,
+    ) * ext)
 
+    println("Writing plot: $str")
     return str
 end
 
-_define_path(x::Bool) = string(convert(Int, x))
-_define_path(x::Int) = Printf.@sprintf("%02.0f", x)
-_define_path(x::AbstractArray) = string(string("-".*_define_path.(x)...)[2:end])
+
+function _define_path(lst::Vector{String}; maxchar=missing, kwargs...)
+    maxchar = coalesce(maxchar, maximum(length.(lst)))
+    lst = _define_path.(tryinteger(lst); maxchar=maxchar)
+    return lowercase(join(lst, maxchar>1 ? "-" : ""))
+end
+
+
+_define_path(x::Int; maxchar=1) = string(Printf.@sprintf("%010.0f", x)[end-(maxchar-1):end])
+_define_path(x::Bool; kwargs...) = string(convert(Int, x))
+_define_path(x::String; kwargs...) = x
 
 
 """

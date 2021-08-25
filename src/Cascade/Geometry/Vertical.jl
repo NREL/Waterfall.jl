@@ -4,3 +4,8 @@ mutable struct Vertical <: Geometry
     nsample::Int
     annotation::Union{Labelbox,Missing}
 end
+
+
+function Vertical( ; label, shape, nsample, annotation)
+    return Vertical(label, shape, nsample, annotation)
+end

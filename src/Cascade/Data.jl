@@ -5,6 +5,7 @@ mutable struct Data <: Sampling
     value::Vector{Real}
 end
 
+
 """
     Data( ; kwargs...)
 This method allows for field order-independent Cascade-definition.

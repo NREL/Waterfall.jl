@@ -1,5 +1,5 @@
 mutable struct Annotation
-    label::Label
+    label::Labelbox
     shape<:Shape
     cascade::Union{Cascade{Horizontal},Missing}
 end

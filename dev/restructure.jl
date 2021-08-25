@@ -107,7 +107,7 @@ for geometry in [Vertical]
 
                     nsample>1 && draw(cmean)
                     
-                end WIDTH+LEFT_BORDER+RIGHT_BORDER HEIGHT+TOP_BORDER+BOTTOM_BORDER+padding(plot.axes[1]) name(plot; colorcycle=colorcycle)
+                end WIDTH+LEFT_BORDER+RIGHT_BORDER HEIGHT+TOP_BORDER+BOTTOM_BORDER+padding(plot.axes[1]) plot.path
             end
         end
     end
