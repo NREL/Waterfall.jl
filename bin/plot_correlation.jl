@@ -40,8 +40,7 @@ nperm = 10
 ncor = 2
 
 plot(Waterfall.Cascade(cutoff(df; nstep=nstep);
-    minrot=0.5,
-    maxrot=0.75,
+    interactivity=(0.5,0.75),
     nsample=nsample,
     ncor=ncor,
     kwargs...),
