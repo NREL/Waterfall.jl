@@ -1,6 +1,6 @@
 mutable struct Horizontal <: Geometry
     label::String
-    attribute::Vector{Box}
+    shape::Vector{Box}
     nsample::Int
     annotation::Union{Label,Missing}
 end

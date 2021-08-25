@@ -1,14 +1,9 @@
 mutable struct XAxis <: Axis
-    label::String
-    ticklabels::AbstractArray
-    ticksublabels::AbstractArray
-    ticks::AbstractArray
+    ticks::Ticks
+    ticklabels::Array{Union{Label,Missing}}
+    ticksublabels::Array{Union{Label,Missing}}
     lim::Tuple
 end
 
 
-function XAxis( ; label, ticklabels, ticksublabels=[], ticks, lim)
-# function Axis( ; label="", ticklabels=[], ticksublabels=[], ticks=[], lim=tuple())
-    isempty(ticksublabels) && (ticksublabels = fill("", size(ticklabels)))
-    return XAxis(label, ticklabels, ticksublabels, ticks, lim)
-end
+XAxis( ; ticks, ticklabels, ticksublabels, lim) = XAxis(ticks, ticklabels, ticksublabels, lim)

@@ -113,10 +113,10 @@ function Base.convert(::Type{DataFrames.DataFrame}, x::Cascade)
 end
 
 
-# !!!! check???
-Base.convert(::Type{Matrix}, lst::AbstractVector; dims=2) = _convert(Matrix, lst, dims)
+# # !!!! check???
+# Base.convert(::Type{Matrix}, lst::AbstractVector; dims=2) = _convert(Matrix, lst, dims)
 
-_convert(::Type{Matrix}, lst, dims) = LinearAlgebra.Matrix(cat(lst...; dims=dims)')
+# _convert(::Type{Matrix}, lst, dims) = LinearAlgebra.Matrix(cat(lst...; dims=dims)')
 
 
 """

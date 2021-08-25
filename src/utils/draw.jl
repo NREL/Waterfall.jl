@@ -20,7 +20,7 @@ function draw(plot::T; kwargs...) where T <: Plot
     draw(plot.cascade)
 
     Luxor.setcolor(Luxor.sethue("black")..., 1.0)
-    _draw_title(plot; kwargs...)
+    draw(plot.title)
     draw(plot.axes)
     
     return nothing
@@ -48,12 +48,19 @@ function draw(shape::Poly)
 end
 
 
-function draw(ax::T) where T <: Axis
-    _draw(typeof(ax))
-    _draw_ticks(ax)
-    # T==YAxis && _draw_ticklabels(ax)
-    _draw_ticklabels(ax)
-    _draw_label(ax)
+function draw(ax::XAxis)
+    draw(ax.ticklabels)
+    draw(ax.ticksublabels)
+    Luxor.arrow(ax.ticks.arrow...)
+    return nothing
+end
+
+
+function draw(ax::YAxis)
+    draw(ax.ticklabels)
+    draw(ax.ticks.shape)
+    Luxor.arrow(ax.ticks.arrow...)
+    return nothing
 end
 
 
@@ -61,10 +68,11 @@ draw(lst::AbstractArray) = [draw(x) for x in lst]
 draw(x::Cascade{T}) where T<:Geometry = draw(collect_data(x))
 
 function draw(x::T) where T<:Geometry
-    draw(x.attribute)
+    draw(x.shape)
     draw(x.annotation)
     return nothing
 end
+
 
 """
 """
@@ -79,41 +87,23 @@ function _draw_title(plot::T; interactivity, fuzziness, kwargs...) where T <: Pl
     ][idx]
 
     font = Luxor.get_fontsize()
-    Luxor.textbox(str, Luxor.Point(WIDTH/2, -TOP_BORDER); leading=1.25*font, alignment=:center)
+    Luxor.textbox(str, Luxor.Point(WIDTH/2, -TOP_BORDER); leading=0, alignment=:center)
     return nothing
 end
 
 
 """
-    _draw(XAxis)
-    _draw(YAxis)
-This function draws an arrow for the input axis.
+    _draw_legend()
 """
-_draw(::Type{XAxis}) = Luxor.arrow(Luxor.Point.((0,WIDTH+2*SEP), HEIGHT)...)
-_draw(::Type{YAxis}) = Luxor.arrow(Luxor.Point.(0, (HEIGHT,0))...)
-
-
-"""
-"""
-_draw_tick(points) = Luxor.line(points..., :stroke)
-
-
-"""
-"""
-_draw_ticks(ax::YAxis) = _draw_tick.(_define_ytick.(ax.ticks))
-# _draw_ticks(ax::XAxis) = _draw_tick.(_define_xtick.(ax.ticks))
-_draw_ticks(ax::XAxis) = nothing
-
-
-"""
-"""
-_define_xtick(x; y=HEIGHT) = Luxor.Point.(x, _extend_by(y))
-_define_ytick(y; x=0) = Luxor.Point.(_extend_by(x), y)
-
-
-"""
-"""
-_extend_by(x, sep=SEP) = (-1,1).*0.5.*sep .+ x
+function _draw_legend()
+    Luxor.text("mean", Luxor.Point(WIDTH-5*SEP,5*SEP); halign=:left, valign=:middle)
+    draw(Box(
+        (Luxor.Point(WIDTH-7.5*SEP,4.5*SEP),Luxor.Point(WIDTH-5.5*SEP,5.5*SEP)),
+        _define_from(Coloring, "black"),
+        :stroke,
+    ))
+    return nothing
+end
 
 
 """
@@ -152,72 +142,26 @@ function _draw_label(ax::YAxis; angle=-pi/2, x=-(LEFT_BORDER-0.5*SEP))
         halign=:center,
         # kwargs...,
     )
-
-    # _draw_label(
-    #     ax.label * " top",
-    #     Luxor.midpoint(Luxor.Point(x,ax.ticks[1]), Luxor.Point(x,ax.ticks[end]));
-    #     angle=angle,
-    #     valign=:top,
-    #     halign=:center,
-    #     # kwargs...,
-    # )
 end
 
-_draw_label(ax::XAxis) = nothing
 
-
-"""
-    _draw_ticklabels(ax::T) where T <: Axis
-"""
-function _draw_ticklabels(ax::XAxis; y=HEIGHT+SEP)
-    lab = ax.ticklabels
-    x = ax.ticks
-    _draw_label.(ax.ticklabels, Luxor.Point.(x, y); valign=:top, halign=:center)
-
-    # _draw_label.(ax.ticksublabels, Luxor.Point.(x, y+SEP); valign=:top, halign=:right, angle=-pi/6)
-    
+function draw(lab::Label)
     tmp = Luxor.get_fontsize()
-    font = 0.8*tmp
-
-    N = length(ax.ticksublabels)
-    x = cumulative_x( ; steps=N)
+    font = tmp * lab.scale
     Luxor.fontsize(font)
 
-    for ii in 1:N
-        str = _define_label(ax.ticksublabels[ii], width(N; space=2); font=font)
-        # str = Luxor.textlines(uppercase(ax.ticksublabels[ii]), width(N))
-        # str = str[.!isempty.(str)]
-
-        Luxor.textbox(str, Luxor.Point(x[ii], y+1.5*SEP); leading=1.25*font, alignment=:center)
-        # textbox(lines::Array, pos::Point=O;
-        #     leading = 12,
-        #     linefunc::Function = (linenumber, linetext, startpos, height) -> (),
-        #     alignment=:left)
-    end
-
-    Luxor.fontsize(tmp)
-    return nothing
-end
-
-
-function draw(label::Label)
-    tmp = Luxor.get_fontsize()
-    Luxor.fontsize(tmp*label.textsize)
-
     Luxor.setcolor(Luxor.sethue("black")...)
-    Luxor.textbox(label.text, label.position; leading=1.25*label.textsize, alignment=label.alignment)
+    Luxor.textbox(lab.text, lab.position; alignment=lab.alignment, leading=lab.leading*font)
     Luxor.fontsize(tmp)
     return nothing
 end
+
 
 draw(x::Missing) = nothing
 
 
-
-
-function _draw_ticklabels(ax::YAxis; x=0-SEP)
-    lab = ax.ticklabels
-    y = ax.ticks
-    _draw_label.(lab, Luxor.Point.(x, y); valign=:middle, halign=:right)
-    return nothing
+function padding(ax::XAxis)
+    lab = ax.ticksublabels
+    lines = maximum(length.(getfield.(lab,:text)))
+    return lines * FONTSIZE
 end

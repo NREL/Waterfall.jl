@@ -1,6 +1,6 @@
 mutable struct Violin <: Geometry
     label::String
-    attribute::Poly
+    shape::Poly
     nsample::Int
     annotation::Union{Label,Missing}
 end

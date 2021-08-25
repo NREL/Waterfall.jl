@@ -1,16 +1,5 @@
 import Base
 
-"""
-This function returns position
-"""
-function _calculate_position(cascade, ::Type{Violin},  args...; kwargs...)
-    return scale_kde(cascade)
-end
-
-function _calculate_position(cascade, ::Type{T}; kwargs...) where T<:Geometry
-    return scale_point(cascade; kwargs...)
-end
-
 
 """
     define_from(::Type{Cascade{Data}}, df)
@@ -20,14 +9,18 @@ end
 function define_from(::Type{Cascade{Data}}, df::DataFrames.DataFrame;
     ncor=DEFAULT_NCOR,
     maxdim=length(COLORCYCLE),
-    permutation=1:length(COLORCYCLE),
+    # permutation=1:length(COLORCYCLE),
+    permutation=missing,
     correlate=true,
     permute=true,
     kwargs...,
 )
     # maxdim = min(maxdim, size(df,1)-2)
     maxdim = size(df,1)
-    permutation = collect(permutation)
+
+    if ismissing(permutation)
+        permutation = collect(1:m(maxdim,length(COLORCYCLE)))
+    end
 
     idx = [1;sort(permutation).+1;maxdim]
     data = define_from(Vector{Data}, df[idx,:]; kwargs...)
@@ -83,7 +76,7 @@ function define_from(::Type{Plot{Data}}, cascade::Cascade{Data}; kwargs...)
         define_from(YAxis, cascade; kwargs...);
     ]
     
-    return Plot(cascade, axes)
+    return Plot(cascade, axes, _define_title(cascade; kwargs...), "")
 end
 
 
@@ -94,24 +87,32 @@ end
 
 
 function define_from(::Type{XAxis}, cascade::Cascade{Data}; xlabel="", kwargs...)
-    data = collect_data(cascade)
-    # perm = collect_permutation(cascade)
-    # cascade::Cascade{Data}
+    
+    ticklabels, ticksublabels = _define_from(Vector{Label}, XAxis, cascade; kwargs...)
 
-    N = length(data)
-    xticklabels = get_label.(data)
-    xticksublabels = get_sublabel.(data)
-    xticks = cumulative_x( ; steps=N)
-    return XAxis( ; label=xlabel, ticklabels=xticklabels, ticksublabels=xticksublabels, ticks=xticks, lim=(1,N))
+    return XAxis( ;
+        ticks = _define_from(Ticks, XAxis, cascade; kwargs...),
+        ticklabels = ticklabels,
+        ticksublabels = ticksublabels,
+        lim = (1,length(collect_data(cascade))),
+    )
 end
 
+
 function define_from(::Type{YAxis}, cascade::Cascade{Data}; ylabel, kwargs...)
-    data = collect_data(cascade)
-    vlims = vlim(data)
-    vmin, vmax, vscale = vlims
-    yticklabels = collect(vmin:floor(vmax))
-    yticks = scale_y(yticklabels; vlims...)
-    return YAxis( ; label=ylabel, ticklabels=yticklabels, ticks=yticks, lim=(vmin,vmax))
+    vmin, vmax, vscale = vlim(collect_data(cascade); kwargs...)
+
+    return YAxis( ;
+        label = ylabel,
+        ticks = _define_from(Ticks, YAxis, cascade; kwargs...),
+        ticklabels = _define_from(Vector{Label}, YAxis, cascade; kwargs...),
+        lim = (vmin,vmax),
+    )
+end
+
+
+function define_from(::Type{T}, x; kwargs...) where T <: Luxor.Colorant
+    return scale_hsv(parse(T, _define_colorant(x)); kwargs...)
 end
 
 
@@ -145,6 +146,7 @@ function _define_from(::Type{Coloring}, sign, args...; alpha=0.8, kwargs...)
     alpha = _define_alpha(alpha; kwargs...)
     return Coloring(hue, alpha)
 end
+
 
 function _define_from(::Type{Vector{Coloring}}, args...; kwargs...)
     return _define_from.(Coloring, args...; kwargs...)
@@ -181,6 +183,7 @@ function set_geometry(cascade, ::Type{Violin}; kwargs...)
     return _set_geometry(cascade, Violin, Poly, Coloring; style=:fill, kwargs...)
 end
 
+
 function set_geometry(cascade, ::Type{Vertical}; kwargs...)
     return _set_geometry(cascade, Vertical, Box, Blending;
         style=:fill,
@@ -189,6 +192,7 @@ function set_geometry(cascade, ::Type{Vertical}; kwargs...)
         kwargs...,
     )
 end
+
 
 function set_geometry(cascade, ::Type{Horizontal}; kwargs...)
     return _set_geometry(cascade, Horizontal, Box, Coloring;
@@ -205,6 +209,7 @@ function set_geometry(cascade, ::Type{Parallel}; slope::Bool=true, kwargs...)
     return _set_geometry(cascade, Parallel, Line, Coloring;
         quantile = convert(Float64, slope),
         alpha = length(cascade),
+        factor = 0.5,
         style = :stroke,
         subdivide = false,
         space = false,
@@ -221,13 +226,13 @@ function _set_geometry(cascade::Cascade{Data}, Geometry, Shape, Color;
     colorcycle::Bool=false,
     kwargs...,
 )
-    position = _calculate_position(cascade, Geometry; kwargs...)
+    position = scale_for(cascade, Geometry; kwargs...)
     sgn = sign(cascade)
 
     attr = _define_from(Shape, Color, position, sgn; style=:fill, kwargs...)
     label = get_label.(collect_data(cascade))
 
-    annot = _define_annotation(cascade, geometry; kwargs...)
+    annot = _define_annotation(cascade, Geometry; kwargs...)
 
     data = Geometry.(label, attr, length(cascade), annot)
 
@@ -248,5 +253,5 @@ end
 
 function _set_geometry(plot::Plot{Data}, Geometry::DataType, args...; kwargs...)
     cascade = _set_geometry(plot.cascade, Geometry, args...; kwargs...)
-    return Plot(cascade, plot.axes)
+    return Plot(cascade, plot.axes, plot.title, plot.path)
 end

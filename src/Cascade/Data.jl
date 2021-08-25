@@ -27,7 +27,7 @@ get_order(args...) = _get(get_order, args...)
 get_value(x::Data) = x.value
 get_value(args...) = _get(get_value, args...)
 
-_get(fun::Function, data::Vector) = convert(Matrix, fun.(data))
+_get(fun::Function, data::Vector) = matrix(fun.(data))
 
 
 "Set properties"

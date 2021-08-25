@@ -25,6 +25,16 @@ collect_data(x::Cascade) = Vector{}([x.start; x.steps; x.stop])
 
 
 """
+    collect_ticks(x::Cascade{Data}; kwargs...)
+This function returns a list of major y-axis ticks
+"""
+function collect_ticks(cascade; kwargs...)
+    vmin, vmax, vscale = vlim(cascade; kwargs...)
+    return collect(vmin:minimum(get_order.([vmin,vmax])):vmax)
+end
+
+
+"""
     collect_correlation(x::Cascade)
 This function extends the correlation matrix ``A \\in \\mathbb{R}^{N,N}`` stored in
 `x.correlation` by defining ``A' \\in \\mathbb{R}^{N+2,N+2}`` to account for

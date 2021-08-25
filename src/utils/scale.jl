@@ -2,12 +2,26 @@ get_order(x::T) where T<:Real = parse(Int, match(r"e(.*)", Printf.@sprintf("%e",
 
 
 """
+    scale_for
 """
-function scale_point(cascade::Cascade; kwargs...)
+function scale_for(cascade, ::Type{Violin}; kwargs...)
     v1 = cumulative_v(cascade; shift=-1.0, kwargs...)
     v2 = cumulative_v(cascade; shift= 0.0, kwargs...)
     
-    # Allows for diy vlims.
+    vkde = calculate(v2, KernelDensity.kde)
+    vlims = vlim(v1; kwargs...)
+
+    xl, xr = scale_x(vkde; kwargs...)
+    y = scale_y(vkde; vlims...)
+
+    return vectorize(Luxor.Point.(hcat(xl,xr), hcat(y,y)))
+end
+
+
+function scale_for(cascade, ::Type{T}; kwargs...) where T<:Geometry
+    v1 = cumulative_v(cascade; shift=-1.0, kwargs...)
+    v2 = cumulative_v(cascade; shift= 0.0, kwargs...)
+    
     vlims = vlim(v1; kwargs...)
 
     y1 = scale_y(v1; vlims...)
@@ -23,11 +37,58 @@ end
     scale_x(data::Data, quantile::Real=1; kwargs...)
 This function scales 
 """
+function scale_x( ;
+    steps,
+    shift::Float64=-0.5,
+    samples=1,
+    subdivide=true,
+    space=true,
+    kwargs...,
+)
+    ROW, COL = steps, (subdivide ? samples : 1)
+    extend = -sign(-0.5-shift) * (0.5*SEP * !space * !subdivide)
+
+    wstep = width(steps)
+    wsample = wstep/COL
+
+    Wstep = fill(wstep, (ROW,1))
+    Wsample = fill(wsample, (1,COL))
+    dWo = fill(SEP, (ROW,1))
+    
+    L = lower_triangular(ROW)
+    U = upper_triangular(COL)
+
+    dx = Wsample*(U+shift*I)
+    x = (L-I)*Wstep + L*dWo .+ extend
+    result = x .+ dx
+
+    return subdivide ? result : hcat(fill(result, samples)...)
+end
+
+
+function scale_x(lst::AbstractArray{T}; kwargs...) where T <: KernelDensity.UnivariateKDE
+    v = matrix(getfield.(lst,:density))
+
+    ROW, COL = size(v)
+    xmid = scale_x( ; steps=ROW, kwargs...)
+
+    w = width(ROW)
+    vmax = maximum(v; dims=2)
+    factor = matrix(fill.(0.5 * w ./ vmax, COL))
+
+    xl = xmid .- (factor .* v)
+    xr = xmid .+ (factor .* v)
+    return xl, xr
+end
+
+
 function scale_x(data::Vector{Data}; quantile=1.0, kwargs...)
-    x1 = cumulative_x(data; shift = -(1-(1-quantile)/2), kwargs...)
-    x2 = cumulative_x(data; shift =    -(1-quantile)/2,  kwargs...)
+    STEPS, SAMPLES = size(get_value(data))
+    x1 = scale_x( ; steps=STEPS, samples=SAMPLES, shift=-(1-(1-quantile)/2), kwargs...)
+    x2 = scale_x( ; steps=STEPS, samples=SAMPLES, shift=   -(1-quantile)/2,  kwargs...)
     return x1, x2
 end
+
 
 scale_x(cascade::T; kwargs...) where T <: Cascade = scale_x(collect_data(cascade); kwargs...)
 
@@ -35,63 +96,17 @@ scale_x(cascade::T; kwargs...) where T <: Cascade = scale_x(collect_data(cascade
 """
     scale_y(data::Data)
 """
-scale_y(v::AbstractArray; vmin, vscale, vmax) = -vscale * (max.(v,vmin) .- vmax)
-
-
-"""
-    scale_kde(data::Vector{Data})
-"""
-function scale_kde(fun::Function, data::Vector{Data})
-    value = calculate_kde.(fun, data)
-    
-    vlims = NamedTuple{(:vmin,:vmax,:vscale)}(vlim(data))
-    y = get_x(value)
-    y = scale_y(y; vlims...)
-
-    xl, xr = scale_density(value; steps=length(data),)
-    return hcat(xl,xr), hcat(y,y)
+function scale_y(v::AbstractArray; kwargs...)
+    vmin, vmax, vscale = vlim(v; kwargs...)
+    return -vscale * (max.(v,vmin) .- vmax)
 end
 
-
-function scale_kde(cascade::Cascade; kwargs...)
-    v1 = cumulative_v(cascade; shift=-1.0, kwargs...)
-    v2 = cumulative_v(cascade; shift= 0.0, kwargs...)
-
-    value = calculate_kde.(vectorize(convert.(Float64, v2)))
-
-    data = collect_data(cascade)
-    vlims = vlim(data; kwargs...)
-
-    y = getproperty.(value,:x)
-    y = convert(Matrix, scale_y.(y; vlims...))
-
-    xl, xr = scale_density(value; steps=length(data),)
-
-    x, y = hcat(xl,xr), hcat(y,y)
-    return vectorize(Luxor.Point.(x,y))
+function scale_y(lst::AbstractArray{T}; kwargs...) where T <: KernelDensity.UnivariateKDE
+    return matrix(scale_y.(getfield.(lst,:x); kwargs...))
 end
 
-
-"""
-    scale_density()
-"""
-function scale_density(v::Matrix{T}; steps, kwargs...) where T <: Real
-    ROW, COL = size(v)
-
-    xmid = cumulative_x( ; steps=steps, kwargs...)
-
-    w = width(steps)
-    vmax = maximum(v; dims=2)
-    m = hcat(fill(0.5 * w ./ vmax, COL)...)
-
-    xl = xmid .- (m .* v)
-    xr = xmid .+ (m .* v)
-    return xl, xr
-end
-
-function scale_density(value::Vector; kwargs...)
-    return scale_density(get_density(value); kwargs...)
-end
+scale_y(cascade::Cascade{Data}; kwargs...) = scale_y(collect_data(cascade); kwargs...)
+scale_y(data::Vector{Data}; kwargs...) = scale_y(get_value(data); vlim(data)...)
 
 
 """
@@ -104,11 +119,12 @@ y-axis ticks.
 - `vmax::Float64`: (rounded) minimum data value
 - `vscale::Float64`: scaling factor to convert value coordinates to drawing coordinates.
 """
-function vlim(mat::Matrix; vmin=missing, vmax=missing, kwargs...)
-    if ismissing(vmin)*ismissing(vmax)
-        vmax = VMAX
-        vmin = VMIN
-    end
+function vlim(mat::AbstractArray; vmin=missing, vmax=missing, kwargs...)
+    mat = dropzero(mat)
+    order = minimum(get_order.(mat))
+
+    ismissing(vmin) && (vmin = floor(minimum(mat) - 0.5*exp10(order-1)))
+    ismissing(vmax) && (vmax = ceil(maximum(mat) + 0.5*exp10(order-1)) + 0.5*exp10(order-1))
     
     vscale = HEIGHT/(vmax-vmin)
     return (vmin=vmin, vmax=vmax, vscale=vscale)
@@ -116,7 +132,7 @@ end
 
 
 function vlim(data::Vector{Data}; kwargs...)
-    return vlim(get_value(data); kwargs...)
+    return vlim(Statistics.cumsum(get_value(data); dims=1); kwargs...)
 end
 
-calculate_kde(v::Vector{T}) where T <: Real = KernelDensity.kde(v)
+vlim(cascade::Cascade{Data}; kwargs...) = vlim(collect_data(cascade); kwargs...)
