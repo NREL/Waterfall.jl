@@ -204,21 +204,21 @@
   <windows source-height='30'>
     <window class='worksheet' maximized='true' name='Sheet 1'>
       <cards>
-        <edge name='left'>
+        <stroke name='left'>
           <strip size='160'>
             <card type='pages' />
             <card type='filters' />
             <card type='marks' />
           </strip>
-        </edge>
-        <edge name='top'>
+        </stroke>
+        <stroke name='top'>
           <strip size='2147483647'>
             <card type='columns' />
           </strip>
           <strip size='2147483647'>
             <card type='rows' />
           </strip>
-        </edge>
+        </stroke>
       </cards>
       <viewpoint>
         <highlight>
