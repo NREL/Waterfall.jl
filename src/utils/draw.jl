@@ -1,66 +1,19 @@
 """
-    set(color::Coloring)
+    set(x::Coloring)
+    set(x::Blending)
+These methods set the color or blend defined in `x`.
 """
-function set(color::Coloring)
-    Luxor.setcolor(Luxor.sethue(color.hue)..., color.alpha)
-    return nothing
-end
-
-function set(color::Blending)
-    Luxor.setblend(Luxor.blend(color.direction..., color.hue...))
-    return nothing
-end
+set(color::Coloring) = Luxor.setcolor(Luxor.sethue(color.hue)..., color.alpha)
+set(color::Blending) = Luxor.setblend(Luxor.blend(color.direction..., color.hue...))
 
 
 """
-    draw(attr::Box)
-This function draws the input
+    draw(plot::Plot{T}) where T<:Geometry
+These methods draw a waterfall plot using all of the styling and values stored in `plot`.
 """
-function draw(plot::T; kwargs...) where T <: Plot
-    draw(plot.cascade)
-
-    Luxor.setcolor(Luxor.sethue("black")..., 1.0)
-    draw(plot.title)
-    draw(plot.axes)
-    
-    return nothing
-end
-
-
-function draw(shape::Box)
+function draw(shape::T) where T <: Shape
     set(shape.color)
-    Luxor.box(shape.position..., shape.style)
-    return nothing
-end
-
-
-function draw(shape::Line)
-    set(shape.color)
-    Luxor.line(shape.position[1], shape.position[2], shape.style)
-    return nothing
-end
-
-
-function draw(shape::Poly)
-    set(shape.color)
-    Luxor.poly(shape.position, close=true, shape.style)
-    return nothing
-end
-
-
-function draw(ax::XAxis)
-    draw(ax.ticklabels)
-    draw(ax.ticksublabels)
-    Luxor.arrow(ax.ticks.arrow...)
-    return nothing
-end
-
-
-function draw(ax::YAxis)
-    draw(ax.label)
-    draw(ax.ticklabels)
-    draw(ax.ticks.shape)
-    Luxor.arrow(ax.ticks.arrow...)
+    _draw(shape)
     return nothing
 end
 
@@ -68,7 +21,6 @@ end
 function draw(lab::T) where T <: Label
     Luxor.fontsize(lab.scale * FONTSIZE)
     Luxor.setcolor(Luxor.sethue("black")...)
-
     _draw(lab)
 
     Luxor.fontsize(FONTSIZE)
@@ -76,19 +28,21 @@ function draw(lab::T) where T <: Label
 end
 
 
-draw(lst::AbstractArray) = [draw(x) for x in lst]
+draw(x::T; kwargs...) where T<:Plot = draw(collect(values(x)))
 draw(x::Cascade{T}) where T<:Geometry = draw(collect_data(x))
+draw(x::T) where T<:Geometry = draw(x.shape)
+draw(x::T) where T<:Axis = draw(collect(values(x)))
+draw(x::String) = nothing
 
-function draw(x::T) where T<:Geometry
-    draw(x.shape)
-    # draw(x.annotation)
-    return nothing
-end
+draw(lst::AbstractArray) = [draw(x) for x in lst]
 
 
 """
     _draw(lab::T) where T <: Label
-This is a helper function for drawing different types of labels.
+    _draw(shape::T) where T <: Shape
+These are helper methods for drawing different types of labels and shapes. They do not
+include steps like setting colors and font size, since these processes are consistent across
+`Label` and `Shape`. 
 """
 function _draw(lab::Label{String})
     Luxor.text(lab.text, lab.position; halign=lab.halign, valign=lab.valign, angle=lab.angle)
@@ -105,23 +59,10 @@ end
 
 _draw(lab::Label{Missing}) = nothing
 
-
-"""
-"""
-function _draw_title(plot::T; interactivity, fuzziness, kwargs...) where T <: Plot
-    N = length(plot)
-    idx = [true, plot.cascade.iscorrelated, N>1]
-
-    str = [
-        "$N SAMPLE" * (N>1 ? "S" : ""),
-        "CORRELATION COEFFICIENT: min=$(interactivity[1]), max=$(interactivity[2])",
-        "UNIFORM SAMPLE DISTRIBUTION: f(x; a>$(fuzziness[1]), b<$(fuzziness[2]))"
-    ][idx]
-
-    font = Luxor.get_fontsize()
-    Luxor.textbox(str, Luxor.Point(WIDTH/2, -TOP_BORDER); leading=0, alignment=:center)
-    return nothing
-end
+_draw(shape::Arrow) = Luxor.arrow(shape.position..., linewidth=2.0)
+_draw(shape::Box) = Luxor.box(shape.position..., shape.style)
+_draw(shape::Line) = Luxor.line(shape.position..., shape.style)
+_draw(shape::Poly) = Luxor.poly(shape.position, close=true, shape.style)
 
 
 """

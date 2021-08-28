@@ -4,6 +4,6 @@ mutable struct Arrow <: Shape
     style::Union{Symbol, Vector{Float64}}
 end
 
-function Arrow( ; position, color, style=:stroke, kwargs...)
+function Arrow( ; position, color, style)
     return Arrow(position, color, style)
 end

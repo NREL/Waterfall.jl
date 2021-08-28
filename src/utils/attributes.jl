@@ -239,23 +239,30 @@ function _define_annotation(cascade::Cascade{Data}, Geometry::DataType;
 end
 
 
+
+function _define_from(::Type{T}, x::Tuple{Luxor.Point,Luxor.Point};
+    hue = "black",
+    alpha = 1.0,
+    style = :stroke,
+    kwargs...,
+) where T <: Union{Arrow,Line}
+    return T(x, _define_from(Coloring, hue; alpha=alpha), style)
+end
+
+
 """
 """
-function _define_from(::Type{Ticks}, cascade, ::Type{T};
+function _define_ticks(cascade, ::Type{T};
     x = 0,
     y = HEIGHT,
     len = SEP,
     kwargs...,
-) where T<:Axis
+) where T <: Axis
 
     p1 = _define_position(cascade, T; x=x-0.5*len, y=y-0.5*len, kwargs...)
     p2 = _define_position(cascade, T; x=x+0.5*len, y=y+0.5*len, kwargs...)
-    lst = tuple.(p1,p2)
 
-    return Ticks( ;
-        shape = [Line(tup, _define_from(Coloring, "black"; alpha=1.0), :stroke) for tup in lst],
-        arrow = _define_arrow(T; x=x, y=y, kwargs...),
-    )
+    return _define_from.(Line, tuple.(p1,p2))
 end
 
 

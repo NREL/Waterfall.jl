@@ -1,9 +1,9 @@
 mutable struct YAxis <: Axis
     label::Label{String}
-    ticks::Ticks
+    ticks::Vector{Line}
     ticklabels::Vector{Label{String}}
-    lim::Tuple
+    frame::Arrow
 end
 
 
-YAxis( ; label, ticks, ticklabels, lim) = YAxis(label, ticks, ticklabels, lim)
+YAxis( ; label, ticks, ticklabels, frame) = YAxis(label, ticks, ticklabels, frame)

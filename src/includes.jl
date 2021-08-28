@@ -38,6 +38,7 @@ include(joinpath(WATERFALL_DIR,"src","Cascade","Geometry","Parallel.jl"))
 include(joinpath(WATERFALL_DIR,"src","Cascade","Geometry","Vertical.jl"))
 include(joinpath(WATERFALL_DIR,"src","Cascade","Geometry","Violin.jl"))
 
+include(joinpath(WATERFALL_DIR,"src","Figure","Shape","Arrow.jl"))
 include(joinpath(WATERFALL_DIR,"src","Figure","Shape","Box.jl"))
 include(joinpath(WATERFALL_DIR,"src","Figure","Shape","Line.jl"))
 include(joinpath(WATERFALL_DIR,"src","Figure","Shape","Point.jl"))

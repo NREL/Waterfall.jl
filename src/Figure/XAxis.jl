@@ -1,9 +1,8 @@
 mutable struct XAxis <: Axis
-    ticks::Ticks
     ticklabels::Vector{Label{Vector{String}}}
     ticksublabels::Vector{Label{Vector{String}}}
-    lim::Tuple
+    frame::Line
 end
 
 
-XAxis( ; ticks, ticklabels, ticksublabels, lim) = XAxis(ticks, ticklabels, ticksublabels, lim)
+XAxis( ; ticklabels, ticksublabels, frame) = XAxis(ticklabels, ticksublabels, frame)

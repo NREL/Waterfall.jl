@@ -91,12 +91,12 @@ function define_from(::Type{Plot{T}}, cascade::Cascade{Data}; kwargs...) where T
 end
 
 
-function define_from(::Type{XAxis}, cascade::Cascade{Data}; xlabel="", kwargs...)
+function define_from(::Type{XAxis}, cascade::Cascade{Data}; kwargs...)
     label_type = Vector{Label{Vector{String}}}
     pad = SEP/2
     
     return XAxis( ;
-        ticks = _define_from(Ticks, cascade, XAxis; kwargs...),
+        # ticks = _define_from(Ticks, cascade, XAxis; kwargs...),
         ticklabels = _define_from(label_type, cascade, XAxis, :label;
             yshift = pad,    
             kwargs...,
@@ -106,20 +106,21 @@ function define_from(::Type{XAxis}, cascade::Cascade{Data}; xlabel="", kwargs...
             scale = 0.8,
             kwargs...,
         ),
-        lim = (1,length(collect_data(cascade))),
+        frame = _define_from(Line, (Luxor.Point(0,HEIGHT), Luxor.Point(WIDTH+2*SEP,HEIGHT)))
     )
 end
 
 
 function define_from(::Type{YAxis}, cascade::Cascade{Data};
     ylabel,
+    x = 0,
+    y = HEIGHT,
     kwargs...,
 )
     label_type = Label{String}
-    vmin, vmax, vscale = vlim(collect_data(cascade); kwargs...)
 
     return YAxis( ;
-        ticks = _define_from(Ticks, cascade, YAxis; kwargs...),
+        ticks = _define_ticks(cascade, YAxis; kwargs...),
         label = _define_from(label_type, ylabel, Luxor.Point(-(LEFT_BORDER-SEP/2), HEIGHT/2);
             angle = -pi/2,
             valign = :top,
@@ -130,7 +131,7 @@ function define_from(::Type{YAxis}, cascade::Cascade{Data};
             scale = 0.9,
             kwargs...,
         ),
-        lim = (vmin,vmax),
+        frame = _define_from(Arrow, (Luxor.Point(0,HEIGHT), Luxor.Point(0,0))),
     )
 end
 

@@ -100,11 +100,11 @@ for geometry in [Vertical]
                 Luxor.@png begin
                     Luxor.fontface("Gill Sans")
                     Luxor.fontsize(FONTSIZE)
+                    Luxor.setline(1.0)
                     Luxor.setmatrix([1 0 0 1 LEFT_BORDER TOP_BORDER])
                     
                     draw(plot)
-                    # _draw(plot.title)
-
+                    
                     # nsample>1 && draw(cmean)
                     
                 end WIDTH+LEFT_BORDER+RIGHT_BORDER HEIGHT+TOP_BORDER+BOTTOM_BORDER+padding(plot.axes[1]) plot.path
