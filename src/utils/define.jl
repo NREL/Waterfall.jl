@@ -92,12 +92,20 @@ end
 
 
 function define_from(::Type{XAxis}, cascade::Cascade{Data}; xlabel="", kwargs...)
-    Lab = Vector{Label{Vector{String}}}
+    label_type = Vector{Label{Vector{String}}}
+    pad = SEP/2
     
     return XAxis( ;
         ticks = _define_from(Ticks, cascade, XAxis; kwargs...),
-        ticklabels = _define_from(Lab, cascade, XAxis, :label; yshift=SEP, kwargs...),
-        ticksublabels = _define_from(Lab, cascade, XAxis, :sublabel; yshift=2*SEP, kwargs...),
+        ticklabels = _define_from(label_type, cascade, XAxis, :label;
+            yshift = pad,    
+            kwargs...,
+        ),
+        ticksublabels = _define_from(label_type, cascade, XAxis, :sublabel;
+            yshift = pad+FONTSIZE,
+            scale = 0.8,
+            kwargs...,
+        ),
         lim = (1,length(collect_data(cascade))),
     )
 end
@@ -107,17 +115,21 @@ function define_from(::Type{YAxis}, cascade::Cascade{Data};
     ylabel,
     kwargs...,
 )
-    Lab = Label{String}
+    label_type = Label{String}
     vmin, vmax, vscale = vlim(collect_data(cascade); kwargs...)
 
     return YAxis( ;
-        label = _define_from(Lab, ylabel, Luxor.Point(0,HEIGHT/2);
+        ticks = _define_from(Ticks, cascade, YAxis; kwargs...),
+        label = _define_from(label_type, ylabel, Luxor.Point(-(LEFT_BORDER-SEP/2), HEIGHT/2);
             angle = -pi/2,
             valign = :top,
-            xshift = -LEFT_BORDER,
         ),
-        ticks = _define_from(Ticks, cascade, YAxis; kwargs...),
-        ticklabels = _define_from(Vector{Lab}, cascade, YAxis; kwargs...),
+        ticklabels = _define_from(Vector{label_type}, cascade, YAxis;
+            halign = :right,
+            xshift = -SEP,
+            scale = 0.9,
+            kwargs...,
+        ),
         lim = (vmin,vmax),
     )
 end

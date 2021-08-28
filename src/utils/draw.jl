@@ -57,6 +57,7 @@ end
 
 
 function draw(ax::YAxis)
+    draw(ax.label)
     draw(ax.ticklabels)
     draw(ax.ticks.shape)
     Luxor.arrow(ax.ticks.arrow...)
