@@ -4,6 +4,7 @@ mutable struct Poly <: Shape
     style::Union{Symbol, Vector{Float64}}
 end
 
+
 function Poly( ; position, color, style=:fill, kwargs...)
     return Poly(position, color, style)
 end

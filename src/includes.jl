@@ -16,10 +16,6 @@ import SparseArrays
 
 import LinearAlgebra, LinearAlgebra.I
 
-abstract type Sampling end
-abstract type Geometry <: Sampling end
-
-abstract type Axis end
 
 include(joinpath(WATERFALL_DIR,"src","Figure","Color","Coloring.jl"))
 include(joinpath(WATERFALL_DIR,"src","Figure","Color","Blending.jl"))
@@ -31,8 +27,10 @@ include(joinpath(WATERFALL_DIR,"src","Figure","Shape","Point.jl"))
 include(joinpath(WATERFALL_DIR,"src","Figure","Shape","Poly.jl"))
 
 include(joinpath(WATERFALL_DIR,"src","Figure","Text","Labelbox.jl"))
-# include(joinpath(WATERFALL_DIR,"src","Figure","Text","Label.jl"))
+include(joinpath(WATERFALL_DIR,"src","Figure","Text","Label.jl"))
 
+abstract type Sampling end
+abstract type Geometry <: Sampling end
 include(joinpath(WATERFALL_DIR,"src","Cascade","Data.jl"))
 include(joinpath(WATERFALL_DIR,"src","Cascade","Cascade.jl"))
 include(joinpath(WATERFALL_DIR,"src","Cascade","Geometry","Horizontal.jl"))
@@ -45,6 +43,7 @@ include(joinpath(WATERFALL_DIR,"src","Figure","Shape","Line.jl"))
 include(joinpath(WATERFALL_DIR,"src","Figure","Shape","Point.jl"))
 include(joinpath(WATERFALL_DIR,"src","Figure","Shape","Poly.jl"))
 
+abstract type Axis end
 include(joinpath(WATERFALL_DIR,"src","Figure","Ticks.jl"))
 include(joinpath(WATERFALL_DIR,"src","Figure","XAxis.jl"))
 include(joinpath(WATERFALL_DIR,"src","Figure","YAxis.jl"))
@@ -58,7 +57,6 @@ include(joinpath(WATERFALL_DIR,"src","options.jl"))
 include(joinpath(WATERFALL_DIR,"src","utils","attributes.jl"))
 include(joinpath(WATERFALL_DIR,"src","utils","io.jl"))
 include(joinpath(WATERFALL_DIR,"src","utils","calc.jl"))
-# include(joinpath(WATERFALL_DIR,"src","utils","correlate.jl"))
 include(joinpath(WATERFALL_DIR,"src","utils","draw.jl"))
 include(joinpath(WATERFALL_DIR,"src","utils","random.jl"))
 include(joinpath(WATERFALL_DIR,"src","utils","scale.jl"))

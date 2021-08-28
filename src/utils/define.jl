@@ -3,25 +3,24 @@ import Base
 
 """
     define_from(::Type{Cascade{Data}}, df)
-    define_from(::Type{Plot{Data}}, cascade)
+    define_from(::Type{Plot{Data}}, cascade; kwargs...)
     define_from(::Type{T}, cascade::Cascade{Data}; kwargs...) where T<:Axis
+
+# Keywords
+- `ylabel::String`, y-axis label
+- 
 """
 function define_from(::Type{Cascade{Data}}, df::DataFrames.DataFrame;
-    ncor=DEFAULT_NCOR,
-    maxdim=length(COLORCYCLE),
-    # permutation=1:length(COLORCYCLE),
-    permutation=missing,
-    correlate=true,
-    permute=true,
+    permutation = missing,
+    correlate = true,
+    permute = true,
     kwargs...,
 )
-    # maxdim = min(maxdim, size(df,1)-2)
     rows = size(df,1)
-    maxdim = min(rows,length(COLORCYCLE),maxdim)
+    maxstep = min(rows-2,length(COLORCYCLE))
 
-    if ismissing(permutation)
-        permutation = collect(1:min(rows-2,length(COLORCYCLE)))
-    end
+    # Check for numbers in here lager than the colorcycle length?
+    permutation = coalesce(permutation, collect(1:maxstep))
     
     idx = [1; sort(permutation).+1; rows]
     data = define_from(Vector{Data}, df[idx,:]; kwargs...)
@@ -30,13 +29,18 @@ function define_from(::Type{Cascade{Data}}, df::DataFrames.DataFrame;
         start = first(data),
         stop = last(data),
         steps = data[2:end-1],
-        correlation = random_rotation(length(permutation), ncor; maxdim=rows, permutation=permutation, kwargs...),
+        correlation = random_rotation(length(permutation);
+            nrandom=correlate,
+            maxdim=maxstep,
+            permutation=permutation,
+            kwargs...,
+        ),
         permutation = permutation,
         iscorrelated = false,
         ispermuted = false,
     )
 
-    correlate && correlate!(cascade)
+    correlate!==false && correlate!(cascade)
     permute && (cascade = permute!(cascade))
     
     return cascade
@@ -88,25 +92,32 @@ end
 
 
 function define_from(::Type{XAxis}, cascade::Cascade{Data}; xlabel="", kwargs...)
+    Lab = Vector{Label{Vector{String}}}
     
-    ticklabels, ticksublabels = _define_from(Vector{Labelbox}, XAxis, cascade; kwargs...)
-
     return XAxis( ;
-        ticks = _define_from(Ticks, XAxis, cascade; kwargs...),
-        ticklabels = ticklabels,
-        ticksublabels = ticksublabels,
+        ticks = _define_from(Ticks, cascade, XAxis; kwargs...),
+        ticklabels = _define_from(Lab, cascade, XAxis, :label; yshift=SEP, kwargs...),
+        ticksublabels = _define_from(Lab, cascade, XAxis, :sublabel; yshift=2*SEP, kwargs...),
         lim = (1,length(collect_data(cascade))),
     )
 end
 
 
-function define_from(::Type{YAxis}, cascade::Cascade{Data}; ylabel, kwargs...)
+function define_from(::Type{YAxis}, cascade::Cascade{Data};
+    ylabel,
+    kwargs...,
+)
+    Lab = Label{String}
     vmin, vmax, vscale = vlim(collect_data(cascade); kwargs...)
 
     return YAxis( ;
-        label = ylabel,
-        ticks = _define_from(Ticks, YAxis, cascade; kwargs...),
-        ticklabels = _define_from(Vector{Labelbox}, YAxis, cascade; kwargs...),
+        label = _define_from(Lab, ylabel, Luxor.Point(0,HEIGHT/2);
+            angle = -pi/2,
+            valign = :top,
+            xshift = -LEFT_BORDER,
+        ),
+        ticks = _define_from(Ticks, cascade, YAxis; kwargs...),
+        ticklabels = _define_from(Vector{Lab}, cascade, YAxis; kwargs...),
         lim = (vmin,vmax),
     )
 end
@@ -132,17 +143,24 @@ function _define_from(Shape, Color, position::Vector{T1}, sgn::Vector{T2};
 end
 
 function _define_from(Shape, Color, position::Vector{T}, sgn;
-    style, kwargs...) where T <: Luxor.Point
+    style,
+    kwargs...,
+) where T <: Luxor.Point
     return Shape(position, _define_from(Color, sgn, position; kwargs...), style)
 end
 
 function _define_from(Shape, Color, position::Vector{T}, sgn;
-    style, kwargs...) where T <: Tuple
+    style,
+    kwargs...,
+) where T <: Tuple
     return Shape.(position, _define_from(Vector{Color}, sgn, position; kwargs...), style)
 end
 
 
-function _define_from(::Type{Coloring}, sign, args...; alpha=0.8, kwargs...)
+function _define_from(::Type{Coloring}, sign, args...;
+    alpha = 0.8,
+    kwargs...,
+)
     hue = define_from(Luxor.RGB, sign; kwargs...)
     alpha = _define_alpha(alpha; kwargs...)
     return Coloring(hue, alpha)
@@ -155,11 +173,8 @@ end
 
 
 function _define_from(::Type{Vector{Blending}}, sgn, position; kwargs...)
-    lightness = 0.5
-    h1 = define_from.(Luxor.RGB, sgn)
-    h2 = define_from.(Luxor.RGB, sgn; s=-lightness, v=lightness)
-    hue = tuple.(h1, h2)
-
+    hue = _define_blend.(sgn)
+    
     # Calculate direction.
     xmid = mid(position; dims=1)
 
@@ -233,7 +248,8 @@ function _set_geometry(cascade::Cascade{Data}, Geometry, Shape, Color;
     attr = _define_from(Shape, Color, position, sgn; style=:fill, kwargs...)
     label = get_label.(collect_data(cascade))
 
-    annot = _define_annotation(cascade, Geometry; kwargs...)
+    # annot = _define_annotation(cascade, Geometry; kwargs...)
+    annot = fill(_define_from(Label, missing, Luxor.Point(0,0)), length(sgn))
 
     data = Geometry.(label, attr, length(cascade), annot)
 
@@ -241,9 +257,6 @@ function _set_geometry(cascade::Cascade{Data}, Geometry, Shape, Color;
         start = set_hue!(first(data), "black"),
         stop = set_hue!(last(data), "black"),
         steps = colorcycle ? set_hue!.(data[2:end-1], cascade.permutation) : data[2:end-1],
-        # start = first(data),
-        # stop = last(data),
-        # steps = data[2:end-1],
         permutation = cascade.permutation,
         correlation = cascade.correlation,
         ispermuted = cascade.ispermuted,

@@ -15,22 +15,22 @@
 
 """
 """
-function random_samples(value; fuzzy_correlation=false, kwargs...)
+function random_samples(value; kwargs...)
     dim = length(value)
     translation = random_translation(dim; kwargs...)
     # correlation = random_correlation(dim; kwargs...)
-    # fuzzy_correlation && (translation = translation * correlation)
     return translation .+ value
 end
 
 
 """
+
 """
 function random_translation(dim;
-    nsample=DEFAULT_NSAMPLE,
-    distribution=DEFAULT_DISTRIBUTION,
-    fuzziness=DEFAULT_FUZZINESS,
-    seed=SEED,
+    nsample = DEFAULT_NSAMPLE,
+    distribution = DEFAULT_DISTRIBUTION,
+    fuzziness = DEFAULT_FUZZINESS,
+    seed = SEED,
     kwargs...,
 )
     Random.seed!(SEED)
@@ -44,7 +44,7 @@ function _random_translation(N, distribution::Symbol, offset::Vector)
 end
 
 
-function _random_translation(N, distribution::Vector, offset::Vector; seed=1234)
+function _random_translation(N, distribution::Vector, offset::Vector; seed=SEED)
     # If given multiple distributions to select from, do so at random.
     if length(unique(sort!(distribution)))>1
         Random.seed!(seed)
@@ -103,11 +103,15 @@ https://cran.r-project.org/web/packages/GauPro/vignettes/IntroductionToGPs.html#
 https://scipy-cookbook.readthedocs.io/items/CorrelatedRandomSamples.html
 """
 function random_correlation(dim;
-    ncor=DEFAULT_NCOR,
-    method=:eig,
+    nrandom = DEFAULT_NCOR,
+    method = :eig,
     kwargs...,
 )
-    rot = random_rotation(dim, ncor; symmetric=true, kwargs...)
+    rot = random_rotation(dim;
+        symmetric=true,
+        type=LinearAlgebra.UnitLowerTriangular,
+        kwargs...,
+    )
 
     if method==:eig
         eigval = LinearAlgebra.eigvals(rot)
@@ -136,7 +140,7 @@ R_{i,j} = R_{j,i} = x
 ```
 
 # Keyword arguments
-- `seed=1234` for random number generator set before picking the values with which to fill
+- `seed=SEED` for random number generator set before picking the values with which to fill
     the rotation matrix.
 - `interactivity=(0.0,0.1)` the range of minimum and maximum allowed rotation
 
@@ -154,16 +158,20 @@ julia> random_rotation(4, 3)
  0.0        0.0       0.0  1.0
 ```
 """
-function random_rotation(dim::Integer, nrot;
-    maxdim=100,
-    seed=1234,
-    interactivity=(0.0,0.1),
-    permutation=[],
-    type=I,
+function random_rotation(dim::Integer;
+    maxdim = missing,
+    permutation = missing,
+    interactivity = (0.0,0.1),
+    nrandom = true,
+    seed = SEED,
+    type = I,
     kwargs...,
 )
-    rot = init(type, maxdim)
-    idx = random_index(rot, true)
+    maxdim = coalesce(maxdim, dim)
+    permutation = sort(coalesce(permutation, 1:dim))
+
+    rot = matrix(type, maxdim)
+    idx = random_index(rot, nrandom)
     N = length(idx)
 
     # Generate random values.
@@ -176,22 +184,7 @@ function random_rotation(dim::Integer, nrot;
     rot = _fill!(rot, idx.=>val; kwargs...)
     
     # Now, select elements of the rotation matrix that are relevant to the given permutation.
-    perm = isempty(permutation) ? collect(1:dim) : sort(permutation)
-    return rot[perm,perm]
-
-    # # Select indices overwhich to apply the rotation.
-    # rot = lower_triangular(dim, 0.)
-    # idx = random_index(rot, nrot)
-    # N = length(idx)
-
-    # # Generate random values.
-    # Random.seed!(seed)
-    # val = [
-    #     random_uniform( interactivity..., Integer(ceil(N/2)));
-    #     random_uniform(-reverse(collect(interactivity))..., Integer(floor(N/2)));
-    # ]
-
-    # return _fill!(rot, idx.=>val; kwargs...)
+    return rot[permutation, permutation]
 end
 
 
@@ -216,17 +209,17 @@ function _fill!(mat, lst; kwargs...)
     return mat
 end
 
-
 _fill!(mat::LinearAlgebra.Diagonal, args...; kwargs...) = _fill!(Matrix{}(mat), args...; kwargs...)
+
 
 """
     random_permutation(rng::UnitRange, nperm::Int; kwargs...)
 This function returns an `nperm`-element list of unique permutations of `rng`.
 
 # Keyword arguments
-- `seed=1234`
+- `seed=SEED`
 """
-function random_permutation(rng::UnitRange, nperm::Int; seed=1234)
+function random_permutation(rng::UnitRange, nperm::Int; seed=SEED)
     # Ensure the input number of permutations is feasible.
     nperm = min(factorial(last(rng)), nperm)
 
@@ -247,7 +240,7 @@ This function returns a list of random indices for which `x` is defined.
 - `N::Int`: number of indices to return
 
 # Keyword arguments
-- `seed=1234` for random number generator
+- `seed=SEED` for random number generator
 
 # Returns
 - `idx::Vector` of indices
@@ -273,12 +266,14 @@ random_index(x; kwargs...) = _shuffle(list_index(x); kwargs...)
 random_index(D::LinearAlgebra.Diagonal; kwargs...) = _random_index(D, !=; kwargs...)
 random_index(L::LinearAlgebra.UnitLowerTriangular; kwargs...) = _random_index(L, <; kwargs...)
 random_index(U::LinearAlgebra.UnitUpperTriangular; kwargs...) = _random_index(U, >; kwargs...)
-random_index(L::LinearAlgebra.LowerTriangular; kwargs...) = _random_index(L, <=; kwargs...)
-random_index(U::LinearAlgebra.UpperTriangular; kwargs...) = _random_index(U, >=; kwargs...)
+# random_index(L::LinearAlgebra.LowerTriangular; kwargs...) = _random_index(L, <=; kwargs...)
+# random_index(U::LinearAlgebra.UpperTriangular; kwargs...) = _random_index(U, >=; kwargs...)
 
 
-"This is a helper function to apply `random_index` to a matrix with a constraint
-on its index (ex: triangular)"
+"""
+This is a helper function to apply `random_index` to a matrix with a constraint
+on its index (ex: triangular)
+"""
 function _random_index(mat, constraint; kwargs...)
     idx = _constrain_index(list_index(mat), constraint)
     return _shuffle(idx; kwargs...)
@@ -291,7 +286,7 @@ function _constrain_index(idx::Vector{Vector{Int}}, fun)
 end
 
 "This is a helper function to set a seed and shuffle the index in one step."
-function _shuffle(idx; seed=1234, kwargs...)
+function _shuffle(idx; seed=SEED, kwargs...)
     Random.seed!(seed)
     return Random.shuffle(idx)
 end

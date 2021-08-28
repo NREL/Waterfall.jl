@@ -40,12 +40,12 @@ This function scales
 function scale_x( ;
     steps,
     shift::Float64=-0.5,
-    samples=1,
+    nsample=1,
     subdivide=true,
     space=true,
     kwargs...,
 )
-    ROW, COL = steps, (subdivide ? samples : 1)
+    ROW, COL = steps, (subdivide ? nsample : 1)
     extend = -sign(-0.5-shift) * (0.5*SEP * !space * !subdivide)
 
     wstep = width(steps)
@@ -55,14 +55,14 @@ function scale_x( ;
     Wsample = fill(wsample, (1,COL))
     dWo = fill(SEP, (ROW,1))
     
-    L = lower_triangular(ROW)
-    U = upper_triangular(COL)
+    L = matrix(LinearAlgebra.UnitLowerTriangular, ROW; value=1)
+    U = matrix(LinearAlgebra.UnitUpperTriangular, COL; value=1)
 
     dx = Wsample*(U+shift*I)
     x = (L-I)*Wstep + L*dWo .+ extend
     result = x .+ dx
 
-    return subdivide ? result : hcat(fill(result, samples)...)
+    return subdivide ? result : hcat(fill(result, nsample)...)
 end
 
 
@@ -84,8 +84,8 @@ end
 
 function scale_x(data::Vector{Data}; quantile=1.0, kwargs...)
     STEPS, SAMPLES = size(get_value(data))
-    x1 = scale_x( ; steps=STEPS, samples=SAMPLES, shift=-(1-(1-quantile)/2), kwargs...)
-    x2 = scale_x( ; steps=STEPS, samples=SAMPLES, shift=   -(1-quantile)/2,  kwargs...)
+    x1 = scale_x( ; steps=STEPS, nsample=SAMPLES, shift=-(1-(1-quantile)/2), kwargs...)
+    x2 = scale_x( ; steps=STEPS, nsample=SAMPLES, shift=   -(1-quantile)/2,  kwargs...)
     return x1, x2
 end
 
@@ -123,8 +123,8 @@ function vlim(mat::AbstractArray; vmin=missing, vmax=missing, kwargs...)
     mat = dropzero(mat)
     order = minimum(get_order.(mat))
 
-    ismissing(vmin) && (vmin = floor(minimum(mat) - 0.5*exp10(order-1)))
-    ismissing(vmax) && (vmax = ceil(maximum(mat) + 0.5*exp10(order-1)) + 0.5*exp10(order-1))
+    vmin = coalesce(vmin, floor(minimum(mat) - 0.5*exp10(order-1)))
+    vmax = coalesce(vmax, ceil(maximum(mat) + 0.5*exp10(order-1)) + 0.5*exp10(order-1))
     
     vscale = HEIGHT/(vmax-vmin)
     return (vmin=vmin, vmax=vmax, vscale=vscale)

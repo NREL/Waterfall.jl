@@ -1,7 +1,7 @@
 mutable struct Annotation
-    label::Labelbox
+    label::Label{Vector{String}}
     shape<:Shape
-    cascade::Union{Cascade{Horizontal},Missing}
+    cascade::Union{Cascade{Horizontal},Cascade{Vertical},Missing}
 end
 
 

@@ -1,7 +1,7 @@
 mutable struct YAxis <: Axis
-    label::String
+    label::Label{String}
     ticks::Ticks
-    ticklabels::Array{Union{Labelbox,Missing}}
+    ticklabels::Vector{Label{String}}
     lim::Tuple
 end
 

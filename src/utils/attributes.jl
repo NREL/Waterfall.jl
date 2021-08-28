@@ -1,12 +1,12 @@
 """
-    wrap_to(str, width; textscale)
+    wrap_to(str, width; scale)
 This function wraps an input string `str` to the input `width`, calculated assuming a
-font size `textscale` and returns an array of strings.
+font size `scale` and returns an array of strings.
 """
-function wrap_to(str::String, width; textscale)
+function wrap_to(str::String, width; scale)
     Luxor.@png begin
         tmp = Luxor.get_fontsize()
-        Luxor.fontsize(FONTSIZE * textscale)
+        Luxor.fontsize(FONTSIZE * scale)
 
         str = uppercase(str)
         lst = Luxor.textlines.(Luxor.textlines(str, width), width)
@@ -76,15 +76,7 @@ function set_hue!(x::Coloring, h; kwargs...)
     return x
 end
 
-function set_hue!(x::Blending, h)
-    lightness = 0.5
-    x.hue = (
-        define_from(Luxor.RGB, h),
-        define_from(Luxor.RGB, h; s=-lightness, v=lightness),
-    )
-    return x
-end
-
+set_hue!(x::Blending, h) = begin x.hue = _define_blend(h); return x end
 set_hue!(x::T, h) where T<:Geometry = begin set_hue!(x.shape, h); return x end
 set_hue!(x::T, h) where T<:Shape = begin set_hue!(x.color, h); return x end
 set_hue!(x::Vector{T}, h) where T<:Shape = begin set_hue!.(x, h); return x end
@@ -133,8 +125,27 @@ _define_alpha(x; kwargs...) = x
 
 
 """
+    _define_blend(x; kwargs...)
+This method defines the starting and stopping colors for a color gradient, such that the
+starting color is defined using [`Waterfall._define_colorant`](@ref) and the stopping color
+is 50% "lighter" than this color.
+
+# Returns
+- `x::Tuple{Luxor.RGB,Luxor.RGB}`, color gradient from the starting to stopping position of
+    each waterfall in the cascade.
+"""
+function _define_blend(x; kwargs...)
+    lightness = 0.5
+    h1 = define_from(Luxor.RGB, x)
+    h2 = define_from(Luxor.RGB, x; lightness=lightness)
+    return tuple(h1, h2)
+end
+
+
+"""
 This method scales a value ``v \\in [0,1]`` by a factor ``f \\in [-1,1]``,
 ``f<0`` decreases ``v`` and ``f>0`` increases ``v``:
+
 ```math
 v' =
 \\begin{cases}
@@ -143,19 +154,37 @@ v' =
 \\left(v_{max}-v\\right) f + v
 \\end{cases}
 ```
+
+Keywords:
+- `on`, interval of maximum and minimum result values
 """
 _scale_by(v, f; on, kwargs...) = (on[sign(f)<0 ? 1 : 2] - v) * abs(f) + v
 
 
 """
-    scale_hsv(color; s=0)
+    scale_hsv(color; kwargs...)
 This function decreases or increases `color` saturation by a factor of ``s \\in [-1,1]``.
+
+# Keywords
+- `lightness=0.5`, factor by which to "lighten" a color. Doing so scales hue by
+    `h=lightness` and saturation by `s=-lightness`. Allowed values: ``\\in [0,1]``.
+- `h=0`, factor by which to scale color hue. Allowed values: ``\\in [-1,1]``.
+    `hsv.h` ``\\in [0,1]``
+- `s=0`, factor by which to scale color saturation. Allowed values: ``\\in [-1,1]``.
+    `hsv.s` ``\\in [0,1]``
+- `v=0`, factor by which to scale color value. Allowed values: ``\\in [-1,1]``.
+    `hsv.v` ``\\in [0,255]``.
 """
-function scale_hsv(hsv::Luxor.HSV; h=0, s=0, v=0, kwargs...)
-    h = _scale_by(hsv.h, h; on=[0,255])
-    s = _scale_by(hsv.s, s; on=[0,1])
-    v = _scale_by(hsv.v, v; on=[0,1])
-    return Luxor.Colors.HSV(h, s, v)
+function scale_hsv(hsv::Luxor.HSV; lightness=missing, h=0, s=0, v=0, kwargs...)
+
+    return if !ismissing(lightness)
+        scale_hsv(hsv; s=-lightness, v=lightness)
+    else
+        h = _scale_by(hsv.h, h; on=[0,255])
+        s = _scale_by(hsv.s, s; on=[0,1])
+        v = _scale_by(hsv.v, v; on=[0,1])
+        Luxor.Colors.HSV(h, s, v)
+    end
 end
 
 function scale_hsv(rgb::Luxor.RGB; kwargs...)
@@ -170,7 +199,7 @@ end
 function _define_annotation(cascade::Cascade{Data}, Geometry::DataType;
     annotscale = 0.9,
     annotlead = 1.0,
-    fun = Statistics.mean,
+    fun::Function = Statistics.mean,
     kwargs...,
 )
     # Define label text.
@@ -180,7 +209,7 @@ function _define_annotation(cascade::Cascade{Data}, Geometry::DataType;
     lab = [@Printf.sprintf("%+2.2f",x) for x in vlab]
     N = size(v,1)
 
-    # Remove sign from start, stop:
+    # Remove sgn from start, stop:
     [lab[ii] = string(lab[ii][2:end-1]) for ii in [1,N]]
     lab = vectorize(lab)
 
@@ -194,7 +223,16 @@ function _define_annotation(cascade::Cascade{Data}, Geometry::DataType;
     position = scale_for(cascade, Geometry; kwargs...)
     ymin = minimum.(position; dims=2) .- annotlead*annotscale*length.(lab) .- 0.5*SEP
 
-    label = Labelbox.(lab, annotscale, Luxor.Point.(xmid,ymin), :center, annotlead)
+    label = [Label( ; 
+        text=lab[ii],
+        scale=annotscale,
+        position=Luxor.Point.(xmid[ii],ymin),
+        halign=:center,
+        valign=:middle,
+        angle=0,
+        leading=annotlead,
+    ) for ii in 1:N]
+
     Geometry==Violin && (label = [label[1:end-1];missing])
 
     return label
@@ -203,84 +241,162 @@ end
 
 """
 """
-function _define_from(::Type{Ticks}, Axis, cascade; x=0, y=HEIGHT, sep=0.5*SEP, kwargs...)
-    p1 = _define_from(Vector{Luxor.Point}, Axis, cascade; x=x-sep, y=y-sep, kwargs...)
-    p2 = _define_from(Vector{Luxor.Point}, Axis, cascade; x=x+sep, y=y+sep, kwargs...)
+function _define_from(::Type{Ticks}, cascade, ::Type{T};
+    x = 0,
+    y = HEIGHT,
+    len = SEP,
+    kwargs...,
+) where T<:Axis
+
+    p1 = _define_position(cascade, T; x=x-0.5*len, y=y-0.5*len, kwargs...)
+    p2 = _define_position(cascade, T; x=x+0.5*len, y=y+0.5*len, kwargs...)
     lst = tuple.(p1,p2)
 
     return Ticks( ;
         shape = [Line(tup, _define_from(Coloring, "black"; alpha=1.0), :stroke) for tup in lst],
-        arrow = _define_arrow(Axis; x=x, y=y, kwargs...),
+        arrow = _define_arrow(T; x=x, y=y, kwargs...),
     )
 end
 
 
-function _define_from(::Type{Vector{Luxor.Point}}, ::Type{YAxis}, cascade; x=0, shift=0, kwargs...)
+"""
+    _define_text()
+"""
+function _define_text(x::Float64; sign=true, digits=2)
+    x = round(x; digits=digits)
+    
+    len = length(string(abs(convert(Int, round(x))))) + 1 + sign
+    str = sign ? @Printf.sprintf("%+2.10f", x) : @Printf.sprintf("%2.10f", x)
+
+    return string(str[1:len+digits])
+end
+
+
+function _define_text(cascade, fun::Function, args...; kwargs...)
+    v = get_value(collect_data(cascade))
+    v = calculate(v, fun, args...)
+
+    digits = abs(minimum(get_order.(v))) + 1
+
+    str = _define_text.(v; digits=digits)
+    [str[ii] = str[ii][2:end] for ii in [1,size(str,1)]]
+
+    return str
+end
+
+
+function _define_text(cascade, ::Type{YAxis}; scale=0.9, kwargs...)
+    v = collect_ticks(cascade; kwargs...)
+    digits = abs(minimum(get_order.(v)))
+    return _define_text.(v; digits=digits, sign=false)
+end
+
+
+function _define_text(cascade, ::Type{XAxis}, field::Symbol; kwargs...)
+    return getfield.(collect_data(cascade), field)
+end
+
+_define_text(x) = x
+
+
+"""
+    _define_position(cascade, ::Type{T}; kwargs...) where T <: Axis
+This method defines the TICK POSITIONS for the input Axis subtype (XAxis or YAxis).
+
+# Arguments
+- `cascade`
+
+# Keywords
+- `x=0`, x-coordinate of y-axis.
+- `y=HEIGHT`, y-coordinate of x-axis.
+"""
+function _define_position(cascade, ::Type{YAxis};
+    x = 0,
+    xshift = 0,
+    kwargs...,
+)
     y = collect_ticks(cascade; kwargs...)
-    y = scale_y(y; vlim(cascade; kwargs...)...) .+ shift
-    return Luxor.Point.(x, y)
+    y = scale_y(y; vlim(cascade; kwargs...)...)
+    return Luxor.Point.(x+xshift, y)
 end
 
 
-function _define_from(::Type{Vector{Luxor.Point}}, ::Type{XAxis}, cascade; y=HEIGHT, kwargs...)
+function _define_position(cascade, ::Type{XAxis}, args...;
+    y = HEIGHT,
+    yshift = 0,
+    kwargs...,
+)
     x = scale_x( ; steps=length(collect_data(cascade)))
-    return Luxor.Point.(x, y)
+    return Luxor.Point.(x, y+yshift)
 end
 
 
-function _define_from(::Type{Vector{Labelbox}}, ::Type{YAxis}, cascade::Cascade{Data};
-    textscale=0.9,
-    kwargs...,
-)
-    shift = -textscale*FONTSIZE*0.5
-    lab = collect_ticks(cascade; kwargs...)
-    pos = _define_from(Vector{Luxor.Point}, YAxis, cascade; x=-SEP, shift=shift, kwargs...)
-
-    return _define_ticklabels(lab, pos; textscale=textscale, alignment=:right, kwargs...)
-end
-
-
-function _define_from(::Type{Vector{Labelbox}}, ::Type{XAxis}, cascade; y=HEIGHT, kwargs...)
-    ticklabels = _define_from(Vector{Labelbox}, XAxis, cascade, get_label;
-        y = y+SEP,
-        leading = 0.0,
-        kwargs...,
-    )
-
-    ticksublabels = _define_from(Vector{Labelbox}, XAxis, cascade, get_sublabel;
-        y=y+SEP+FONTSIZE,
-        textscale=0.8,
-        kwargs...,
-    )
-
-    return ticklabels, ticksublabels
-end
-
-
-function _define_from(::Type{Vector{Labelbox}}, ::Type{XAxis}, cascade, fun::Function; y, kwargs...)
-    lab = fun.(collect_data(cascade))
-    pos = _define_from(Vector{Luxor.Point}, XAxis, cascade; y=y, kwargs...)
-    return _define_ticklabels(lab, pos; alignment=:center, kwargs...)
+function _define_position(cascade, fun::Function, args...; kwargs...)
 end
 
 
 """
-"""
-function _define_ticklabels(lab::Vector, pos::Array{Luxor.Point};
-    alignment,
-    leading = 0.0,
-    textscale = 0.9,
-    kwargs...,
-)
-    N = length(lab)
+    _define_from(::Type{Vector{L}}, ::Type{A}, cascade; kwargs...) where {L<:Label, A<:Axis}
+    _define_from(::Type{Vector{L}}, ::Type{XAxis}, cascade, fun; kwargs...) where L<:Label
+These methods define LABELS for the input `Axis` subtype (XAxis or YAxis).
 
-    return if all(isempty.(lab))
-        fill(missing,N)
-    else
-        wid = width(N; space=2)
-        lab = [wrap_to(x, wid; textscale=textscale) for x in lab]
-        Labelbox.(lab, textscale, pos, alignment, leading)
-    end
+# Arguments
+- `cascade::Cascade`
+- `field::Symbol`, if defining ticks for the XAxis, include the Data field name that will
+    serve as the x-axis tick label or sublabel. Allowed options: `:label`, `:sublabel`.
+
+# Returns
+- `ticklabels::Vector{L}` of tick LABELS
+- `ticksublabels::Vector{L}` (returned if `A=XAxis` and `fun` unspecified), of tick SUBLABELS
+"""
+function _define_from(::Type{Vector{T}}, cascade::Cascade{Data}, args...; kwargs...) where T <: Label
+    txt = _define_text(cascade, args...; kwargs...)
+    pos = _define_position(cascade, args...; kwargs...)
+    return _define_from(Vector{T}, txt, pos; kwargs...)
+end
+
+
+function _define_from(::Type{T}, text, position::Luxor.Point;
+    scale = 1,
+    halign = :center,
+    valign = :middle,
+    leading = 1,
+    angle = 0,
+    kwargs...,
+) where T <: Label
+    return Label( ;
+        text = text,
+        scale = scale,
+        position = position,
+        halign = halign,
+        valign = valign,
+        angle = angle,
+        leading = leading,
+    )
+end
+
+
+function _define_from(::Type{T}, text::String, position::Luxor.Point, width::Float64;
+    scale = 1,
+    kwargs...,
+) where T <: Label
+    return _define_from(T, wrap_to(text, width; scale), position; kwargs...)
+end
+
+
+function _define_from(::Type{Vector{Label{T}}}, text::AbstractArray, position::AbstractArray;
+    kwargs...,
+) where T <: Vector{String}
+    N = length(position)
+    wid = width(N; space=2)
+    return [_define_from(Label, text[ii], position[ii], wid; kwargs...) for ii in 1:N]
+end
+
+
+function _define_from(::Type{Vector{Label{T}}}, text::AbstractArray, position::AbstractArray;
+    kwargs...,
+) where T <: Any
+    return [_define_from(Label{T}, text[ii], position[ii]; kwargs...) for ii in 1:length(position)]
 end
 
 
@@ -302,9 +418,9 @@ function _define_path(x::Cascade, Geometry;
     ext = ".png",
     figdir = "fig",
     maxsample = 50,
-    separator = "_",
     kwargs...,
 )
+    separator = "_"
     Geometry = lowercase(string(Geometry))
 
     # Define the path name and create the directory if it doesn't already exist.
@@ -332,7 +448,7 @@ end
 function _define_path(lst::Vector{String}; maxchar=missing, kwargs...)
     maxchar = coalesce(maxchar, maximum(length.(lst)))
     lst = _define_path.(tryinteger(lst); maxchar=maxchar)
-    return lowercase(join(lst, maxchar>1 ? "-" : ""))
+    return join(lst, maxchar>1 ? "-" : "")
 end
 
 
@@ -350,8 +466,8 @@ This method formats a title to describe, where applicable:
     (if more than one sample).
 """
 function _define_title(cascade::Cascade{Data}; nsample,
-    titlescale=1.1,
-    titleleading=1.1,
+    titlescale = 1.1,
+    titleleading = 1.1,
     kwargs...,
 )
     # Select which rows of the title to show:
@@ -366,7 +482,15 @@ function _define_title(cascade::Cascade{Data}; nsample,
         _title_distribution( ; kwargs...)
     ][idx]
 
-    return Labelbox(str, titlescale, Luxor.Point(WIDTH/2, -TOP_BORDER), :center, titleleading)
+    return Label( ; 
+        text = str,
+        scale = titlescale,
+        position = Luxor.Point(WIDTH/2, -TOP_BORDER),
+        halign = :center,
+        valign = :middle,
+        angle = 0,
+        leading = titleleading,
+    )
 end
 
 

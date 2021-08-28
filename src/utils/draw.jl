@@ -64,14 +64,45 @@ function draw(ax::YAxis)
 end
 
 
+function draw(lab::T) where T <: Label
+    Luxor.fontsize(lab.scale * FONTSIZE)
+    Luxor.setcolor(Luxor.sethue("black")...)
+
+    _draw(lab)
+
+    Luxor.fontsize(FONTSIZE)
+    return nothing
+end
+
+
 draw(lst::AbstractArray) = [draw(x) for x in lst]
 draw(x::Cascade{T}) where T<:Geometry = draw(collect_data(x))
 
 function draw(x::T) where T<:Geometry
     draw(x.shape)
-    draw(x.annotation)
+    # draw(x.annotation)
     return nothing
 end
+
+
+"""
+    _draw(lab::T) where T <: Label
+This is a helper function for drawing different types of labels.
+"""
+function _draw(lab::Label{String})
+    Luxor.text(lab.text, lab.position; halign=lab.halign, valign=lab.valign, angle=lab.angle)
+    return nothing
+end
+
+function _draw(lab::Label{Vector{String}})
+    Luxor.textbox(lab.text, lab.position;
+        alignment = lab.halign,
+        leading = lab.leading*lab.scale*FONTSIZE,
+    )
+    return nothing
+end
+
+_draw(lab::Label{Missing}) = nothing
 
 
 """
@@ -107,59 +138,7 @@ end
 
 
 """
-    _draw_label(label, point; kwargs)
-This method adds the text in `label` to the point `point`.
-
-    _draw_label(label, point1, point2; kwargs)
-This method adds the text in `label` to the midpoint between `point1` and `point2`.
-
-# Keywords
-- `halign::Symbol=:center`
-- `valign::Symbol=:bottom`
 """
-function _draw_label(label::String, point::Luxor.Point; halign=:center, valign=:bottom, kwargs...)
-    Luxor.text(label, point; halign=halign, valign=valign, kwargs...)
-    return nothing
-end
-
-function _draw_label(label::String, point1::Luxor.Point, point2::Luxor.Point; kwargs...)
-    _draw_label(label, Luxor.midpoint(point1, point2); kwargs...)
-    return nothing
-end
-
-function _draw_label(label::Float64, args...; kwargs...)
-    _draw_label(Printf.@sprintf("%0.1f", label), args...; kwargs...)
-    return nothing
-end
-
-
-function _draw_label(ax::YAxis; angle=-pi/2, x=-(LEFT_BORDER-0.5*SEP))
-    _draw_label(
-        uppercase(ax.label),
-        Luxor.midpoint(Luxor.Point(x,ax.ticks[2]), Luxor.Point(x,ax.ticks[end]));
-        angle=angle,
-        valign=:top,
-        halign=:center,
-        # kwargs...,
-    )
-end
-
-
-function draw(lab::Labelbox)
-    tmp = Luxor.get_fontsize()
-    font = tmp * lab.scale
-    Luxor.fontsize(font)
-
-    Luxor.setcolor(Luxor.sethue("black")...)
-    Luxor.textbox(lab.text, lab.position; alignment=lab.alignment, leading=lab.leading*font)
-    Luxor.fontsize(tmp)
-    return nothing
-end
-
-
-draw(x::Missing) = nothing
-
-
 function padding(ax::XAxis)
     lab = ax.ticksublabels
     lines = maximum(length.(getfield.(lab,:text)))

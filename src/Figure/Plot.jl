@@ -1,7 +1,7 @@
 mutable struct Plot{T <: Sampling}
     cascade::Cascade{T}
     axes::Vector
-    title::Labelbox
+    title::Label{Vector{String}}
     path::String
     # xaxis::Axis
     # yaxis::Axis

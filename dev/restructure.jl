@@ -88,14 +88,14 @@ for geometry in [Vertical]
                 global cascade = define_from(Cascade{Data}, df; locals..., kwargs...)
                 global plot = define_from(Plot{geometry}, copy(cascade); locals..., kwargs...)
                 
-                cmean = set_geometry(calculate(copy(cascade), Statistics.mean), Horizontal;
-                style=:stroke, alpha=1.0, locals...,
-                )
-                dmean = collect_data(cmean)
-                [setfield!(x, :annotation, missing) for x in dmean]
+                # cmean = set_geometry(calculate(copy(cascade), Statistics.mean), Horizontal;
+                # style=:stroke, alpha=1.0, locals...,
+                # )
+                # dmean = collect_data(cmean)
+                # [setfield!(x, :annotation, missing) for x in dmean]
                 
-                vlims = vlim(collect_data(cascade); locals..., kwargs...)
-                vmin, vmax, vscale = vlims
+                # vlims = vlim(collect_data(cascade); locals..., kwargs...)
+                # vmin, vmax, vscale = vlims
 
                 Luxor.@png begin
                     Luxor.fontface("Gill Sans")
@@ -103,9 +103,9 @@ for geometry in [Vertical]
                     Luxor.setmatrix([1 0 0 1 LEFT_BORDER TOP_BORDER])
                     
                     draw(plot)
-                    # draw(plot.title)
+                    # _draw(plot.title)
 
-                    nsample>1 && draw(cmean)
+                    # nsample>1 && draw(cmean)
                     
                 end WIDTH+LEFT_BORDER+RIGHT_BORDER HEIGHT+TOP_BORDER+BOTTOM_BORDER+padding(plot.axes[1]) plot.path
             end

@@ -1,7 +1,7 @@
 import Base
 
-init(T::UnionAll, N) = T(fill(0.0, N, N))
-init(T::LinearAlgebra.UniformScaling, N) = T(N)*1.0
+matrix(T::UnionAll, N; value=0) = T(fill(value, N, N))
+matrix(T::LinearAlgebra.UniformScaling, N) = T(N)*1.0
 
 vectorize(x::Matrix) = collect.(collect(eachrow(x)))
 vectorize(mat...) = vectorize(Tuple.(hcat.(mat...)))

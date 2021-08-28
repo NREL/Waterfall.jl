@@ -3,22 +3,22 @@
 This function adds "fuzziness" to an input `df`
 
 # Keyword Arguments
-- value::Symbol=
-- samples::Integer=50
+- value::Symbol=VALUE_COL
+- nsample::Integer=50
 - distribution::Symbol=:normal
 - factor
 """
 function fuzzify(df;
-    value=VALUE_COL,
+    value = VALUE_COL,
     kwargs...,
 )
     val = random_samples(df[:,value]; kwargs...)
     update_stop!(val)
-
+    
     df = DataFrames.crossjoin(df, DataFrames.DataFrame(SAMPLE_COL=>1:size(val,2)))
     df[!,value] .= vcat(val'...)
 
-    idx = DataFrames.Not([value,SAMPLE_COL])
+    idx = DataFrames.Not([value, SAMPLE_COL])
     return DataFrames.groupby(df, idx)
 end
 

@@ -1,4 +1,4 @@
-mutable struct Label5{T <: Union{Missing,String,Vector{String}}}
+mutable struct Label{T <: Union{Missing,String,Vector{String}}}
     text::T
     scale::Float64
     position::Luxor.Point
@@ -9,7 +9,7 @@ mutable struct Label5{T <: Union{Missing,String,Vector{String}}}
 end
 
 
-function Label5( ;
+function Label( ;
     text,
     scale::Real,
     position,
@@ -18,7 +18,7 @@ function Label5( ;
     angle::Real,
     leading::Real,
 )
-    return Label5(
+    return Label(
         text,
         convert(Float64, scale),
         position,
@@ -29,4 +29,6 @@ function Label5( ;
     )
 end
 
-labstr = Label5( ; text="hieeeee", scale=1.1, position=Luxor.Point(0,10), halign=:center, valign=:middle, angle=0.0, leading=0)
+# labstr = Label( ; text="hieeeee", scale=1.1, position=Luxor.Point(0,10), halign=:center, valign=:middle, angle=0.0, leading=0)
+# labvec = Label( ; text=["hieeeee","leoooooo"], scale=1.1, position=Luxor.Point(0,10), halign=:center, valign=:middle, angle=0.0, leading=0)
+# labmis = Label( ; text=missing, scale=1.1, position=Luxor.Point(0,10), halign=:center, valign=:middle, angle=0.0, leading=0)
