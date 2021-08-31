@@ -76,7 +76,7 @@ function set_hue!(x::Coloring, h; kwargs...)
     return x
 end
 
-set_hue!(x::Blending, h) = begin x.hue = _define_blend(h); return x end
+set_hue!(x::Blending, h) = begin x.hue = _define_gradient(h); return x end
 set_hue!(x::T, h) where T<:Geometry = begin set_hue!(x.shape, h); return x end
 set_hue!(x::T, h) where T<:Shape = begin set_hue!(x.color, h); return x end
 set_hue!(x::Vector{T}, h) where T<:Shape = begin set_hue!.(x, h); return x end
@@ -125,16 +125,16 @@ _define_alpha(x; kwargs...) = x
 
 
 """
-    _define_blend(x; kwargs...)
+    _define_gradient(x; kwargs...)
 This method defines the starting and stopping colors for a color gradient, such that the
 starting color is defined using [`Waterfall._define_colorant`](@ref) and the stopping color
 is 50% "lighter" than this color.
 
 # Returns
-- `x::Tuple{Luxor.RGB,Luxor.RGB}`, color gradient from the starting to stopping position of
+- `x::Tuple{Luxor.RGB,Luxor.RGB}`, color gradient from the starting to stopping pos of
     each waterfall in the cascade.
 """
-function _define_blend(x; kwargs...)
+function _define_gradient(x; kwargs...)
     lightness = 0.5
     h1 = define_from(Luxor.RGB, x)
     h2 = define_from(Luxor.RGB, x; lightness=lightness)
@@ -196,50 +196,20 @@ end
 
 """
 """
-function _define_annotation(cascade::Cascade{Data}, Geometry::DataType;
-    annotscale = 0.9,
-    annotlead = 1.0,
-    fun::Function = Statistics.mean,
-    kwargs...,
-)
-    # Define label text.
-    v = get_value(collect_data(cascade))
-    vlab = calculate(v, fun)
-    vlab = round.(vlab; digits=abs(minimum(get_order.(vlab)))+1)
-    lab = [@Printf.sprintf("%+2.2f",x) for x in vlab]
-    N = size(v,1)
-
-    # Remove sgn from start, stop:
-    [lab[ii] = string(lab[ii][2:end-1]) for ii in [1,N]]
-    lab = vectorize(lab)
-
-    # Define position
-    wid = width(N)
-
-    # Define x position.
-    xmid = scale_x( ; steps=N)
-
-    # Define y position.
-    position = scale_for(cascade, Geometry; kwargs...)
-    ymin = minimum.(position; dims=2) .- annotlead*annotscale*length.(lab) .- 0.5*SEP
-
-    label = [Label( ; 
-        text=lab[ii],
-        scale=annotscale,
-        position=Luxor.Point.(xmid[ii],ymin),
-        halign=:center,
-        valign=:middle,
-        angle=0,
-        leading=annotlead,
-    ) for ii in 1:N]
-
-    Geometry==Violin && (label = [label[1:end-1];missing])
-
-    return label
+function _define_annotation(cascade::Cascade{Data}, Geometry::DataType, args...; kwargs...)
+    txt = _define_text(cascade, args...; kwargs...)
+    pos = _define_position(cascade, Geometry; kwargs...)
+    return _define_from(Vector{Label{String}}, txt, pos; valign=:bottom, kwargs...)
 end
 
 
+function _define_annotation(cascade::Cascade{Data}, ::Type{Missing}; kwargs...)
+    return fill(_define_from(Label, Missing), length(collect_data(cascade)))
+end
 
+
+"""
+"""
 function _define_from(::Type{T}, x::Tuple{Luxor.Point,Luxor.Point};
     hue = "black",
     alpha = 1.0,
@@ -267,13 +237,22 @@ end
 
 
 """
-    _define_text()
+    _define_text(x::Float64; kwargs...)
+This method formats `x` as a string.
+
+# Keywords
+- `digits=2`, fractional digits to include
+- `sgn=true`, indicates whether to show a leading `+`
+
+    _define_text(cascade, fun::Function, args...; kwargs...)
+This method calculates a value 
 """
-function _define_text(x::Float64; sign=true, digits=2)
+function _define_text(x::Float64; sgn=true, digits=2)
     x = round(x; digits=digits)
+    sgn = sgn ? sgn : Base.sign(x)<0
     
-    len = length(string(abs(convert(Int, round(x))))) + 1 + sign
-    str = sign ? @Printf.sprintf("%+2.10f", x) : @Printf.sprintf("%2.10f", x)
+    len = length(string(abs(convert(Int, round(x))))) + 1 + sgn
+    str = sgn ? @Printf.sprintf("%+2.10f", x) : @Printf.sprintf("%2.10f", x)
 
     return string(str[1:len+digits])
 end
@@ -295,7 +274,7 @@ end
 function _define_text(cascade, ::Type{YAxis}; scale=0.9, kwargs...)
     v = collect_ticks(cascade; kwargs...)
     digits = abs(minimum(get_order.(v)))
-    return _define_text.(v; digits=digits, sign=false)
+    return _define_text.(v; digits=digits, sgn=false)
 end
 
 
@@ -338,7 +317,12 @@ function _define_position(cascade, ::Type{XAxis}, args...;
 end
 
 
-function _define_position(cascade, fun::Function, args...; kwargs...)
+function _define_position(cascade, Geometry; kwargs...)
+    x = scale_x( ; steps=length(collect_data(cascade)))
+    
+    pos = scale_for(cascade, Geometry; kwargs...)
+    y = minimum.(pos; dims=2)
+    return Luxor.Point.(x, y)
 end
 
 
@@ -363,7 +347,7 @@ function _define_from(::Type{Vector{T}}, cascade::Cascade{Data}, args...; kwargs
 end
 
 
-function _define_from(::Type{T}, text, position::Luxor.Point;
+function _define_from(::Type{T}, text, pos::Luxor.Point;
     scale = 1,
     halign = :center,
     valign = :middle,
@@ -374,7 +358,7 @@ function _define_from(::Type{T}, text, position::Luxor.Point;
     return Label( ;
         text = text,
         scale = scale,
-        position = position,
+        position = pos,
         halign = halign,
         valign = valign,
         angle = angle,
@@ -383,36 +367,33 @@ function _define_from(::Type{T}, text, position::Luxor.Point;
 end
 
 
-function _define_from(::Type{T}, text::String, position::Luxor.Point, width::Float64;
+function _define_from(::Type{T}, text::String, pos::Luxor.Point, width::Float64;
     scale = 1,
     kwargs...,
 ) where T <: Label
-    return _define_from(T, wrap_to(text, width; scale), position; kwargs...)
+    return _define_from(T, wrap_to(text, width; scale), pos; kwargs...)
 end
 
 
-function _define_from(::Type{Vector{Label{T}}}, text::AbstractArray, position::AbstractArray;
+function _define_from(::Type{Vector{Label{T}}}, text::AbstractArray, pos::AbstractArray;
     kwargs...,
 ) where T <: Vector{String}
-    N = length(position)
+    N = length(pos)
     wid = width(N; space=2)
-    return [_define_from(Label, text[ii], position[ii], wid; kwargs...) for ii in 1:N]
+    return [_define_from(Label, text[ii], pos[ii], wid; kwargs...) for ii in 1:N]
 end
 
 
-function _define_from(::Type{Vector{Label{T}}}, text::AbstractArray, position::AbstractArray;
+function _define_from(::Type{Vector{Label{T}}}, text::AbstractArray, pos::AbstractArray;
     kwargs...,
 ) where T <: Any
-    return [_define_from(Label{T}, text[ii], position[ii]; kwargs...) for ii in 1:length(position)]
+    return [_define_from(Label{T}, text[ii], pos[ii]; kwargs...) for ii in 1:length(pos)]
 end
 
 
-"""
-    _define_arrow()
-This method defines an arrow from the origin to the end of the axis.
-"""
-_define_arrow(::Type{XAxis}; x=0, y=HEIGHT, kwargs...) = (Luxor.Point(x,y), Luxor.Point(WIDTH+2*SEP,y))
-_define_arrow(::Type{YAxis}; x=0, y=HEIGHT, kwargs...) = (Luxor.Point(x,y), Luxor.Point(x,0))
+function _define_from(::Type{T}, ::Type{Missing}; kwargs...) where T<:Label
+    return _define_from(Label, missing, Luxor.Point(0,0))
+end
 
 
 """

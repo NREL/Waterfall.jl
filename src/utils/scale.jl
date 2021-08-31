@@ -33,6 +33,13 @@ function scale_for(cascade, ::Type{T}; kwargs...) where T<:Geometry
 end
 
 
+function scale_for(cascade, ::Type{T}, fun::Function, args...; kwargs...) where T<:Geometry
+    vlims = vlim(cascade; kwargs...)
+    # cout = calculate(copy(cascade), fun, args...)
+    return scale_for(calculate(copy(cascade), fun, args...), T; vlims...)
+end
+
+
 """
     scale_x(data::Data, quantile::Real=1; kwargs...)
 This function scales 

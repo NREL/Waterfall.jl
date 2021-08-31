@@ -142,31 +142,31 @@ end
 
 
 """
-    _define_from(Shape, Color, position, sgn; kwargs...)
-    _define_from(::Type{T}, sign, position; kwargs...) where T<:Vector{Blending}
+    _define_from(Shape, Color, pos, sgn; kwargs...)
+    _define_from(::Type{T}, sign, pos; kwargs...) where T<:Vector{Blending}
     _define_from(::Type{T}, sign; kwargs...) where T<:Union{Vector{Coloring},Coloring}
 
 # Keywords:
 - `style`
 """
-function _define_from(Shape, Color, position::Vector{T1}, sgn::Vector{T2};
+function _define_from(Shape, Color, pos::Vector{T1}, sgn::Vector{T2};
     kwargs...,
 ) where {T1<:AbstractArray, T2<:AbstractArray}
-    return _define_from.(Shape, Color, position, sgn; kwargs...)
+    return _define_from.(Shape, Color, pos, sgn; kwargs...)
 end
 
-function _define_from(Shape, Color, position::Vector{T}, sgn;
+function _define_from(Shape, Color, pos::Vector{T}, sgn;
     style,
     kwargs...,
 ) where T <: Luxor.Point
-    return Shape(position, _define_from(Color, sgn, position; kwargs...), style)
+    return Shape(pos, _define_from(Color, sgn, pos; kwargs...), style)
 end
 
-function _define_from(Shape, Color, position::Vector{T}, sgn;
+function _define_from(Shape, Color, pos::Vector{T}, sgn;
     style,
     kwargs...,
 ) where T <: Tuple
-    return Shape.(position, _define_from(Vector{Color}, sgn, position; kwargs...), style)
+    return Shape.(pos, _define_from(Vector{Color}, sgn, pos; kwargs...), style)
 end
 
 
@@ -185,15 +185,15 @@ function _define_from(::Type{Vector{Coloring}}, args...; kwargs...)
 end
 
 
-function _define_from(::Type{Vector{Blending}}, sgn, position; kwargs...)
-    hue = _define_blend.(sgn)
+function _define_from(::Type{Vector{Blending}}, sgn, pos; kwargs...)
+    hue = _define_gradient.(sgn)
     
     # Calculate direction.
-    xmid = mid(position; dims=1)
-
+    xmid = mid(pos; dims=1)
+    
     ii = Dict(k => sgn.==k for k in [-1,1])
-    ymax = Dict(k => maximum(position[v]; dims=2) for (k,v) in ii)
-    ymin = Dict(k => minimum(position[v]; dims=2) for (k,v) in ii)
+    ymax = Dict(k => maximum(pos[v]; dims=2) for (k,v) in ii)
+    ymin = Dict(k => minimum(pos[v]; dims=2) for (k,v) in ii)
 
     begin y1 = fill(0.0, size(sgn)); y2 = fill(0.0, size(sgn)) end
     begin y1[ii[-1]] .= ymin[-1]; y2[ii[-1]] .= ymax[-1] end
@@ -208,13 +208,13 @@ end
     set_geometry(cascade, ::Type{T}; kwargs...) where T<:Geometry
 Given a cascade and geometry, return a cascade with an updated type.
 """
-function set_geometry(cascade, ::Type{Violin}; kwargs...)
-    return _set_geometry(cascade, Violin, Poly, Coloring; style=:fill, kwargs...)
+function set_geometry(cascade, ::Type{Violin}, args...; kwargs...)
+    return _set_geometry(cascade, Violin, Poly, Coloring, args...; style=:fill, kwargs...)
 end
 
 
-function set_geometry(cascade, ::Type{Vertical}; kwargs...)
-    return _set_geometry(cascade, Vertical, Box, Blending;
+function set_geometry(cascade, ::Type{Vertical}, args...; kwargs...)
+    return _set_geometry(cascade, Vertical, Box, Blending, args...;
         style=:fill,
         subdivide=true,
         space=true, 
@@ -223,8 +223,10 @@ function set_geometry(cascade, ::Type{Vertical}; kwargs...)
 end
 
 
-function set_geometry(cascade, ::Type{Horizontal}; kwargs...)
-    return _set_geometry(cascade, Horizontal, Box, Coloring;
+function set_geometry(cascade, ::Type{Horizontal}, args...; usegradient=missing, kwargs...)
+    usegradient = coalesce(usegradient, length(cascade)==1)
+    
+    return _set_geometry(cascade, Horizontal, Box, usegradient ? Blending : Coloring, args...;
         alpha=length(cascade),
         style=:fill,
         subdivide=false,
@@ -234,8 +236,8 @@ function set_geometry(cascade, ::Type{Horizontal}; kwargs...)
 end
 
 
-function set_geometry(cascade, ::Type{Parallel}; slope::Bool=true, kwargs...)
-    return _set_geometry(cascade, Parallel, Line, Coloring;
+function set_geometry(cascade, ::Type{Parallel}, args...; slope::Bool=true, kwargs...)
+    return _set_geometry(cascade, Parallel, Line, Coloring, args...;
         quantile = convert(Float64, slope),
         alpha = length(cascade),
         factor = 0.5,
@@ -251,21 +253,19 @@ end
     _set_geometry(cascade::Cascade{Data}, Geometry, Shape, Color; kwargs...)
     _set_geometry(plot::Plot{Data}, Geometry, Shape, Color; kwargs...)
 """
-function _set_geometry(cascade::Cascade{Data}, Geometry, Shape, Color;
+function _set_geometry(cascade::Cascade{Data}, Geometry, Shape, Color, args...;
     colorcycle::Bool=false,
     kwargs...,
 )
-    position = scale_for(cascade, Geometry; kwargs...)
+    pos = scale_for(cascade, Geometry, args...; kwargs...)
     sgn = sign(cascade)
 
-    attr = _define_from(Shape, Color, position, sgn; style=:fill, kwargs...)
     label = get_label.(collect_data(cascade))
+    shape = _define_from(Shape, Color, pos, sgn; style=:fill, kwargs...)
+    annot = _define_annotation(cascade, Missing; kwargs...)
 
-    # annot = _define_annotation(cascade, Geometry; kwargs...)
-    annot = fill(_define_from(Label, missing, Luxor.Point(0,0)), length(sgn))
-
-    data = Geometry.(label, attr, length(cascade), annot)
-
+    data = Geometry.(label, shape, length(cascade), annot)
+    
     return Cascade(
         start = set_hue!(first(data), "black"),
         stop = set_hue!(last(data), "black"),

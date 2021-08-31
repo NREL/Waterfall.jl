@@ -64,7 +64,7 @@ perms = vcat([[
     # reverse(ii),
 ] for ii in [collect(1:4)]]...)
 
-for geometry in [Vertical]
+for geometry in [Horizontal]
 # for geometry in [Parallel]
     # for nsample in [1,10,50]
     for nsample in [1]
@@ -73,7 +73,6 @@ for geometry in [Vertical]
             for perm in [perms[end]]
 
                 (length(perm)>length(COLORCYCLE) && colorcycle) && continue
-
                 
                 locals = (
                     nsample = nsample,
@@ -83,6 +82,7 @@ for geometry in [Vertical]
                     correlate = true,
                     colorcycle = colorcycle,
                     ylabel = "Efficiency (%)",
+                    usegradient = false,
                 )
                 
                 global cascade = define_from(Cascade{Data}, df; locals..., kwargs...)
@@ -104,7 +104,7 @@ for geometry in [Vertical]
                     Luxor.setmatrix([1 0 0 1 LEFT_BORDER TOP_BORDER])
                     
                     draw(plot)
-                    
+
                     # nsample>1 && draw(cmean)
                     
                 end WIDTH+LEFT_BORDER+RIGHT_BORDER HEIGHT+TOP_BORDER+BOTTOM_BORDER+padding(plot.axes[1]) plot.path
