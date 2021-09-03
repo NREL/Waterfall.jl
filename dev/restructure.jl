@@ -4,6 +4,7 @@ using Waterfall
 # include("")
 include(joinpath(WATERFALL_DIR,"src","includes.jl"))
 include(joinpath(WATERFALL_DIR,"bin","io.jl"))
+include(joinpath(WATERFALL_DIR,"dev","legend.jl"))
 
 
 # function define_permute(df, nperm::T; kwargs...) where T<:Integer
@@ -67,14 +68,14 @@ perms = vcat([[
 for geometry in [Horizontal]
 # for geometry in [Parallel]
     # for nsample in [1,10,50]
-    for nsample in [1]
+    for nsample in [5]
         # for colorcycle in [true,false]
-        for colorcycle in [true]
+        for colorcycle in [false]
             for perm in [perms[end]]
 
                 (length(perm)>length(COLORCYCLE) && colorcycle) && continue
                 
-                locals = (
+                global locals = (
                     nsample = nsample,
                     permutation = perm,
                     permute = true,
@@ -88,6 +89,8 @@ for geometry in [Horizontal]
                 global cascade = define_from(Cascade{Data}, df; locals..., kwargs...)
                 global plot = define_from(Plot{geometry}, copy(cascade); locals..., kwargs...)
                 
+                global h = _define_from(Handle, plot.cascade; locals..., kwargs...)
+
                 # cmean = set_geometry(calculate(copy(cascade), Statistics.mean), Horizontal;
                 # style=:stroke, alpha=1.0, locals...,
                 # )
@@ -97,6 +100,11 @@ for geometry in [Horizontal]
                 # vlims = vlim(collect_data(cascade); locals..., kwargs...)
                 # vmin, vmax, vscale = vlims
 
+
+                # --- STILL GOOD ---
+                # global lab = _define_annotation(cascade, Horizontal, Statistics.mean; locals..., kwargs..., scale=0.9)
+                # global cas = set_geometry(cascade, Horizontal, Statistics.mean; locals..., kwargs..., style=:stroke, alpha=1.0)
+                
                 Luxor.@png begin
                     Luxor.fontface("Gill Sans")
                     Luxor.fontsize(FONTSIZE)
@@ -104,6 +112,39 @@ for geometry in [Horizontal]
                     Luxor.setmatrix([1 0 0 1 LEFT_BORDER TOP_BORDER])
                     
                     draw(plot)
+                    [draw(h[ii].shape) for ii in 1:length(h)]
+                    [draw(h[ii].label) for ii in 1:length(h)]
+
+                    # draw(lab)
+                    # draw(cas)
+
+                    # global s = _define_series(cas, Statistics.mean)
+                    # draw(s)
+
+                    # xshape = WIDTH-100;
+                    # yshape = 3*SEP
+                    # wid = 2*SEP
+                    
+                    # blend = [
+                    #     Box(
+                    #         (Luxor.Point(xshape-wid, yshape-SEP/2), Luxor.Point(xshape+wid, yshape+SEP/2)),
+                    #         _define_from(Coloring, HEX_GAIN),
+                    #         :fill,
+                    #     ),
+                    #     Box(
+                    #         (Luxor.Point(xshape-wid, yshape+FONTSIZE-SEP/2), Luxor.Point(xshape+wid, yshape+FONTSIZE+SEP/2)),
+                    #         _define_from(Coloring, HEX_LOSS),
+                    #         :fill,
+                    #     )
+                    # ]
+
+                    # leg = [
+                    #     _define_from(Label, "GAIN", Luxor.Point(xshape+wid+SEP, yshape); halign=:left, scale=0.8),
+                    #     _define_from(Label, "LOSS", Luxor.Point(xshape+wid+SEP, yshape+FONTSIZE); halign=:left, scale=0.8),
+                    # ]
+
+                    # draw(blend)
+                    # draw(leg)
 
                     # nsample>1 && draw(cmean)
                     
