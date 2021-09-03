@@ -29,13 +29,14 @@ function scale_for(cascade, ::Type{T}; kwargs...) where T<:Geometry
 
     x1, x2 = scale_x(cascade; kwargs...)
 
-    return vectorize(Luxor.Point.(x1,y1), Luxor.Point.(x2,y2))
+    pos = vectorize(Luxor.Point.(x1,y1), Luxor.Point.(x2,y2))
+    return all(length.(pos).==1) ? (pos = getindex.(pos,1)) : pos
+    return pos
 end
 
 
 function scale_for(cascade, ::Type{T}, fun::Function, args...; kwargs...) where T<:Geometry
     vlims = vlim(cascade; kwargs...)
-    # cout = calculate(copy(cascade), fun, args...)
     return scale_for(calculate(copy(cascade), fun, args...), T; vlims...)
 end
 

@@ -141,6 +141,10 @@ function _define_gradient(x; kwargs...)
     return tuple(h1, h2)
 end
 
+function _define_gradient(x1, x2; kwargs...)
+    return tuple(define_from(Luxor.RGB, x1; kwargs...), define_from(Luxor.RGB, x2; kwargs...))
+end
+
 
 """
 This method scales a value ``v \\in [0,1]`` by a factor ``f \\in [-1,1]``,
@@ -287,14 +291,22 @@ _define_text(x) = x
 
 """
     _define_position(cascade, ::Type{T}; kwargs...) where T <: Axis
-This method defines the TICK POSITIONS for the input Axis subtype (XAxis or YAxis).
+This method defines the TICK POSITIONS for the input Axis subtype (XAxis or YAxis)
+`XAxis` tick labels are centered below the associated cascade waterfall.
+
+    _define_position(cascade, Geometry::DataType; kwargs...)
+This method defines a point above the top of each cascade waterfall, so that an annotation
+label can be bottom/center-aligned at these points.
 
 # Arguments
 - `cascade`
+- ``
 
 # Keywords
 - `x=0`, x-coordinate of y-axis.
 - `y=HEIGHT`, y-coordinate of x-axis.
+- `xshift`
+- `yshift`
 """
 function _define_position(cascade, ::Type{YAxis};
     x = 0,
@@ -318,11 +330,11 @@ end
 
 
 function _define_position(cascade, Geometry; kwargs...)
+    yshift = -SEP/2
     x = scale_x( ; steps=length(collect_data(cascade)))
-    
-    pos = scale_for(cascade, Geometry; kwargs...)
+    pos = vectorize.(scale_for(cascade, Geometry; kwargs...))
     y = minimum.(pos; dims=2)
-    return Luxor.Point.(x, y)
+    return Luxor.Point.(x, y.+yshift)
 end
 
 
@@ -455,7 +467,7 @@ This method formats a title to describe, where applicable:
 """
 function _define_title(cascade::Cascade{Data}; nsample,
     titlescale = 1.1,
-    titleleading = 1.1,
+    titleleading = 1.2,
     kwargs...,
 )
     # Select which rows of the title to show:
@@ -483,8 +495,7 @@ end
 
 
 "Format title string for normal distribution function"
-_title_normal(x) = "f(x; $(x[1]) < \\sigma < $(x[2]))"
-
+_title_normal(x) = "f(x; $(x[1]) < s < $(x[2]))"
 
 "Format title string for uniform distribution function"
 function _title_uniform(x; abs::Bool=false)

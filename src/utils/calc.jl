@@ -15,33 +15,6 @@ calculate(data::Vector{Data}, args...; kwargs...) = calculate(get_value(data), a
 calculate(cascade, args...; kwargs...) = calculate!(copy(cascade), args...; kwargs...)
 
 
-"""
-    matrix(mat; )
-
-```jldoctest
-julia> matrix(1:3)
-3×1 Array{Int64,2}:
- 1
- 2
- 3
-```
-"""
-matrix(lst) = lst
-matrix(lst::Vector{T}) where T<:Union{Vector,Real} = _matrix(lst)
-matrix(lst::Matrix{T}) where T<:Union{Vector,Real} = isvector(lst) && _matrix(lst)
-
-function matrix(lst::Vector{T}) where T<:AbstractMatrix
-    !isvector(first(lst)) && error("Error in concatenating the list")
-
-    # If the input is a list of *COLUMN* matrices,
-    findmin(size(first(lst)))[2] == 1 && (lst = LinearAlgebra.adjoint.(lst))
-
-    return _matrix(lst)
-end
-
-_matrix(lst) = convert(Matrix, cat(lst...; dims=2)')
-
-
 "Check that there are two dimensions, MAXIMUM, and that one of these dimensions is ONE."
 isvector(mat::AbstractMatrix) = length(size(mat)) == 2 && (1 in size(mat))
 isvector(vec::AbstractVector) = true

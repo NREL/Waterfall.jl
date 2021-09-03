@@ -1,6 +1,6 @@
 mutable struct Legend
-    label::String
-    attributes::Shape
+    annotation::Vector{Annotation}
+    handle::Vector{Handle}
 end
 
-Legend( ; label, attributes) = Legend(label, attributes)
+Legend( ; annotation, handle) = Legend(annotation, handle)

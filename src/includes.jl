@@ -48,8 +48,9 @@ abstract type Axis end
 include(joinpath(WATERFALL_DIR,"src","Figure","Ticks.jl"))
 include(joinpath(WATERFALL_DIR,"src","Figure","XAxis.jl"))
 include(joinpath(WATERFALL_DIR,"src","Figure","YAxis.jl"))
-# include(joinpath(WATERFALL_DIR,"src","Figure","Legend.jl"))
-# include(joinpath(WATERFALL_DIR,"src","Figure","Annotation.jl"))
+include(joinpath(WATERFALL_DIR,"src","Figure","Annotation.jl"))
+include(joinpath(WATERFALL_DIR,"src","Figure","Handle.jl"))
+include(joinpath(WATERFALL_DIR,"src","Figure","Legend.jl"))
 include(joinpath(WATERFALL_DIR,"src","Figure","Plot.jl"))
 
 include(joinpath(WATERFALL_DIR,"src","definitions.jl"))

@@ -254,17 +254,17 @@ end
     _set_geometry(plot::Plot{Data}, Geometry, Shape, Color; kwargs...)
 """
 function _set_geometry(cascade::Cascade{Data}, Geometry, Shape, Color, args...;
-    colorcycle::Bool=false,
+    colorcycle::Bool = false,
     kwargs...,
 )
     pos = scale_for(cascade, Geometry, args...; kwargs...)
     sgn = sign(cascade)
 
     label = get_label.(collect_data(cascade))
-    shape = _define_from(Shape, Color, pos, sgn; style=:fill, kwargs...)
-    annot = _define_annotation(cascade, Missing; kwargs...)
+    shape = vectorize.(_define_from(Shape, Color, pos, sgn; kwargs...))
+    # annot = _define_annotation(cascade, Missing; kwargs...)
 
-    data = Geometry.(label, shape, length(cascade), annot)
+    data = Geometry.(label, shape, length(cascade))
     
     return Cascade(
         start = set_hue!(first(data), "black"),
