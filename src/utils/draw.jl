@@ -37,8 +37,10 @@ draw(x::T) where T<:Axis = _draw(x)
 draw(x::Annotation) = _draw(x)
 draw(x::Handle) = _draw(x)
 draw(x::String) = nothing
+draw(x::Missing) = nothing
 
 draw(lst::AbstractArray) = [draw(x) for x in lst]
+draw(pair::Pair) = draw(collect(pair))
 
 
 """
@@ -61,7 +63,7 @@ function _draw(lab::Label{Vector{String}})
     return nothing
 end
 
-_draw(lab::Label{Missing}) = nothing
+# _draw(lab::Label{Missing}) = nothing
 
 # Draw shapes.
 _draw(shape::Arrow) = Luxor.arrow(shape.position..., linewidth=2.0)

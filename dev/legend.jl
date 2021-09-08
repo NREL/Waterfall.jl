@@ -32,7 +32,7 @@ get_shape(cascade::Cascade{T}) where T<:Geometry = copy(first(cascade.start.shap
 """
     _define_from(Handle, cascade, fun, args...)
 """
-function _define_from(::Type{Handle}, cascade::Cascade{T}, str;
+function _define_from(::Type{Handle}, cascade::Cascade{T}, str::String;
     scale = 0.8,
     kwargs...,
 ) where T <: Geometry
@@ -59,6 +59,9 @@ function _define_from(::Type{Handle}, cascade; colorcycle, kwargs...)
 end
 
 
+"""
+    _define_from(Annotation)
+"""
 function _define_from(::Type{Annotation}, cascade::Cascade{Data}, Geometry::DataType,
     args...;
     scale = 0.8,
@@ -68,4 +71,35 @@ function _define_from(::Type{Annotation}, cascade::Cascade{Data}, Geometry::Data
         label = _define_label(cascade, Geometry, args...; scale=scale, kwargs...),
         cascade = set_geometry(cascade, Geometry, args...; alpha=1.0, style=:stroke, kwargs...),
     )
+end
+
+
+"""
+    _define_legend(cascade; kwargs)
+"""
+function _define_legend(cascade::Cascade{T}; kwargs...) where T <: Geometry
+    legend = _define_from(Handle, cascade; kwargs...) .=> missing
+    return legend |> Vector{Pair{Handle,Any}}
+end
+
+
+"""
+    _push!(legend, cascade, Geometry, args...; kwargs...)
+
+# Arguments
+- `legend`
+- `cascade::Cascade{Data}`
+- `fun::Function`
+"""
+function _push!(
+    legend::Vector{Pair{Handle,T}},
+    cascade::Cascade{Data},
+    Geometry::DataType,
+    args...;
+    kwargs...,
+) where T<:Any
+    a =  _define_from(Annotation, cascade, Geometry, args...; kwargs...)
+    h = _define_from(Handle, a.cascade, args...; idx=length(legend)+1, kwargs...)
+    push!(legend, h => a)
+    return legend
 end

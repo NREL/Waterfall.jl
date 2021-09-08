@@ -88,14 +88,19 @@ for geometry in [Horizontal]
                 
                 global cascade = define_from(Cascade{Data}, df; locals..., kwargs...)
                 global plot = define_from(Plot{geometry}, copy(cascade); locals..., kwargs...)
-                
+
+                global legd = _push!(
+                    _define_legend(plot.cascade; locals..., kwargs...),
+                    cascade, geometry, Statistics.mean; locals..., kwargs...
+                )
+
                 # global a1 =  _define_from(Annotation, cascade, Horizontal, Statistics.mean; locals..., kwargs...)
                 # global a2 =  _define_from(Handle, cascade, Horizontal, Statistics.mean; locals..., kwargs...)
 
-                global h = _define_from(Handle, plot.cascade; locals..., kwargs...)
+                # global h = _define_from(Handle, plot.cascade; locals..., kwargs...)
                 
-                global a =  _define_from(Annotation, cascade, Horizontal, Statistics.mean; locals..., kwargs...)
-                global ha = _define_from(Handle, a.cascade, Statistics.mean; idx=length(h)+1, locals..., kwargs...)
+                # global a =  _define_from(Annotation, cascade, Horizontal, Statistics.mean; locals..., kwargs...)
+                # global ha = _define_from(Handle, a.cascade, Statistics.mean; idx=length(h)+1, locals..., kwargs...)
 
 
                 # cmean = set_geometry(calculate(copy(cascade), Statistics.mean), Horizontal;
@@ -119,9 +124,10 @@ for geometry in [Horizontal]
                     Luxor.setmatrix([1 0 0 1 LEFT_BORDER TOP_BORDER])
                     
                     draw(plot)
-                    draw(h)
-                    draw(a)
-                    draw(ha)
+                    draw(legd)
+                    # draw(h)
+                    # draw(a)
+                    # draw(ha)
                     # [draw(h[ii].shape) for ii in 1:length(h)]
                     # [draw(h[ii].label) for ii in 1:length(h)]
 

@@ -1,4 +1,4 @@
-mutable struct Plot{T <: Sampling}
+mutable struct Plot{T<:Sampling}
     cascade::Cascade{T}
     axes::Vector
     title::Label{Vector{String}}

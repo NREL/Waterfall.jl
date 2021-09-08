@@ -1,4 +1,4 @@
-mutable struct Label{T <: Union{Missing,String,Vector{String}}}
+mutable struct Label{T <: Union{String,Vector{String}}}
     text::T
     scale::Float64
     position::Luxor.Point
