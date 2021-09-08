@@ -1,58 +1,71 @@
 """
+"""
+function set_position!(handle::Handle;
+    x0 = WIDTH-100,
+    y0 = 3*SEP,
+    dx = 2*SEP,
+    space = SEP,
+    idx = 1,
+    kwargs...,
+)
+    y0 = y0 + 2.5*space*(idx-1)
+    
+    setproperty!(handle.shape, :position, (
+        Luxor.Point(x0-dx, y0+space),
+        Luxor.Point(x0+dx, y0-space)),
+    )
+    
+    setproperty!(handle.label, :position, last(handle.shape.position.+space))
+
+    return handle
+end
+
+
+"""
     get_shape(cascade; kwargs...)
 This function returns the shape used in `cascade`, with its position updated, as defined by
 keyword arguments.
 """
-function get_shape(cascade::Cascade{T};
-    x0 = WIDTH-100,
-    y0 = 3*SEP,
-    dx = 2*SEP,
-    space,
-    idx = 1,
-    kwargs...,
-) where T<:Geometry
-    y0 = y0 + FONTSIZE*(idx-1)
-    shape = copy(first(cascade.start.shape))
-    setproperty!(shape, :position, (Luxor.Point(x0-dx, y0+space), Luxor.Point(x0+dx, y0-space)))
-    return shape
-end
+get_shape(cascade::Cascade{T}) where T<:Geometry = copy(first(cascade.start.shape))
 
 
 """
     _define_from(Handle, cascade, fun, args...)
 """
-function _define_from(::Type{Handle}, cascade::Cascade{T}, fun::Function, args...;
-    space = SEP,
+function _define_from(::Type{Handle}, cascade::Cascade{T}, str;
+    scale = 0.8,
     kwargs...,
 ) where T <: Geometry
-    shape = get_shape(cascade; space=space, kwargs...)
-    label =_define_from(Label, string(fun), last(shape.position.+space); halign=:left)
-    return Handle(shape, label)
+    shape = get_shape(cascade)
+    label = _define_from(Label, str, Luxor.Point(0,0); halign=:left, scale=scale)
+    return set_position!(Handle(shape, label); scale=scale, kwargs...)
 end
 
 
-function _define_from(::Type{Handle}, cascade::Cascade{T}, hue, str;
-    idx = 1,
-    space = SEP,
-    kwargs...,
-) where T <: Geometry
-    shape = copy(get_shape(cascade; idx=idx, space=space, kwargs...))
-    label =_define_from(Label, str, last(shape.position.+space); halign=:left)
-    return Handle(set_hue!(shape, hue), label)
+function _define_from(::Type{Handle}, cascade, fun::Function, args...; kwargs...)
+    return _define_from(Handle, cascade, string(fun); kwargs...)
 end
 
 
-function _define_from(::Type{Handle}, cascade::Cascade{T};
-    colorcycle,
-    kwargs...,
-) where T <: Geometry
-
-    return [_define_from(Handle, cascade, hue, str; idx=idx, kwargs...)
-        for (idx, hue, str) in zip(1:2, [HEX_GAIN,HEX_LOSS], ["GAIN","LOSS"])]
-
+function _define_from(::Type{Handle}, cascade, str::String, hue; kwargs...)
+    h = _define_from(Handle, cascade, str; kwargs...)
+    return set_hue!(h, hue)
 end
 
-# perm = [2,1,3,4]
-# fun = Statistics.mean
-# # h = _define_from(Handle, plot.cascade, fun; locals..., kwargs...)
-# h = _define_from(Handle, plot.cascade; locals..., kwargs...)
+
+function _define_from(::Type{Handle}, cascade; colorcycle, kwargs...)
+    return [_define_from(Handle, cascade, str, hue; idx=idx, kwargs...)
+        for (idx, str, hue) in zip(1:2, ["GAIN","LOSS"], [HEX_GAIN,HEX_LOSS])]
+end
+
+
+function _define_from(::Type{Annotation}, cascade::Cascade{Data}, Geometry::DataType,
+    args...;
+    scale = 0.8,
+    kwargs...,
+)
+    return Annotation(
+        label = _define_label(cascade, Geometry, args...; scale=scale, kwargs...),
+        cascade = set_geometry(cascade, Geometry, args...; alpha=1.0, style=:stroke, kwargs...),
+    )
+end

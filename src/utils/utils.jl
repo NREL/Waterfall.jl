@@ -63,6 +63,8 @@ Base.length(x::T) where T <: Geometry = x.nsample
 Base.length(x::T) where T <: Cascade = length(x.start)
 Base.length(x::T) where T <: Plot = length(x.cascade)
 Base.length(x::T) where T <: Shape = x.position
+Base.length(x::Handle) = 1
+Base.length(x::Annotation) = 1
 Base.length(x::Coloring) = 1
 Base.length(x::Blending) = 1
 # Base.length(x::T) where T <: Axis = length(x.ticks)
@@ -75,6 +77,8 @@ Base.values(x::Axis) = _values(x)
 Base.values(x::Plot) = _values(x)
 Base.values(x::Coloring) = _values(x)
 Base.values(x::Blending) = _values(x)
+Base.values(x::Handle) = _values(x)
+Base.values(x::Annotation) = _values(x)
 _values(x::T) where T <: Any = Tuple([getproperty(x, f) for f in fieldnames(T)])
 
 

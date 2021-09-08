@@ -76,6 +76,7 @@ function set_hue!(x::Coloring, h; kwargs...)
     return x
 end
 
+set_hue!(x::Handle, h; kwargs...) = begin set_hue!(x.shape, h; kwargs...); return x end
 set_hue!(x::Blending, h) = begin x.hue = _define_gradient(h); return x end
 set_hue!(x::T, h) where T<:Geometry = begin set_hue!(x.shape, h); return x end
 set_hue!(x::T, h) where T<:Shape = begin set_hue!(x.color, h); return x end
@@ -200,15 +201,10 @@ end
 
 """
 """
-function _define_annotation(cascade::Cascade{Data}, Geometry::DataType, args...; kwargs...)
+function _define_label(cascade::Cascade{Data}, Geometry::DataType, args...; kwargs...)
     txt = _define_text(cascade, args...; kwargs...)
     pos = _define_position(cascade, Geometry; kwargs...)
     return _define_from(Vector{Label{String}}, txt, pos; valign=:bottom, kwargs...)
-end
-
-
-function _define_annotation(cascade::Cascade{Data}, ::Type{Missing}; kwargs...)
-    return fill(_define_from(Label, Missing), length(collect_data(cascade)))
 end
 
 

@@ -27,11 +27,15 @@ function draw(lab::T) where T <: Label
     return nothing
 end
 
-
-draw(x::T; kwargs...) where T<:Plot = draw(collect(values(x)))
+# Draw some type values.
 draw(x::Cascade{T}) where T<:Geometry = draw(collect_data(x))
 draw(x::T) where T<:Geometry = draw(x.shape)
-draw(x::T) where T<:Axis = draw(collect(values(x)))
+
+# Draw all Type values
+draw(x::T; kwargs...) where T<:Plot = _draw(x)
+draw(x::T) where T<:Axis = _draw(x)
+draw(x::Annotation) = _draw(x)
+draw(x::Handle) = _draw(x)
 draw(x::String) = nothing
 
 draw(lst::AbstractArray) = [draw(x) for x in lst]
@@ -59,11 +63,14 @@ end
 
 _draw(lab::Label{Missing}) = nothing
 
+# Draw shapes.
 _draw(shape::Arrow) = Luxor.arrow(shape.position..., linewidth=2.0)
 _draw(shape::Box) = Luxor.box(shape.position..., shape.style)
 _draw(shape::Line) = Luxor.line(shape.position..., shape.style)
 _draw(shape::Poly) = Luxor.poly(shape.position, close=true, shape.style)
 
+# Draw all Type values.
+_draw(x::Any) = draw(collect(values(x)))
 
 """
     _draw_legend()
