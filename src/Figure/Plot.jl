@@ -4,10 +4,6 @@ mutable struct Plot{T<:Sampling}
     axes::Vector
     title::Label{Vector{String}}
     path::String
-    # xaxis::Axis
-    # yaxis::Axis
-    # legend::Vector{Legend}
-    # annotation::Vector{Annotation}
 end
 
 function Plot( ; cascade, legend, xaxis, yaxis, title, path)

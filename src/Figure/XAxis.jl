@@ -4,5 +4,4 @@ mutable struct XAxis <: Axis
     frame::Line
 end
 
-
 XAxis( ; ticklabels, ticksublabels, frame) = XAxis(ticklabels, ticksublabels, frame)

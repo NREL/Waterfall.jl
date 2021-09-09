@@ -1,6 +1,11 @@
 import Base
 
 """
+"""
+get_order(x::T) where T<:Real = parse(Int, match(r"e(.*)", Printf.@sprintf("%e", x))[1])
+
+
+"""
     matrix(mat; )
 
 ```jldoctest
@@ -109,6 +114,9 @@ _copy(x::T) where T <: Any = T(values(x)...)
 These methods extend `Base.minimum` to find the minimum `x` or `y` value of a list of points
 or list of pairs of points, with `dims` indicating whether to return the `x` (`dims=1`) or
 `y` (`dims=2`) element.
+
+# Keyword Arguments
+- `dims`
 """
 Base.maximum(lst::Vector{T}; dims) where T<:Luxor.Point = maximum(getindex.(lst,dims))
 Base.maximum(lst::Vector{T}; kwargs...) where T<:Tuple = maximum(vcat(collect.(lst)...); kwargs...)
@@ -120,12 +128,22 @@ Base.maximum(lst::Vector{T}; kwargs...) where T<:Tuple = maximum(vcat(collect.(l
 These methods extend `Base.maximum` to find the maximum `x` or `y` value of a list of points
 or list of pairs of points, with `dims` indicating whether to return the `x` (`dims=1`) or
 `y` (`dims=2`) element.
+
+# Keyword Arguments
+- `dims`
 """
 Base.minimum(lst::Vector{T}; dims) where T<:Luxor.Point = minimum(getindex.(lst,dims))
 Base.minimum(lst::Vector{T}; kwargs...) where T<:Tuple = minimum(vcat(collect.(lst)...); kwargs...)
 
 
-mid(lst; kwargs...) = Statistics.mean([minimum(lst; kwargs...), maximum(lst; kwargs...)])
+"""
+This function finds the midpoint between the minimum and maximum values of the list of
+input points or pairs of points.
+
+# Keyword Arguments
+- `dims`
+"""
+mid(pos; kwargs...) = Statistics.mean([minimum(pos; kwargs...), maximum(pos; kwargs...)])
 
 
 "This function returns all permutations of the elements in the input vectors or vector of vectors"

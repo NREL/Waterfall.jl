@@ -1,5 +1,4 @@
 """
-
 """
 function calculate!(cascade::Cascade{Data}, args...; kwargs...)
     data = collect_data(cascade)
@@ -18,23 +17,6 @@ calculate(cascade, args...; kwargs...) = calculate!(copy(cascade), args...; kwar
 "Check that there are two dimensions, MAXIMUM, and that one of these dimensions is ONE."
 isvector(mat::AbstractMatrix) = length(size(mat)) == 2 && (1 in size(mat))
 isvector(vec::AbstractVector) = true
-
-
-# "Returns an NxN lower-triangular matrix."
-# lower_triangular(N::Integer; kwargs...) = lower_triangular(N, 1; kwargs...)
-
-# function lower_triangular(N::Integer, val; unit=true)
-#     mat = fill(val, N, N)
-#     return unit ? LinearAlgebra.UnitLowerTriangular(mat) : LinearAlgebra.LowerTriangular(mat)
-# end
-
-# "Returns an NxN upper-triangular matrix."
-# upper_triangular(N::Integer; kwargs...) = upper_triangular(N, 1; kwargs...)
-
-# function upper_triangular(N::Integer, val; unit=true)
-#     mat = fill(val, N, N)
-#     return unit ? LinearAlgebra.UnitUpperTriangular(mat) : LinearAlgebra.UpperTriangular(mat)
-# end
 
 
 "Drops zero values."

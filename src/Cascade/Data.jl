@@ -10,7 +10,7 @@ end
     Data( ; kwargs...)
 This method allows for field order-independent Cascade-definition.
 
-# Keyword arguments
+# Keyword Arguments
 - `order=[]`: If unspecified, default to `1:length(value)`
 """
 function Data( ; label, value, sublabel, order)
@@ -18,25 +18,34 @@ function Data( ; label, value, sublabel, order)
 end
 
 
-"Get properties"
+## Get Data properties.
+
 get_label(x::Data) = x.label
+
 get_sublabel(x::Data) = x.sublabel
 
 get_order(x::Data) = x.order
 get_order(args...) = _get(get_order, args...)
 
+
+"""
+"""
 get_value(x::Data) = x.value
 get_value(args...) = _get(get_value, args...)
 
+
+"""
+"""
 _get(fun::Function, data::Vector) = matrix(fun.(data))
 
 
-"Set properties"
-set_label!(x::Data, label) = begin x.label = label; return x end
-set_sublabel!(x::Data, sublabel) = begin x.sublabel = sublabel; return x end
+## Set Data properties
 
+"""
+"""
 function set_value!(x::Data, value)
     x.value = value
+    # !!!! Do we want to reset order?
     x.order = 1:length(value)
     return x
 end
@@ -44,6 +53,8 @@ end
 set_value!(args...) = _set(set_value!, args...)
 
 
+"""
+"""
 function set_order!(x::Data, order)
     tmp = Dict(k => v for (k,v) in zip(x.order, x.value))
     x.order = order
@@ -54,5 +65,6 @@ end
 set_order!(x::Vector{Data}, order) = [set_order!(x[ii], order) for ii in 1:length(x)]
 
 
-""
+"""
+"""
 _set(fun::Function, data::Vector{Data}, mat::AbstractMatrix) = fun.(data, vectorize(mat))

@@ -26,7 +26,6 @@ include(joinpath(WATERFALL_DIR,"src","Figure","Shape","Line.jl"))
 include(joinpath(WATERFALL_DIR,"src","Figure","Shape","Point.jl"))
 include(joinpath(WATERFALL_DIR,"src","Figure","Shape","Poly.jl"))
 
-include(joinpath(WATERFALL_DIR,"src","Figure","Text","Labelbox.jl"))
 include(joinpath(WATERFALL_DIR,"src","Figure","Text","Label.jl"))
 
 abstract type Sampling end

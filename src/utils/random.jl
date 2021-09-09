@@ -139,7 +139,7 @@ R_{i,j} = R_{j,i} = x
 \\right\\}
 ```
 
-# Keyword arguments
+# Keyword Arguments
 - `seed=SEED` for random number generator set before picking the values with which to fill
     the rotation matrix.
 - `interactivity=(0.0,0.1)` the range of minimum and maximum allowed rotation
@@ -216,7 +216,7 @@ _fill!(mat::LinearAlgebra.Diagonal, args...; kwargs...) = _fill!(Matrix{}(mat), 
     random_permutation(rng::UnitRange, nperm::Int; kwargs...)
 This function returns an `nperm`-element list of unique permutations of `rng`.
 
-# Keyword arguments
+# Keyword Arguments
 - `seed=SEED`
 """
 function random_permutation(rng::UnitRange, nperm::Int; seed=SEED)
@@ -239,7 +239,7 @@ This function returns a list of random indices for which `x` is defined.
     (and on, if `x` is not unitary) the diagonal
 - `N::Int`: number of indices to return
 
-# Keyword arguments
+# Keyword Arguments
 - `seed=SEED` for random number generator
 
 # Returns

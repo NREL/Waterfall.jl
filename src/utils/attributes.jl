@@ -71,6 +71,21 @@ end
 
 
 """
+    set_hue!(x, h)
+"""
+function set_hue!(x::Coloring, h; kwargs...)
+    x.hue = define_from(Luxor.RGB, h; kwargs...)
+    return x
+end
+
+set_hue!(x::Handle, h; kwargs...) = begin set_hue!(x.shape, h; kwargs...); return x end
+set_hue!(x::Blending, h) = begin x.hue = _define_gradient(h); return x end
+set_hue!(x::T, h) where T<:Geometry = begin set_hue!(x.shape, h); return x end
+set_hue!(x::T, h) where T<:Shape = begin set_hue!(x.color, h); return x end
+set_hue!(x::Vector{T}, h) where T<:Shape = begin set_hue!.(x, h); return x end
+
+
+"""
     set_position!(handle::Handle)
 This method calculates the position of a Handle's shape and label such that the shape is
 centered at (x0,y0) and fits within the bounds of `(2*dx, 2*dy)`. The label is aligned
@@ -104,88 +119,3 @@ This function returns the shape used in `cascade`, with its position updated, as
 keyword arguments.
 """
 get_shape(cascade::Cascade{T}) where T<:Geometry = copy(first(cascade.start.shape))
-
-
-"""
-    wrap_to(str, width; scale)
-This function wraps an input string `str` to the input `width`, calculated assuming a
-font size `scale` and returns an array of strings.
-"""
-function wrap_to(str::String, width; scale)
-    Luxor.@png begin
-        tmp = Luxor.get_fontsize()
-        Luxor.fontsize(FONTSIZE * scale)
-
-        str = uppercase(str)
-        lst = Luxor.textlines.(Luxor.textlines(str, width), width)
-
-        idx = .!.&(isempty.(getindex.(lst,1)), length.(lst).==1)
-        lst = lst[idx]
-
-        idx = length.(lst).==2
-
-        if any(idx)
-            lst[idx] = Luxor.textlines.(_break(getindex.(lst[idx],2)), width)
-            lst = vcat(lst...)
-            lst = Luxor.textlines(string(lst[.!isempty.(lst)] .* " "...), width)
-        else
-            lst = vcat(lst...)
-        end
-        
-        lst = vcat(lst...)
-        Luxor.fontsize(tmp)
-    end
-
-    return lst[.!isempty.(lst)]
-end
-
-
-wrap_to(x, args...; kwargs...) = wrap_to(string(x), args...; kwargs...)
-
-
-"""
-    _break(str)
-This function breaks a string first at slashes (if any), and then at suffixes. 
-"""
-_break(str::String) = occursin("/",str) ? _break_slash(str) : _break_suffix(str)
-_break(lst) = occursin("/",string(lst...)) ? _break_slash.(lst) : _break_suffix.(lst)
-
-
-"""
-    _break_suffix(str)
-This function splits words' suffixes: '-ANT', '-ING', '-ION', after ensuring the input
-string is uppercase.
-"""
-function _break_suffix(str)
-    str = uppercase(str)
-    suff = ["ANT","ING","ION"]
-
-    rep = [
-        Pair.(Regex.(suff.*"\\s"), string.("- ".*suff.*" "));
-        Pair.(Regex.(suff.*"\$"), string.("- ".*suff));
-    ]
-
-    return reduce(replace, rep, init=str)
-end
-
-
-"""
-    _break_slash(str)
-This function splits words separated by a slash to allow line-breaking.
-"""
-_break_slash(str) = reduce(replace, [Pair(r"/", "/ ")], init=str)
-
-
-"""
-    set_hue!(x, h)
-"""
-function set_hue!(x::Coloring, h; kwargs...)
-    x.hue = define_from(Luxor.RGB, h; kwargs...)
-    return x
-end
-
-set_hue!(x::Handle, h; kwargs...) = begin set_hue!(x.shape, h; kwargs...); return x end
-set_hue!(x::Blending, h) = begin x.hue = _define_gradient(h); return x end
-set_hue!(x::T, h) where T<:Geometry = begin set_hue!(x.shape, h); return x end
-set_hue!(x::T, h) where T<:Shape = begin set_hue!(x.color, h); return x end
-set_hue!(x::Vector{T}, h) where T<:Shape = begin set_hue!.(x, h); return x end

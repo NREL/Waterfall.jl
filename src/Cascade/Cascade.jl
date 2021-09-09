@@ -1,5 +1,3 @@
-"""
-"""
 mutable struct Cascade{T<:Sampling}
     start::T
     stop::T
@@ -64,6 +62,8 @@ end
 
 
 """
+    collect_permutation(lst)
+    collect_permutation(cascade)
 """
 collect_permutation(lst::AbstractArray) = [1; get_permutation(lst).+1; length(lst)+2]
 
@@ -71,10 +71,11 @@ function collect_permutation(x::T; kwargs...) where T<:Cascade
     return collect_permutation(get_permutation(x))
 end
 
-get_start(x::Cascade) = x.start
-get_steps(x::Cascade) = x.steps
-get_stop(x::Cascade) = x.stop
 
+"""
+    get_permutation(idx)
+    get_permutation(cascade)
+"""
 function get_permutation(x::Cascade)
     return x.ispermuted ? get_permutation(x.permutation) : collect(1:length(x.steps))
 end
@@ -87,13 +88,16 @@ function get_permutation(idx::AbstractVector{Int})
 end
 
 
-
+"""
+    get_correlation(cascade)
+"""
 function get_correlation(x::Cascade; kwargs...)
     return x.correlation[get_permutation(x; kwargs...), :]
 end
 
 
 """
+    update_stop!(x::)
 This function updates `cascade.stop` or the last row of a matrix to equal the negative
 of the cumulative sum of all previous values.
 """
@@ -103,7 +107,7 @@ function update_stop!(x::Cascade)
     return x
 end
 
-function update_stop!(x)
+function update_stop!(x::Matrix)
     x[end,:] .= -Statistics.cumsum(x; dims=1)[end-1,:]
     return x
 end
@@ -137,7 +141,6 @@ function correlate(v::AbstractArray, A::AbstractMatrix, order::AbstractVector{In
     # consistent with the natural order. Then, reorder this list to match the permutation order.
     lst_A = pick_from(A; dims=2)
     lst_A = lst_A[order]
-    # lst_A = [[Matrix{Float64}(I(N))]; lst_A[order[1:N-1]]]
 
     # Apply the interaction defined in each row individually and sequentially.
     # If A is a 3x3 matrix, ordered [2,3,1], this would look like.
@@ -233,7 +236,7 @@ with the exception of those in ROW or COLUMN `ii`, set to zero.
     produced by [`random_rotation`]
 - `ii::Int`, non-zero ROW OR COLUMN
 
-# Keywords
+# Keyword Arguments
 - `dims::Int = 1, 2`: Matrix dimension from which to select.
 
 # Returns
@@ -275,6 +278,3 @@ function pick_from(ii::Int, A; dims)
 end
 
 pick_from(A; kwargs...) = [pick_from(ii,A; kwargs...) for ii in 1:size(A,1)]
-# function select_row(lst::Vector{Matrix{Any}}, idx::AbstractVector)
-#     return convert(Matrix, getindex.(lst, idx, :))
-# end

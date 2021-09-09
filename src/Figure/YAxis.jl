@@ -5,5 +5,4 @@ mutable struct YAxis <: Axis
     frame::Arrow
 end
 
-
 YAxis( ; label, ticks, ticklabels, frame) = YAxis(label, ticks, ticklabels, frame)

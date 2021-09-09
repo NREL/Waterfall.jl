@@ -6,7 +6,7 @@ import Base
     define_from(::Type{Plot{Data}}, cascade; kwargs...)
     define_from(::Type{T}, cascade::Cascade{Data}; kwargs...) where T<:Axis
 
-# Keywords
+# Keyword Arguments
 - `ylabel::String`, y-axis label
 - 
 """
@@ -148,7 +148,7 @@ end
     _define_from(::Type{T}, sign, pos; kwargs...) where T<:Vector{Blending}
     _define_from(::Type{T}, sign; kwargs...) where T<:Union{Vector{Coloring},Coloring}
 
-# Keywords:
+# Keyword Arguments:
 - `style`
 
 
@@ -340,6 +340,8 @@ function _define_from(::Type{Annotation}, cascade::Cascade{Data}, Geometry::Data
 end
 
 
+## Define values for DataTypes PROPERTIES
+
 """
     _define_alpha(N::Int; kwargs...)
 This function calculates an alpha for `N` samples to scale transparency for overlays:
@@ -348,7 +350,7 @@ This function calculates an alpha for `N` samples to scale transparency for over
 \\alpha = \\min\\left\\lbrace\\dfrac{w}{f(N)},\\, 0\\right\\rbrace
 ```
 
-# Keywords
+# Keyword Arguments
 - `factor::Real=0.25`, scaling weighting ``w``
 - `fun::Function=log`, scaling function ``\\ln``
 """
@@ -507,7 +509,7 @@ label can be bottom/center-aligned at these points.
 - `cascade`
 - ``
 
-# Keywords
+# Keyword Arguments
 - `x=0`, x-coordinate of y-axis.
 - `y=HEIGHT`, y-coordinate of x-axis.
 - `xshift`
@@ -547,7 +549,7 @@ end
     _define_text(x::Float64; kwargs...)
 This method formats `x` as a string.
 
-# Keywords
+# Keyword Arguments
 - `digits=2`, fractional digits to include
 - `sgn=true`, indicates whether to show a leading `+`
 
@@ -670,85 +672,3 @@ end
 function _title_correlation( ; interactivity, kwargs...)
     return "CORRELATION COEFFICIENT: " * _title_uniform(interactivity; abs=true)
 end
-
-
-
-"""
-    set_geometry(cascade, ::Type{T}; kwargs...) where T<:Geometry
-Given a cascade and geometry, return a cascade with an updated type.
-"""
-function set_geometry(cascade, ::Type{Violin}, args...; kwargs...)
-    return _set_geometry(cascade, Violin, Poly, Coloring, args...; style=:fill, kwargs...)
-end
-
-
-function set_geometry(cascade, ::Type{Vertical}, args...; kwargs...)
-    return _set_geometry(cascade, Vertical, Box, Blending, args...;
-        style=:fill,
-        subdivide=true,
-        space=true, 
-        kwargs...,
-    )
-end
-
-
-function set_geometry(cascade, ::Type{Horizontal}, args...; usegradient=missing, kwargs...)
-    usegradient = coalesce(usegradient, length(cascade)==1)
-    
-    return _set_geometry(cascade, Horizontal, Box, usegradient ? Blending : Coloring, args...;
-        alpha=length(cascade),
-        style=:fill,
-        subdivide=false,
-        space=true,
-        kwargs...,
-    )
-end
-
-
-function set_geometry(cascade, ::Type{Parallel}, args...; slope::Bool=true, kwargs...)
-    return _set_geometry(cascade, Parallel, Line, Coloring, args...;
-        quantile = convert(Float64, slope),
-        alpha = length(cascade),
-        factor = 0.5,
-        style = :stroke,
-        subdivide = false,
-        space = false,
-        kwargs...,
-    )
-end
-
-
-"""
-    _set_geometry(cascade::Cascade{Data}, Geometry, Shape, Color; kwargs...)
-    # _set_geometry(plot::Plot{Data}, Geometry, Shape, Color; kwargs...)
-"""
-function _set_geometry(cascade::Cascade{Data}, Geometry, Shape, Color, args...;
-    colorcycle::Bool = false,
-    kwargs...,
-)
-    pos = scale_for(cascade, Geometry, args...; kwargs...)
-    sgn = sign(cascade)
-
-    label = get_label.(collect_data(cascade))
-    shape = vectorize.(_define_from(Shape, Color, pos, sgn; kwargs...))
-    # annot = _define_annotation(cascade, Missing; kwargs...)
-
-    data = Geometry.(label, shape, length(cascade))
-    
-    return Cascade(
-        start = set_hue!(first(data), "black"),
-        stop = set_hue!(last(data), "black"),
-        steps = colorcycle ? set_hue!.(data[2:end-1], cascade.permutation) : data[2:end-1],
-        permutation = cascade.permutation,
-        correlation = cascade.correlation,
-        ispermuted = cascade.ispermuted,
-        iscorrelated = cascade.iscorrelated,
-    )
-end
-
-
-# function _set_geometry(plot::Plot{Data}, Geometry::DataType, args...; kwargs...)
-#     cascade = _set_geometry(plot.cascade, Geometry, args...; kwargs...)
-#     path = _define_path(plot.cascade, Geometry; kwargs...)
-#     return Plot(cascade, plot.axes, plot.title, path)
-# end
