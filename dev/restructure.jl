@@ -4,7 +4,7 @@ using Waterfall
 # include("")
 include(joinpath(WATERFALL_DIR,"src","includes.jl"))
 include(joinpath(WATERFALL_DIR,"bin","io.jl"))
-include(joinpath(WATERFALL_DIR,"dev","legend.jl"))
+# include(joinpath(WATERFALL_DIR,"dev","legend.jl"))
 
 
 # function define_permute(df, nperm::T; kwargs...) where T<:Integer

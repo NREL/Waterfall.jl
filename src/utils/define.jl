@@ -148,6 +148,26 @@ end
 
 # Keywords:
 - `style`
+
+
+    _define_from(::Type{Vector{L}}, ::Type{A}, cascade; kwargs...) where {L<:Label, A<:Axis}
+    _define_from(::Type{Vector{L}}, ::Type{XAxis}, cascade, fun; kwargs...) where L<:Label
+These methods define LABELS for the input `Axis` subtype (XAxis or YAxis).
+
+# Arguments
+- `cascade::Cascade`
+- `field::Symbol`, if defining ticks for the XAxis, include the Data field name that will
+serve as the x-axis tick label or sublabel. Allowed options: `:label`, `:sublabel`.
+
+# Returns
+- `ticklabels::Vector{L}` of tick LABELS
+- `ticksublabels::Vector{L}` (returned if `A=XAxis` and `fun` unspecified), of tick SUBLABELS
+
+
+    _define_from(Handle, cascade, fun, args...)
+
+
+    _define_from(Annotation)
 """
 function _define_from(Shape, Color, pos::Vector{T1}, sgn::Vector{T2};
     kwargs...,
@@ -201,6 +221,138 @@ function _define_from(::Type{Vector{Blending}}, sgn, pos; kwargs...)
 
     direction = tuple.(Luxor.Point.(xmid,y1), Luxor.Point.(xmid,y2))
     return Blending.(direction, hue)
+end
+
+
+## Define Label; lists of Labels
+
+function _define_from(::Type{Vector{T}}, cascade::Cascade{Data}, args...; kwargs...) where T <: Label
+    txt = _define_text(cascade, args...; kwargs...)
+    pos = _define_position(cascade, args...; kwargs...)
+    return _define_from(Vector{T}, txt, pos; kwargs...)
+end
+
+
+function _define_from(::Type{T}, text, pos::Luxor.Point;
+    scale = 1,
+    halign = :center,
+    valign = :middle,
+    leading = 1,
+    angle = 0,
+    kwargs...,
+) where T <: Label
+    return Label( ;
+        text = text,
+        scale = scale,
+        position = pos,
+        halign = halign,
+        valign = valign,
+        angle = angle,
+        leading = leading,
+    )
+end
+
+
+function _define_from(::Type{T}, text::String, pos::Luxor.Point, width::Float64;
+    scale = 1,
+    kwargs...,
+) where T <: Label
+    return _define_from(T, wrap_to(text, width; scale), pos; kwargs...)
+end
+
+
+function _define_from(::Type{Vector{Label{T}}}, text::AbstractArray, pos::AbstractArray;
+    kwargs...,
+) where T <: Vector{String}
+    N = length(pos)
+    wid = width(N; space=2)
+    return [_define_from(Label, text[ii], pos[ii], wid; kwargs...) for ii in 1:N]
+end
+
+
+function _define_from(::Type{Vector{Label{T}}}, text::AbstractArray, pos::AbstractArray;
+    kwargs...,
+) where T <: Any
+    return [_define_from(Label{T}, text[ii], pos[ii]; kwargs...) for ii in 1:length(pos)]
+end
+
+
+function _define_from(::Type{T}, x; kwargs...) where T<:Label
+    return _define_from(Label, x, Luxor.Point(0,0))
+end
+
+
+## Define Handle
+
+function _define_from(::Type{Handle}, cascade::Cascade{T}, str::String;
+    scale = 0.8,
+    kwargs...,
+) where T <: Geometry
+    shape = get_shape(cascade)
+    label = _define_from(Label, str; halign=:left, scale=scale)
+    return set_position!(Handle(shape, label); scale=scale, kwargs...)
+end
+
+
+function _define_from(::Type{Handle}, cascade, fun::Function, args...; kwargs...)
+    return _define_from(Handle, cascade, string(fun); kwargs...)
+end
+
+
+function _define_from(::Type{Handle}, cascade, str::String, hue; kwargs...)
+    h = _define_from(Handle, cascade, str; kwargs...)
+    return set_hue!(h, hue)
+end
+
+
+function _define_from(::Type{Handle}, cascade; colorcycle, kwargs...)
+    return [_define_from(Handle, cascade, str, hue; idx=idx, kwargs...)
+        for (idx, str, hue) in zip(1:2, ["GAIN","LOSS"], [HEX_GAIN,HEX_LOSS])]
+end
+
+
+## Define Annotation
+
+function _define_from(::Type{Annotation}, cascade::Cascade{Data}, Geometry::DataType,
+    args...;
+    scale = 0.8,
+    kwargs...,
+)
+    return Annotation(
+        label = _define_label(cascade, Geometry, args...; scale=scale, kwargs...),
+        cascade = set_geometry(cascade, Geometry, args...; alpha=1.0, style=:stroke, kwargs...),
+    )
+end
+
+
+"""
+    _define_legend(cascade; kwargs)
+"""
+function _define_legend(cascade::Cascade{T}; kwargs...) where T <: Geometry
+    legend = _define_from(Handle, cascade; kwargs...) .=> missing
+    return legend |> Vector{Pair{Handle,Any}}
+end
+
+
+"""
+    _push!(legend, cascade, Geometry, args...; kwargs...)
+
+# Arguments
+- `legend`
+- `cascade::Cascade{Data}`
+- `fun::Function`
+"""
+function _push!(
+    legend::Vector{Pair{Handle,T}},
+    cascade::Cascade{Data},
+    Geometry::DataType,
+    args...;
+    kwargs...,
+) where T<:Any
+    a =  _define_from(Annotation, cascade, Geometry, args...; kwargs...)
+    h = _define_from(Handle, a.cascade, args...; idx=length(legend)+1, kwargs...)
+    push!(legend, h => a)
+    return legend
 end
 
 

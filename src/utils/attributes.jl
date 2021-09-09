@@ -1,4 +1,40 @@
 """
+    set_position!(handle::Handle)
+This method calculates the position of a Handle's shape and label such that the shape is
+centered at (x0,y0) and fits within the bounds of `(2*dx, 2*dy)`. The label is aligned
+middle/left at `(x0+dx+space, y0)`
+"""
+function set_position!(handle::Handle;
+    x0 = WIDTH-100,
+    y0 = 3*SEP,
+    dx = 2*SEP,
+    dy = SEP,
+    space = SEP,
+    idx = 1,
+    kwargs...,
+)
+    y0 = y0 + (2*dy+space)*(idx-1)
+    
+    setproperty!(handle.shape, :position, (
+        Luxor.Point(x0-dx, y0+dy),
+        Luxor.Point(x0+dx, y0-dy),
+    ))
+    
+    setproperty!(handle.label, :position, Luxor.Point(x0+dx+space, y0))
+
+    return handle
+end
+
+
+"""
+    get_shape(cascade; kwargs...)
+This function returns the shape used in `cascade`, with its position updated, as defined by
+keyword arguments.
+"""
+get_shape(cascade::Cascade{T}) where T<:Geometry = copy(first(cascade.start.shape))
+
+
+"""
     wrap_to(str, width; scale)
 This function wraps an input string `str` to the input `width`, calculated assuming a
 font size `scale` and returns an array of strings.
@@ -331,76 +367,6 @@ function _define_position(cascade, Geometry; kwargs...)
     pos = vectorize.(scale_for(cascade, Geometry; kwargs...))
     y = minimum.(pos; dims=2)
     return Luxor.Point.(x, y.+yshift)
-end
-
-
-"""
-    _define_from(::Type{Vector{L}}, ::Type{A}, cascade; kwargs...) where {L<:Label, A<:Axis}
-    _define_from(::Type{Vector{L}}, ::Type{XAxis}, cascade, fun; kwargs...) where L<:Label
-These methods define LABELS for the input `Axis` subtype (XAxis or YAxis).
-
-# Arguments
-- `cascade::Cascade`
-- `field::Symbol`, if defining ticks for the XAxis, include the Data field name that will
-    serve as the x-axis tick label or sublabel. Allowed options: `:label`, `:sublabel`.
-
-# Returns
-- `ticklabels::Vector{L}` of tick LABELS
-- `ticksublabels::Vector{L}` (returned if `A=XAxis` and `fun` unspecified), of tick SUBLABELS
-"""
-function _define_from(::Type{Vector{T}}, cascade::Cascade{Data}, args...; kwargs...) where T <: Label
-    txt = _define_text(cascade, args...; kwargs...)
-    pos = _define_position(cascade, args...; kwargs...)
-    return _define_from(Vector{T}, txt, pos; kwargs...)
-end
-
-
-function _define_from(::Type{T}, text, pos::Luxor.Point;
-    scale = 1,
-    halign = :center,
-    valign = :middle,
-    leading = 1,
-    angle = 0,
-    kwargs...,
-) where T <: Label
-    return Label( ;
-        text = text,
-        scale = scale,
-        position = pos,
-        halign = halign,
-        valign = valign,
-        angle = angle,
-        leading = leading,
-    )
-end
-
-
-function _define_from(::Type{T}, text::String, pos::Luxor.Point, width::Float64;
-    scale = 1,
-    kwargs...,
-) where T <: Label
-    return _define_from(T, wrap_to(text, width; scale), pos; kwargs...)
-end
-
-
-function _define_from(::Type{Vector{Label{T}}}, text::AbstractArray, pos::AbstractArray;
-    kwargs...,
-) where T <: Vector{String}
-    N = length(pos)
-    wid = width(N; space=2)
-    return [_define_from(Label, text[ii], pos[ii], wid; kwargs...) for ii in 1:N]
-end
-
-
-function _define_from(::Type{Vector{Label{T}}}, text::AbstractArray, pos::AbstractArray;
-    kwargs...,
-) where T <: Any
-    return [_define_from(Label{T}, text[ii], pos[ii]; kwargs...) for ii in 1:length(pos)]
-end
-
-
-function _define_from(::Type{T}, ::Type{Missing}; kwargs...) where T<:Label
-    return _define_from(Label, missing, Luxor.Point(0,0))
 end
 
 
