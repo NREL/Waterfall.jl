@@ -1,4 +1,76 @@
 """
+    set_geometry(cascade, ::Type{T}; kwargs...) where T<:Geometry
+Given a cascade and geometry, return a cascade with an updated type.
+"""
+function set_geometry(cascade, ::Type{Violin}, args...; kwargs...)
+    return _set_geometry(cascade, Violin, Poly, Coloring, args...; style=:fill, kwargs...)
+end
+
+
+function set_geometry(cascade, ::Type{Vertical}, args...; kwargs...)
+    return _set_geometry(cascade, Vertical, Box, Blending, args...;
+        style=:fill,
+        subdivide=true,
+        space=true, 
+        kwargs...,
+    )
+end
+
+
+function set_geometry(cascade, ::Type{Horizontal}, args...; usegradient=missing, kwargs...)
+    usegradient = coalesce(usegradient, length(cascade)==1)
+    
+    return _set_geometry(cascade, Horizontal, Box, usegradient ? Blending : Coloring, args...;
+        alpha=length(cascade),
+        style=:fill,
+        subdivide=false,
+        space=true,
+        kwargs...,
+    )
+end
+
+
+function set_geometry(cascade, ::Type{Parallel}, args...; slope::Bool=true, kwargs...)
+    return _set_geometry(cascade, Parallel, Line, Coloring, args...;
+        quantile = convert(Float64, slope),
+        alpha = length(cascade),
+        factor = 0.5,
+        style = :stroke,
+        subdivide = false,
+        space = false,
+        kwargs...,
+    )
+end
+
+
+"""
+    _set_geometry(cascade::Cascade{Data}, Geometry, Shape, Color; kwargs...)
+"""
+function _set_geometry(cascade::Cascade{Data}, Geometry, Shape, Color, args...;
+    colorcycle::Bool = false,
+    kwargs...,
+)
+    pos = scale_for(cascade, Geometry, args...; kwargs...)
+    sgn = sign(cascade)
+
+    label = get_label.(collect_data(cascade))
+    shape = vectorize.(_define_from(Shape, Color, pos, sgn; kwargs...))
+
+    data = Geometry.(label, shape, length(cascade))
+    
+    return Cascade(
+        start = set_hue!(first(data), "black"),
+        stop = set_hue!(last(data), "black"),
+        steps = colorcycle ? set_hue!.(data[2:end-1], cascade.permutation) : data[2:end-1],
+        permutation = cascade.permutation,
+        correlation = cascade.correlation,
+        ispermuted = cascade.ispermuted,
+        iscorrelated = cascade.iscorrelated,
+    )
+end
+
+
+"""
     set_position!(handle::Handle)
 This method calculates the position of a Handle's shape and label such that the shape is
 centered at (x0,y0) and fits within the bounds of `(2*dx, 2*dy)`. The label is aligned
@@ -117,64 +189,3 @@ set_hue!(x::Blending, h) = begin x.hue = _define_gradient(h); return x end
 set_hue!(x::T, h) where T<:Geometry = begin set_hue!(x.shape, h); return x end
 set_hue!(x::T, h) where T<:Shape = begin set_hue!(x.color, h); return x end
 set_hue!(x::Vector{T}, h) where T<:Shape = begin set_hue!.(x, h); return x end
-
-
-"""
-This method scales a value ``v \\in [0,1]`` by a factor ``f \\in [-1,1]``,
-``f<0`` decreases ``v`` and ``f>0`` increases ``v``:
-
-```math
-v' =
-\\begin{cases}
-\\left(v-v_{min}\\right) f + v & f<0
-\\\\
-\\left(v_{max}-v\\right) f + v
-\\end{cases}
-```
-
-Keywords:
-- `on`, interval of maximum and minimum result values
-"""
-_scale_by(v, f; on, kwargs...) = (on[sign(f)<0 ? 1 : 2] - v) * abs(f) + v
-
-
-"""
-    scale_hsv(color; kwargs...)
-This function decreases or increases `color` saturation by a factor of ``s \\in [-1,1]``.
-
-# Keywords
-- `lightness=0.5`, factor by which to "lighten" a color. Doing so scales hue by
-    `h=lightness` and saturation by `s=-lightness`. Allowed values: ``\\in [0,1]``.
-- `h=0`, factor by which to scale color hue. Allowed values: ``\\in [-1,1]``.
-    `hsv.h` ``\\in [0,1]``
-- `s=0`, factor by which to scale color saturation. Allowed values: ``\\in [-1,1]``.
-    `hsv.s` ``\\in [0,1]``
-- `v=0`, factor by which to scale color value. Allowed values: ``\\in [-1,1]``.
-    `hsv.v` ``\\in [0,255]``.
-"""
-function scale_hsv(hsv::Luxor.HSV; lightness=missing, h=0, s=0, v=0, kwargs...)
-
-    return if !ismissing(lightness)
-        scale_hsv(hsv; s=-lightness, v=lightness)
-    else
-        h = _scale_by(hsv.h, h; on=[0,255])
-        s = _scale_by(hsv.s, s; on=[0,1])
-        v = _scale_by(hsv.v, v; on=[0,1])
-        Luxor.Colors.HSV(h, s, v)
-    end
-end
-
-function scale_hsv(rgb::Luxor.RGB; kwargs...)
-    hsv = scale_hsv(convert(Luxor.HSV, rgb); kwargs...)
-    rgb = convert(Luxor.RGB, hsv)
-    return rgb
-end
-
-
-"""
-"""
-
-
-
-"""
-"""

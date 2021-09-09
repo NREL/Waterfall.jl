@@ -144,3 +144,55 @@ function vlim(data::Vector{Data}; kwargs...)
 end
 
 vlim(cascade::Cascade{Data}; kwargs...) = vlim(collect_data(cascade); kwargs...)
+
+
+"""
+    scale_hsv(color; kwargs...)
+This function decreases or increases `color` saturation by a factor of ``s \\in [-1,1]``.
+
+# Keywords
+- `lightness=0.5`, factor by which to "lighten" a color. Doing so scales hue by
+    `h=lightness` and saturation by `s=-lightness`. Allowed values: ``\\in [0,1]``.
+- `h=0`, factor by which to scale color hue. Allowed values: ``\\in [-1,1]``.
+    `hsv.h` ``\\in [0,1]``
+- `s=0`, factor by which to scale color saturation. Allowed values: ``\\in [-1,1]``.
+    `hsv.s` ``\\in [0,1]``
+- `v=0`, factor by which to scale color value. Allowed values: ``\\in [-1,1]``.
+    `hsv.v` ``\\in [0,255]``.
+"""
+function scale_hsv(hsv::Luxor.HSV; lightness=missing, h=0, s=0, v=0, kwargs...)
+
+    return if !ismissing(lightness)
+        scale_hsv(hsv; s=-lightness, v=lightness)
+    else
+        h = _scale_by(hsv.h, h; on=[0,255])
+        s = _scale_by(hsv.s, s; on=[0,1])
+        v = _scale_by(hsv.v, v; on=[0,1])
+        Luxor.Colors.HSV(h, s, v)
+    end
+end
+
+function scale_hsv(rgb::Luxor.RGB; kwargs...)
+    hsv = scale_hsv(convert(Luxor.HSV, rgb); kwargs...)
+    rgb = convert(Luxor.RGB, hsv)
+    return rgb
+end
+
+
+"""
+This method scales a value ``v \\in [0,1]`` by a factor ``f \\in [-1,1]``,
+``f<0`` decreases ``v`` and ``f>0`` increases ``v``:
+
+```math
+v' =
+\\begin{cases}
+\\left(v-v_{min}\\right) f + v & f<0
+\\\\
+\\left(v_{max}-v\\right) f + v
+\\end{cases}
+```
+
+Keywords:
+- `on`, interval of maximum and minimum result values
+"""
+_scale_by(v, f; on, kwargs...) = (on[sign(f)<0 ? 1 : 2] - v) * abs(f) + v
