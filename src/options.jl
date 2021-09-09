@@ -1,8 +1,3 @@
-# Input editing
-SAMPLES = 3
-FUZZINESS = (0.01,0.05)
-DISTRIBUTION = :normal      # linear, normal, triangular
-
 # Display
 DISPLAY_MEAN = true
 MEAN_STYLE = [nothing, :stroke, :fill, :gradient]

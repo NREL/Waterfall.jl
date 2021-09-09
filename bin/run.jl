@@ -1,59 +1,48 @@
 using Waterfall
+
+# include("")
 include(joinpath(WATERFALL_DIR,"src","includes.jl"))
+include(joinpath(WATERFALL_DIR,"bin","io.jl"))
 
-DATA_DIR = joinpath(WATERFALL_DIR,"data","pvrd")
-df = CSV.read(joinpath(DATA_DIR,"pvrd2-investment-metrics.csv"), DataFrame)
-dfamt = CSV.read(joinpath(DATA_DIR,"pvrd2-investment-amounts.csv"), DataFrame)
-
-samples=2
-distribution=:normal
-fuzziness=(0.01,0.1)
-mean=true
-kwargs = (label=:Process, samples=samples, distribution=distribution, fuzziness=fuzziness)
+# List of permutations.
+perms = vcat([[
+    ii,
+    swapat!(copy(ii), 1, 2),
+] for ii in [collect(1:4)]]...)
 
 
-loremipsum = """Lorem ipsum dolor sit amet, consectetur
-adipiscing elit. Nunc placerat lorem ullamcorper,
-sagittis massa et, elementum dui. Sed dictum ipsum vel
-commodo pellentesque. Aliquam erat volutpat. Nam est
-dolor, vulputate a molestie aliquet, rutrum quis lectus.
-Sed lectus mauris, tristique et tempor id, accumsan
-pharetra lacus. Donec quam magna, accumsan a quam
-quis, mattis hendrerit nunc. Nullam vehicula leo ac
-leo tristique, a condimentum tortor faucibus."""
+# !!!! Add support for defining a legend to violin plots.
+for T in [Horizontal, Vertical, Parallel]
+    for nsample in [1,10,50]
+        for colorcycle in [true,false]
+            for perm in perms
 
+                (length(perm)>length(COLORCYCLE) && colorcycle) && continue
+                
+                # Define keyword arguments specific to this iteration.
+                # By default, permute and correlate kwargs = true.
+                global locals = (
+                    # What modifications should be made to the input data?
+                    nsample = nsample,
+                    permutation = perm,
+                    # How should the plot be formatted?
+                    colorcycle = colorcycle,
+                    ylabel = "Efficiency (%)",
+                )
+                
+                global cascade = define_from(Cascade{Data}, df; locals..., kwargs...)
+                global plot = define_from(Plot{T}, copy(cascade); locals..., kwargs...)
 
-for mean in [true,false]
-    for samples in [1,5,50]
-        samples*mean == 1 && continue
+                Luxor.@png begin
+                    Luxor.fontface("Gill Sans")
+                    Luxor.fontsize(FONTSIZE)
+                    Luxor.setline(1.0)
+                    Luxor.setmatrix([1 0 0 1 LEFT_BORDER TOP_BORDER])
 
-        localkwargs = (label=:Process, samples=samples, distribution=distribution, fuzziness=fuzziness)
-
-        local cascade = Cascade(df; localkwargs...)
-        local data = collect_data(cascade)
-        set_order!(cascade, sortperm(get_value(cascade.start)))
-
-        local pviolin = Plot{Violin}(cascade; ylabel="Efficiency (%)")
-        local pscatter = Plot{Scatter}(cascade; ylabel="Efficiency (%)")
-        local pvertical = Plot{Vertical}(cascade; ylabel="Efficiency (%)")
-        local phorizontal = Plot{Horizontal}(cascade; ylabel="Efficiency (%)")
-
-        local cmean = calculate_mean(cascade)
-        local vlims = NamedTuple{(:vmin,:vmax,:vscale)}(vlim(data))
-        local pmean = Plot{Horizontal}(cmean, vlims; ylabel="Efficiency (%)")
-        
-        # POINTS. SORTED BY FIRST.
-        for p in [phorizontal, pviolin, pvertical, pscatter]
-            local f = filename(p; distribution=distribution, mean=mean)
-            @png begin
-                fontsize(14)
-                Luxor.setmatrix([1 0 0 1 LEFT_BORDER TOP_BORDER])
-                # draw(p.cascade, ff)
-                _draw_title(titlecase("$distribution Distribution"),"N = $samples")
-                draw(p)
-                mean && draw(pmean.cascade; style=:stroke, opacity=1.0)
-            end WIDTH+LEFT_BORDER+RIGHT_BORDER HEIGHT+TOP_BORDER+BOTTOM_BORDER f
-            Printf.@printf("\nSaving figure to %s", f)
+                    draw(plot)
+                    
+                end WIDTH+LEFT_BORDER+RIGHT_BORDER HEIGHT+TOP_BORDER+BOTTOM_BORDER+padding(plot.axes[1]) plot.path
+            end
         end
     end
 end
