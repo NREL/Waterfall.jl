@@ -43,17 +43,17 @@ end
 This function scales 
 """
 function scale_x( ;
-    steps,
+    nrow,
     shift::Float64=-0.5,
-    nsample=1,
+    ncol=1, # !!!! rename this kwarg because it's messing things up for violin plots (maybe? I don't know)
     subdivide=true,
     space=true,
     kwargs...,
 )
-    ROW, COL = steps, (subdivide ? nsample : 1)
+    ROW, COL = nrow, (subdivide ? ncol : 1)
     extend = -sign(-0.5-shift) * (0.5*SEP * !space * !subdivide)
 
-    wstep = width(steps)
+    wstep = width(nrow)
     wsample = wstep/COL
 
     Wstep = fill(wstep, (ROW,1))
@@ -67,7 +67,7 @@ function scale_x( ;
     x = (L-I)*Wstep + L*dWo .+ extend
     result = x .+ dx
 
-    return subdivide ? result : hcat(fill(result, nsample)...)
+    return subdivide ? result : hcat(fill(result, ncol)...)
 end
 
 
@@ -75,7 +75,7 @@ function scale_x(lst::AbstractArray{T}; kwargs...) where T <: KernelDensity.Univ
     v = matrix(getfield.(lst,:density))
 
     ROW, COL = size(v)
-    xmid = scale_x( ; steps=ROW, kwargs...)
+    xmid = scale_x( ; nrow=ROW, kwargs..., ncol=COL)
 
     w = width(ROW)
     vmax = maximum(v; dims=2)
@@ -89,8 +89,8 @@ end
 
 function scale_x(data::Vector{Data}; quantile=1.0, kwargs...)
     STEPS, SAMPLES = size(get_value(data))
-    x1 = scale_x( ; steps=STEPS, nsample=SAMPLES, shift=-(1-(1-quantile)/2), kwargs...)
-    x2 = scale_x( ; steps=STEPS, nsample=SAMPLES, shift=   -(1-quantile)/2,  kwargs...)
+    x1 = scale_x( ; nrow=STEPS, ncol=SAMPLES, shift=-(1-(1-quantile)/2), kwargs...)
+    x2 = scale_x( ; nrow=STEPS, ncol=SAMPLES, shift=   -(1-quantile)/2,  kwargs...)
     return x1, x2
 end
 
@@ -125,11 +125,13 @@ y-axis ticks.
 - `vscale::Float64`: scaling factor to convert value coordinates to drawing coordinates.
 """
 function vlim(mat::AbstractArray; vmin=missing, vmax=missing, kwargs...)
-    mat = dropzero(mat)
-    order = minimum(get_order.(mat))
+    if |(ismissing(vmin), ismissing(vmax))
+        mat = dropzero(mat)
+        order = minimum(get_order.(mat))
 
-    vmin = coalesce(vmin, floor(minimum(mat) - 0.5*exp10(order-1)))
-    vmax = coalesce(vmax, ceil(maximum(mat) + 0.5*exp10(order-1)) + 0.5*exp10(order-1))
+        vmin = coalesce(vmin, floor(minimum(mat) - 0.5*exp10(order-1)))
+        vmax = coalesce(vmax, ceil(maximum(mat) + 0.5*exp10(order-1)) + 0.5*exp10(order-1))
+    end
     
     vscale = HEIGHT/(vmax-vmin)
     return (vmin=vmin, vmax=vmax, vscale=vscale)

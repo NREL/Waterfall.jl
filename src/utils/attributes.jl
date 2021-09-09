@@ -18,6 +18,7 @@ end
 
 
 function set_geometry(cascade, ::Type{Horizontal}, args...; usegradient=missing, kwargs...)
+    # !!!! want to show gradient if there's only one cascade element. Is this working??
     usegradient = coalesce(usegradient, length(cascade)==1)
     
     return _set_geometry(cascade, Horizontal, Box, usegradient ? Blending : Coloring, args...;
@@ -119,3 +120,4 @@ This function returns the shape used in `cascade`, with its position updated, as
 keyword arguments.
 """
 get_shape(cascade::Cascade{T}) where T<:Geometry = copy(first(cascade.start.shape))
+get_shape(cascade::Cascade{Violin}) = copy(cascade.start.shape)

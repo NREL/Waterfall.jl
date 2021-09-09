@@ -55,6 +55,7 @@ vectorize(x::Vararg{Any}) = vectorize(Tuple.(hcat.(x...)))
 vectorize(x::Matrix) = collect.(collect(eachrow(x)))
 vectorize(x::Vector) = x
 vectorize(x::Any) = [x;]
+vectorize(x::Poly) = x
 
 
 "These methods extend `Base.sign` to `Waterfall` types."
