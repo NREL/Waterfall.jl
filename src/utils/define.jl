@@ -86,7 +86,7 @@ function define_from(::Type{Plot{T}}, cascade::Cascade{Data}; kwargs...) where T
         title = _define_title(cascade; kwargs...),
         path = _define_path(cascade, T; kwargs...),
         # Add other annotations to the legend.
-        legend = _push!(legend, cascade, T, Statistics.mean; kwargs...),
+        legend = _push!(legend, cascade, Horizontal, Statistics.mean; kwargs...),
     )
 end
 
@@ -301,7 +301,7 @@ function _define_from(::Type{Handle}, cascade::Cascade{T}, str::String;
     kwargs...,
 ) where T <: Geometry
     shape = get_shape(cascade)
-    label = _define_from(Label, str; halign=:left, scale=scale)
+    label = _define_from(Label, uppercase(str); halign=:left, scale=scale)
     return set_position!(Handle(shape, label); scale=scale, kwargs...)
 end
 
