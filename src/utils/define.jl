@@ -75,16 +75,6 @@ function define_from(::Type{Vector{Data}}, df::DataFrames.DataFrame; kwargs...)
 end
 
 
-# function define_from(::Type{Plot{Data}}, cascade::Cascade{Data}; kwargs...)
-#     axes = [
-#         define_from(XAxis, cascade; kwargs...);
-#         define_from(YAxis, cascade; kwargs...);
-#     ]
-    
-#     return Plot(cascade, axes, _define_title(cascade; kwargs...), "")
-# end
-
-
 function define_from(::Type{Plot{T}}, cascade::Cascade{Data}; kwargs...) where T<:Geometry
     cascade_geometry = set_geometry(cascade, T; kwargs...)
     legend = _define_legend(cascade_geometry; kwargs...)
@@ -295,6 +285,18 @@ function _define_from(::Type{T}, x; kwargs...) where T<:Label
 end
 
 
+## Define Arrow, Line (for plot axes)
+
+function _define_from(::Type{T}, x::Tuple{Luxor.Point,Luxor.Point};
+    hue = "black",
+    alpha = 1.0,
+    style = :stroke,
+    kwargs...,
+) where T <: Union{Arrow,Line}
+    return T(x, _define_from(Coloring, hue; alpha=alpha), style)
+end
+
+
 ## Define Handle
 
 function _define_from(::Type{Handle}, cascade::Cascade{T}, str::String;
@@ -339,6 +341,80 @@ end
 
 
 """
+    _define_alpha(N::Int; kwargs...)
+This function calculates an alpha for `N` samples to scale transparency for overlays:
+
+```math
+\\alpha = \\min\\left\\lbrace\\dfrac{w}{f(N)},\\, 0\\right\\rbrace
+```
+
+# Keywords
+- `factor::Real=0.25`, scaling weighting ``w``
+- `fun::Function=log`, scaling function ``\\ln``
+"""
+function _define_alpha(N::Int; factor::Real=0.25, fun::Function=log, kwargs...)
+    return min(factor/fun(N) ,1.0)
+end
+
+_define_alpha(x; kwargs...) = x
+
+
+"""
+    _define_colorant(idx::Int)
+This method returns the color defined at index `idx` of `COLORCYCLE`
+
+    _define_colorant(sgn::Float64)
+This method returns
+- **Red**, given a negative value or
+- **Blue**, given a positive value.
+
+    _define_colorant(lst::AbstractVector)
+This method returns an average of the colors defined in the `lst`
+"""
+function _define_colorant(lst::AbstractVector)
+    rgb = _define_colorant.(lst)
+    rgb_average = [Statistics.mean(getproperty.(rgb, f)) for f in fieldnames(Luxor.RGB)]
+    return Luxor.Colors.RGB(rgb_average...)
+end
+
+_define_colorant(idx::Int) = COLORCYCLE[idx]
+_define_colorant(sgn::Float64) = sign(sgn)>0 ? HEX_GAIN : HEX_LOSS
+_define_colorant(x) = parse(Luxor.Colorant, x)
+
+
+"""
+    _define_gradient(x; kwargs...)
+This method defines the starting and stopping colors for a color gradient, such that the
+starting color is defined using [`Waterfall._define_colorant`](@ref) and the stopping color
+is 50% "lighter" than this color.
+
+# Returns
+- `x::Tuple{Luxor.RGB,Luxor.RGB}`, color gradient from the starting to stopping pos of
+    each waterfall in the cascade.
+"""
+function _define_gradient(x; kwargs...)
+    lightness = 0.5
+    h1 = define_from(Luxor.RGB, x)
+    h2 = define_from(Luxor.RGB, x; lightness=lightness)
+    return tuple(h1, h2)
+end
+
+function _define_gradient(x1, x2; kwargs...)
+    return tuple(define_from(Luxor.RGB, x1; kwargs...), define_from(Luxor.RGB, x2; kwargs...))
+end
+
+
+"""
+    _define_label(cascade, Geometry::DataType, args...; kwargs...)
+"""
+function _define_label(cascade::Cascade{Data}, Geometry::DataType, args...; kwargs...)
+    txt = _define_text(cascade, args...; kwargs...)
+    pos = _define_position(cascade, Geometry; kwargs...)
+    return _define_from(Vector{Label{String}}, txt, pos; valign=:bottom, kwargs...)
+end
+
+
+"""
     _define_legend(cascade; kwargs)
 """
 function _define_legend(cascade::Cascade{T}; kwargs...) where T <: Geometry
@@ -367,6 +443,234 @@ function _push!(
     push!(legend, h => a)
     return legend
 end
+
+
+"""
+    _define_path(cascade::Cascade, Geometry; kwargs...)
+This method defines the path to which to write the file:
+    Geometry/Geometry_n<nsample>_colorcycle<0/1>_corr<0/1>_<permutation>.png
+"""
+function _define_path(x::Cascade, Geometry;
+    colorcycle,
+    ext = ".png",
+    figdir = "fig",
+    maxsample = 50,
+    kwargs...,
+)
+    separator = "_"
+    Geometry = lowercase(string(Geometry))
+
+    # Define the path name and create the directory if it doesn't already exist.
+    path = joinpath(WATERFALL_DIR, figdir, Geometry)
+
+    if !isdir(path)
+        @info("Creating directory: $path")
+        mkpath(path)
+    end
+
+    str = joinpath(path, join([
+        Geometry,
+        "n" * _define_path(length(x); maxchar=get_order(maxsample)+1), # number of samples
+        _define_path(get_label.(x.steps); kwargs...),                  # labels, in order
+        "corr"       * _define_path(x.iscorrelated),                   # is it correlated?
+        "colorcycle" * _define_path(colorcycle),                       # colorscheme?
+        ], separator,
+    ) * ext)
+
+    println("Writing plot: $str")
+    return str
+end
+
+
+function _define_path(lst::Vector{String}; maxchar=missing, kwargs...)
+    maxchar = coalesce(maxchar, maximum(length.(lst)))
+    lst = _define_path.(tryinteger(lst); maxchar=maxchar)
+    return join(lst, maxchar>1 ? "-" : "")
+end
+
+
+_define_path(x::Int; maxchar=1) = string(Printf.@sprintf("%010.0f", x)[end-(maxchar-1):end])
+_define_path(x::Bool; kwargs...) = string(convert(Int, x))
+_define_path(x::String; kwargs...) = x
+
+
+"""
+    _define_position(cascade, ::Type{T}; kwargs...) where T <: Axis
+This method defines the TICK POSITIONS for the input Axis subtype (XAxis or YAxis)
+`XAxis` tick labels are centered below the associated cascade waterfall.
+
+    _define_position(cascade, Geometry::DataType; kwargs...)
+This method defines a point above the top of each cascade waterfall, so that an annotation
+label can be bottom/center-aligned at these points.
+
+# Arguments
+- `cascade`
+- ``
+
+# Keywords
+- `x=0`, x-coordinate of y-axis.
+- `y=HEIGHT`, y-coordinate of x-axis.
+- `xshift`
+- `yshift`
+"""
+function _define_position(cascade, ::Type{YAxis};
+    x = 0,
+    xshift = 0,
+    kwargs...,
+)
+    y = collect_ticks(cascade; kwargs...)
+    y = scale_y(y; vlim(cascade; kwargs...)...)
+    return Luxor.Point.(x+xshift, y)
+end
+
+
+function _define_position(cascade, ::Type{XAxis}, args...;
+    y = HEIGHT,
+    yshift = 0,
+    kwargs...,
+)
+    x = scale_x( ; steps=length(collect_data(cascade)))
+    return Luxor.Point.(x, y+yshift)
+end
+
+
+function _define_position(cascade, Geometry; kwargs...)
+    yshift = -SEP/2
+    x = scale_x( ; steps=length(collect_data(cascade)))
+    pos = vectorize.(scale_for(cascade, Geometry; kwargs...))
+    y = minimum.(pos; dims=2)
+    return Luxor.Point.(x, y.+yshift)
+end
+
+
+"""
+    _define_text(x::Float64; kwargs...)
+This method formats `x` as a string.
+
+# Keywords
+- `digits=2`, fractional digits to include
+- `sgn=true`, indicates whether to show a leading `+`
+
+    _define_text(cascade, fun::Function, args...; kwargs...)
+This method calculates a value 
+"""
+function _define_text(x::Float64; sgn=true, digits=2)
+    x = round(x; digits=digits)
+    sgn = sgn ? sgn : Base.sign(x)<0
+    
+    len = length(string(abs(convert(Int, round(x))))) + 1 + sgn
+    str = sgn ? @Printf.sprintf("%+2.10f", x) : @Printf.sprintf("%2.10f", x)
+
+    return string(str[1:len+digits])
+end
+
+
+function _define_text(cascade, fun::Function, args...; kwargs...)
+    v = get_value(collect_data(cascade))
+    v = calculate(v, fun, args...)
+
+    digits = abs(minimum(get_order.(v))) + 1
+
+    str = _define_text.(v; digits=digits)
+    [str[ii] = str[ii][2:end] for ii in [1,size(str,1)]]
+
+    return str
+end
+
+
+function _define_text(cascade, ::Type{YAxis}; scale=0.9, kwargs...)
+    v = collect_ticks(cascade; kwargs...)
+    digits = abs(minimum(get_order.(v)))
+    return _define_text.(v; digits=digits, sgn=false)
+end
+
+
+function _define_text(cascade, ::Type{XAxis}, field::Symbol; kwargs...)
+    return getfield.(collect_data(cascade), field)
+end
+
+_define_text(x) = x
+
+
+"""
+"""
+function _define_ticks(cascade, ::Type{T};
+    x = 0,
+    y = HEIGHT,
+    len = SEP,
+    kwargs...,
+) where T <: Axis
+
+    p1 = _define_position(cascade, T; x=x-0.5*len, y=y-0.5*len, kwargs...)
+    p2 = _define_position(cascade, T; x=x+0.5*len, y=y+0.5*len, kwargs...)
+
+    return _define_from.(Line, tuple.(p1,p2))
+end
+
+
+"""
+    _define_title(cascade::Cascade{Data}; kwargs...)
+This method formats a title to describe, where applicable:
+1. The number of samples,
+2. Range of correlation coefficients (if a correlation was applied), and
+3. The distribution function (normal or uniform) used to create samples
+    (if more than one sample).
+"""
+function _define_title(cascade::Cascade{Data}; nsample,
+    titlescale = 1.1,
+    titleleading = 1.2,
+    kwargs...,
+)
+    # Select which rows of the title to show:
+    # (1) Always show the number of samples,
+    # (2) Show correlation range if one is applied,
+    # (3) Show sample distribution if multiple samples are given.
+    idx = [true, cascade.iscorrelated, nsample>1]
+
+    str = [
+        "$nsample SAMPLE" * (nsample>1 ? "S" : ""),
+        _title_correlation( ; kwargs...),
+        _title_distribution( ; kwargs...)
+    ][idx]
+
+    return Label( ; 
+        text = str,
+        scale = titlescale,
+        position = Luxor.Point(WIDTH/2, -TOP_BORDER),
+        halign = :center,
+        valign = :middle,
+        angle = 0,
+        leading = titleleading,
+    )
+end
+
+
+"Format title string for normal distribution function"
+_title_normal(x) = "f(x; $(x[1]) < s < $(x[2]))"
+
+"Format title string for uniform distribution function"
+function _title_uniform(x; abs::Bool=false)
+    abs = abs ? "|" : ""
+    return "f($(abs)x$(abs); a>$(x[1]), b<$(x[2]))"
+end
+
+
+"Format title string for SAMPLE distribution"
+function _title_distribution( ; distribution, fuzziness, kwargs...)
+    str = uppercase("$distribution sample distribution: ")
+
+    return if distribution==:normal; str * _title_normal(fuzziness)
+    elseif distribution==:uniform;   str * _title_uniform(fuzziness)
+    else; ""
+    end
+end
+
+
+"Format title string for correlation coefficient"
+function _title_correlation( ; interactivity, kwargs...)
+    return "CORRELATION COEFFICIENT: " * _title_uniform(interactivity; abs=true)
+end
+
 
 
 """
@@ -416,7 +720,7 @@ end
 
 """
     _set_geometry(cascade::Cascade{Data}, Geometry, Shape, Color; kwargs...)
-    _set_geometry(plot::Plot{Data}, Geometry, Shape, Color; kwargs...)
+    # _set_geometry(plot::Plot{Data}, Geometry, Shape, Color; kwargs...)
 """
 function _set_geometry(cascade::Cascade{Data}, Geometry, Shape, Color, args...;
     colorcycle::Bool = false,
@@ -443,8 +747,8 @@ function _set_geometry(cascade::Cascade{Data}, Geometry, Shape, Color, args...;
 end
 
 
-function _set_geometry(plot::Plot{Data}, Geometry::DataType, args...; kwargs...)
-    cascade = _set_geometry(plot.cascade, Geometry, args...; kwargs...)
-    path = _define_path(plot.cascade, Geometry; kwargs...)
-    return Plot(cascade, plot.axes, plot.title, path)
-end
+# function _set_geometry(plot::Plot{Data}, Geometry::DataType, args...; kwargs...)
+#     cascade = _set_geometry(plot.cascade, Geometry, args...; kwargs...)
+#     path = _define_path(plot.cascade, Geometry; kwargs...)
+#     return Plot(cascade, plot.axes, plot.title, path)
+# end
