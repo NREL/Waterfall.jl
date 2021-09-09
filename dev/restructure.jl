@@ -65,8 +65,8 @@ perms = vcat([[
     # reverse(ii),
 ] for ii in [collect(1:4)]]...)
 
-for geometry in [Horizontal]
-# for geometry in [Parallel]
+for T in [Horizontal]
+# for T in [Parallel]
     # for nsample in [1,10,50]
     for nsample in [5]
         # for colorcycle in [true,false]
@@ -87,44 +87,22 @@ for geometry in [Horizontal]
                 )
                 
                 global cascade = define_from(Cascade{Data}, df; locals..., kwargs...)
-                global plot = define_from(Plot{geometry}, copy(cascade); locals..., kwargs...)
-
-                global legd = _push!(
-                    _define_legend(plot.cascade; locals..., kwargs...),
-                    cascade, geometry, Statistics.mean; locals..., kwargs...
-                )
-
-                # global a1 =  _define_from(Annotation, cascade, Horizontal, Statistics.mean; locals..., kwargs...)
-                # global a2 =  _define_from(Handle, cascade, Horizontal, Statistics.mean; locals..., kwargs...)
-
-                # global h = _define_from(Handle, plot.cascade; locals..., kwargs...)
-                
-                # global a =  _define_from(Annotation, cascade, Horizontal, Statistics.mean; locals..., kwargs...)
-                # global ha = _define_from(Handle, a.cascade, Statistics.mean; idx=length(h)+1, locals..., kwargs...)
-
-
-                # cmean = set_geometry(calculate(copy(cascade), Statistics.mean), Horizontal;
-                # style=:stroke, alpha=1.0, locals...,
-                # )
-                # dmean = collect_data(cmean)
-                # [setfield!(x, :annotation, missing) for x in dmean]
-                
-                # vlims = vlim(collect_data(cascade); locals..., kwargs...)
-                # vmin, vmax, vscale = vlims
-
+                global plot = define_from(Plot{T}, copy(cascade); locals..., kwargs...)
 
                 # --- STILL GOOD ---
-                # global lab = _define_annotation(cascade, Horizontal, Statistics.mean; locals..., kwargs..., scale=0.9)
-                # global cas = set_geometry(cascade, Horizontal, Statistics.mean; locals..., kwargs..., style=:stroke, alpha=1.0)
+                # global legd = _push!(
+                #     _define_legend(plot.cascade; locals..., kwargs...),
+                #     cascade, T, Statistics.mean; locals..., kwargs...
+                # )
                 
                 Luxor.@png begin
                     Luxor.fontface("Gill Sans")
                     Luxor.fontsize(FONTSIZE)
                     Luxor.setline(1.0)
                     Luxor.setmatrix([1 0 0 1 LEFT_BORDER TOP_BORDER])
-                    
+
                     draw(plot)
-                    draw(legd)
+                    # draw(legd)
                     # draw(h)
                     # draw(a)
                     # draw(ha)

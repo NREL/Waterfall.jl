@@ -75,19 +75,31 @@ function define_from(::Type{Vector{Data}}, df::DataFrames.DataFrame; kwargs...)
 end
 
 
-function define_from(::Type{Plot{Data}}, cascade::Cascade{Data}; kwargs...)
-    axes = [
-        define_from(XAxis, cascade; kwargs...);
-        define_from(YAxis, cascade; kwargs...);
-    ]
+# function define_from(::Type{Plot{Data}}, cascade::Cascade{Data}; kwargs...)
+#     axes = [
+#         define_from(XAxis, cascade; kwargs...);
+#         define_from(YAxis, cascade; kwargs...);
+#     ]
     
-    return Plot(cascade, axes, _define_title(cascade; kwargs...), "")
-end
+#     return Plot(cascade, axes, _define_title(cascade; kwargs...), "")
+# end
 
 
 function define_from(::Type{Plot{T}}, cascade::Cascade{Data}; kwargs...) where T<:Geometry
-    plot = define_from(Plot{Data}, copy(cascade); kwargs...)
-    return set_geometry(plot, T; kwargs...)
+    cascade_geometry = set_geometry(cascade, T; kwargs...)
+    legend = _define_legend(cascade_geometry; kwargs...)
+    
+    return Plot( ;
+        cascade = cascade_geometry,
+        xaxis = define_from(XAxis, cascade; kwargs...),
+        yaxis = define_from(YAxis, cascade; kwargs...),
+        title = _define_title(cascade; kwargs...),
+        path = _define_path(cascade, T; kwargs...),
+        # Add other annotations to the legend.
+        legend = _push!(legend, cascade, T, Statistics.mean; kwargs...),
+    )
+    # plot = define_from(Plot{Data}, copy(cascade); kwargs...)
+    # return set_geometry(plot, T; kwargs...)
 end
 
 
@@ -257,16 +269,16 @@ function _define_from(::Type{T}, text::String, pos::Luxor.Point, width::Float64;
     scale = 1,
     kwargs...,
 ) where T <: Label
-    return _define_from(T, wrap_to(text, width; scale), pos; kwargs...)
+    return _define_from(T, wrap_to(text, width; scale), pos; scale=scale, kwargs...)
 end
 
 
-function _define_from(::Type{Vector{Label{T}}}, text::AbstractArray, pos::AbstractArray;
+function _define_from(::Type{Vector{Label{T}}}, txt::AbstractArray, pos::AbstractArray;
     kwargs...,
 ) where T <: Vector{String}
     N = length(pos)
     wid = width(N; space=2)
-    return [_define_from(Label, text[ii], pos[ii], wid; kwargs...) for ii in 1:N]
+    return [_define_from(Label, txt[ii], pos[ii], wid; kwargs...) for ii in 1:N]
 end
 
 
@@ -278,7 +290,8 @@ end
 
 
 function _define_from(::Type{T}, x; kwargs...) where T<:Label
-    return _define_from(Label, x, Luxor.Point(0,0))
+    # If no point is given, initialize label position to (0,0)
+    return _define_from(Label, x, Luxor.Point(0,0); kwargs...)
 end
 
 

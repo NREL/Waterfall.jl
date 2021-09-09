@@ -1,5 +1,6 @@
 mutable struct Plot{T<:Sampling}
     cascade::Cascade{T}
+    legend::Vector{Pair{Handle,Any}}
     axes::Vector
     title::Label{Vector{String}}
     path::String
@@ -9,4 +10,6 @@ mutable struct Plot{T<:Sampling}
     # annotation::Vector{Annotation}
 end
 
-Plot( ; cascade, xaxis, yaxis, title, path) = Plot(cascade, [xaxis, yaxis], title, path)
+function Plot( ; cascade, legend, xaxis, yaxis, title, path)
+    return Plot(cascade, legend, [xaxis, yaxis], title, path)
+end
