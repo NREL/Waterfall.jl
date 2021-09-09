@@ -318,8 +318,16 @@ end
 
 
 function _define_from(::Type{Handle}, cascade; colorcycle, kwargs...)
-    return [_define_from(Handle, cascade, str, hue; idx=idx, kwargs...)
-        for (idx, str, hue) in zip(1:2, ["GAIN","LOSS"], [HEX_GAIN,HEX_LOSS])]
+    #= !!!!
+    Should probably set a lower limit on alpha for large numbers of samples.
+    This gets really light and hard to see.
+    =# 
+    return if colorcycle
+        [_define_from(Handle, cascade, "SAMPLE", "black"; idx=1, kwargs...)]
+    else
+        [_define_from(Handle, cascade, str, hue; idx=idx, kwargs...)
+            for (idx, str, hue) in zip(1:2, ["GAIN","LOSS"], [HEX_GAIN,HEX_LOSS])]
+    end
 end
 
 
@@ -528,14 +536,14 @@ function _define_position(cascade, ::Type{XAxis}, args...;
     yshift = 0,
     kwargs...,
 )
-    x = scale_x( ; steps=length(collect_data(cascade)))
+    x = scale_x( ; nrow=length(collect_data(cascade)))
     return Luxor.Point.(x, y+yshift)
 end
 
 
 function _define_position(cascade, Geometry; kwargs...)
     yshift = -SEP/2
-    x = scale_x( ; steps=length(collect_data(cascade)))
+    x = scale_x( ; nrow=length(collect_data(cascade)))
     pos = vectorize.(scale_for(cascade, Geometry; kwargs...))
     y = minimum.(pos; dims=2)
     return Luxor.Point.(x, y.+yshift)
