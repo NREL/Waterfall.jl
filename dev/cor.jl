@@ -15,7 +15,7 @@ fuzziness=(0.01,0.3)
 kwargs = (label=:Label, distribution=distribution, fuzziness=fuzziness)
 
 p = Plot(df; samples=1000, ylabel=:Units, kwargs...)
-v = get_value(collect_data(p.cascade))
+v = collect_value(p.cascade)
 
 covariance = LinearAlgebra.LowerTriangular(Statistics.cov(v, v; dims=2))
 correlation = LinearAlgebra.LowerTriangular(Statistics.cor(v; dims=2))

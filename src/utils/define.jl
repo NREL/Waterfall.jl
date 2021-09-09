@@ -88,8 +88,6 @@ function define_from(::Type{Plot{T}}, cascade::Cascade{Data}; kwargs...) where T
         # Add other annotations to the legend.
         legend = _push!(legend, cascade, T, Statistics.mean; kwargs...),
     )
-    # plot = define_from(Plot{Data}, copy(cascade); kwargs...)
-    # return set_geometry(plot, T; kwargs...)
 end
 
 
@@ -98,7 +96,6 @@ function define_from(::Type{XAxis}, cascade::Cascade{Data}; kwargs...)
     pad = SEP/2
     
     return XAxis( ;
-        # ticks = _define_from(Ticks, cascade, XAxis; kwargs...),
         ticklabels = _define_from(label_type, cascade, XAxis, :label;
             yshift = pad,    
             kwargs...,
@@ -568,7 +565,7 @@ end
 
 
 function _define_text(cascade, fun::Function, args...; kwargs...)
-    v = get_value(collect_data(cascade))
+    v = collect_value(cascade)
     v = calculate(v, fun, args...)
 
     digits = abs(minimum(get_order.(v))) + 1

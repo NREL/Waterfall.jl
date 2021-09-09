@@ -44,7 +44,6 @@ include(joinpath(WATERFALL_DIR,"src","Figure","Shape","Point.jl"))
 include(joinpath(WATERFALL_DIR,"src","Figure","Shape","Poly.jl"))
 
 abstract type Axis end
-include(joinpath(WATERFALL_DIR,"src","Figure","Ticks.jl"))
 include(joinpath(WATERFALL_DIR,"src","Figure","XAxis.jl"))
 include(joinpath(WATERFALL_DIR,"src","Figure","YAxis.jl"))
 include(joinpath(WATERFALL_DIR,"src","Figure","Annotation.jl"))

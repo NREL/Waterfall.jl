@@ -37,32 +37,17 @@ function define_permute(df::DataFrames.DataFrame, lst::T; fun::Function=identity
     cascade = copy(cascades[first(lst)])
     data = collect_data(cascade)
 
-    median = cat([get_value(collect_data(calculate(cascades[k], Statistics.quantile, 0.5))) for k in lst]...; dims=2)
+    median = cat([collect_value(calculate(cascades[k], Statistics.quantile, 0.5)) for k in lst]...; dims=2)
 
-    # vals = LinearAlgebra.Matrix(cat([heights[k] for k in lst]...; dims=2))
-    # fun!==identity && (vals = fun(vals; dims=2))
-
-    # set_value!.(data, vectorize(vals))
     set_value!.(data, vectorize(median))
     return cascade
 end
 
-# nperm = 10
 nsample = 5
-
-# # xperm = define_permute(df, nperm; fun=Statistics.mean, kwargs...)
-# xperm = cumulative_spread(df; nperm=nperm, nsample=nsample, ncor=ncor, kwargs...)
-# xperm = set_geometry(xperm, Parallel, false; hue="black")
-
-# # cascade = define_from(Cascade{Data}, df; interactivity(0.01,0.3), nsample=nsample, ncor=ncor, permutation=lst[2], kwargs...)
-# # pdata = define_from(Plot{Data}, copy(cascade); ylabel="Efficiency (%)")
-# # phoriz = set_geometry(pdata, Horizontal; colorcycle=true)
 
 perms = vcat([[
     ii,
     swapat!(copy(ii), 1, 2),
-    # swapat!(copy(ii), 1, length(ii)),
-    # reverse(ii),
 ] for ii in [collect(1:4)]]...)
 
 for T in [Horizontal]
@@ -94,7 +79,7 @@ for T in [Horizontal]
                 #     _define_legend(plot.cascade; locals..., kwargs...),
                 #     cascade, T, Statistics.mean; locals..., kwargs...
                 # )
-                
+
                 Luxor.@png begin
                     Luxor.fontface("Gill Sans")
                     Luxor.fontsize(FONTSIZE)

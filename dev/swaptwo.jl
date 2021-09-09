@@ -16,7 +16,7 @@ localkwargs = (
 function idk(df, swaps; kwargs...)
     cascades = Dict(swap => define_from(Cascade{Data}, df; permutation=swap, kwargs...)
         for swap in swaps)
-    return Dict(swap => get_value(collect_data(cascade)) for (swap,cascade) in cascades)
+    return Dict(swap => collect_value(cascade) for (swap,cascade) in cascades)
 end
     
 # Find all combinations of four steps AND swap the first two elements.
@@ -59,7 +59,7 @@ DataFrames.select!(dfsum, [:srt,:rev,:comp,:diff_2,:diff_3,:diff_end])
 
 # nsample = 1000
 
-# v = Dict(swap => update_stop!(get_value(collect_data(
+# v = Dict(swap => update_stop!(collect_value(
 #     define_from(Cascade{Data}, df[[1:N+1;size(df,1)],:];
 #         nsample=nsample,
 #         ncor=false,
@@ -68,7 +68,7 @@ DataFrames.select!(dfsum, [:srt,:rev,:comp,:diff_2,:diff_3,:diff_end])
 #         permutation=perms[swap],
 #         kwargs...,
 #         interactivity=(0.1,0.2),
-#     )))) for swap in swaps)
+#     ))) for swap in swaps)
 
 # # Summary DataFrame of all of the pairwise swaps that could be made.
 # N = length(swaps)
