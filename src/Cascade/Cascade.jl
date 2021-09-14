@@ -67,7 +67,9 @@ This function returns a list of major y-axis ticks
 """
 function collect_ticks(cascade; kwargs...)
     vmin, vmax, vscale = vlim(cascade; kwargs...)
-    return collect(vmin:minimum(get_order.([vmin,vmax])):vmax)
+    # !!!! Problem if minimum order is zero.
+    return collect(vmin:max(2, minimum(get_order.([vmin,vmax]))):vmax)
+    # return collect(vmin:minimum(get_order.([vmin,vmax])):vmax)
 end
 
 

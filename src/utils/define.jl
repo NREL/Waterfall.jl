@@ -16,6 +16,7 @@ function define_from(::Type{Cascade{Data}}, df::DataFrames.DataFrame;
     permute = true,
     kwargs...,
 )
+    # !!!! Make generic enough.
     rows = size(df,1)
     maxstep = min(rows-2,length(COLORCYCLE))
 
@@ -98,6 +99,7 @@ function define_from(::Type{XAxis}, cascade::Cascade{Data}; kwargs...)
     return XAxis( ;
         ticklabels = _define_from(label_type, cascade, XAxis, :label;
             yshift = pad,    
+            scale = 0.9,
             kwargs...,
         ),
         ticksublabels = _define_from(label_type, cascade, XAxis, :sublabel;
@@ -639,6 +641,7 @@ function _define_title(cascade::Cascade{Data}; nsample,
         _title_correlation( ; kwargs...),
         _title_distribution( ; kwargs...)
     ][idx]
+    str = String.(str[.!isempty.(str)])
 
     return Label( ; 
         text = str,
@@ -663,7 +666,9 @@ end
 
 
 "Format title string for SAMPLE distribution"
-function _title_distribution( ; distribution, fuzziness, kwargs...)
+function _title_distribution( ; distribution=missing, fuzziness=missing, kwargs...)
+    |(ismissing(distribution), ismissing(fuzziness)) && return ""
+
     str = uppercase("$distribution sample distribution: ")
 
     return if distribution==:normal; str * _title_normal(fuzziness)
@@ -674,6 +679,10 @@ end
 
 
 "Format title string for correlation coefficient"
-function _title_correlation( ; interactivity, kwargs...)
-    return "CORRELATION COEFFICIENT: " * _title_uniform(interactivity; abs=true)
+function _title_correlation( ; interactivity=missing, kwargs...)
+    return if ismissing(interactivity)
+        ""
+    else
+        "CORRELATION COEFFICIENT: " * _title_uniform(interactivity; abs=true)
+    end
 end

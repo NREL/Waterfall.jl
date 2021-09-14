@@ -34,8 +34,10 @@ draw(x::T) where T<:Geometry = draw(x.shape)
 # Draw all Type values
 draw(x::T; kwargs...) where T<:Plot = _draw(x)
 draw(x::T) where T<:Axis = _draw(x)
-draw(x::Annotation) = _draw(x)
-draw(x::Handle) = _draw(x)
+# draw(x::Annotation) = _draw(x)
+# draw(x::Handle) = _draw(x)
+draw(x::Annotation) = nothing
+draw(x::Handle) = nothing
 draw(x::String) = nothing
 draw(x::Missing) = nothing
 

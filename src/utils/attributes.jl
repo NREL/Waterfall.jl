@@ -60,8 +60,11 @@ function _set_geometry(cascade::Cascade{Data}, Geometry, Shape, Color, args...;
     data = Geometry.(label, shape, length(cascade))
     
     return Cascade(
-        start = set_hue!(first(data), "black"),
-        stop = set_hue!(last(data), "black"),
+        # What if there AREN'T start/stop columns?
+        # start = set_hue!(first(data), "black"),
+        # stop = set_hue!(last(data), "black"),
+        start = first(data),
+        stop = last(data),
         steps = colorcycle ? set_hue!.(data[2:end-1], cascade.permutation) : data[2:end-1],
         permutation = cascade.permutation,
         correlation = cascade.correlation,

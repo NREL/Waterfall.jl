@@ -24,7 +24,6 @@ end
 
 
 """
-
 """
 function random_translation(dim;
     nsample = DEFAULT_NSAMPLE,
