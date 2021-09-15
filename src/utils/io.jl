@@ -31,6 +31,26 @@ end
 
 
 """
+    read_from(::Type{DataFrames.DataFrame}, path; kwargs...)
+    read_from(::Type{Vector{Data}}, path; kwargs...)
+This method reads the data file in `path` into the given `DataType`
+
+# Arguments
+- `path::String` to '.csv' file storing values.
+"""
+function read_from(::Type{DataFrames.DataFrame}, path::String; index, kwargs...)
+    idx = DataFrames.DataFrame(index)
+    df = CSV.read(path, DataFrames.DataFrame)
+    return DataFrames.innerjoin(idx, df, on=intersect(propertynames(idx),propertynames(df)))
+end
+
+function read_from(::Type{Vector{Data}}, path::String; kwargs...)
+    df = read_from(DataFrames.DataFrame, path; kwargs...)
+    return define_from(Vector{Data}, df; kwargs...)
+end
+
+
+"""
 """
 _distribution_error(args...) =  _option_error("distribution", [:normal,:uniform], args...)
 

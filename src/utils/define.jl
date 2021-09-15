@@ -1,15 +1,68 @@
 import Base
 
-
 """
+    define_from(Cascade{Data}, directory; kwargs...)
+    define_from(Plot{T}, directory; kwargs...) where T<:Geometry
+These methods read data from a `directory` into the specified `DataType`.
+Defining a plot preserves `plot.path=directory`, and names the output data file for the
+plot geometry, so that if, for example, a horizontal plot is defined and plotted, it will be
+saved to `directory/horizontal.png`.
+
     define_from(::Type{Cascade{Data}}, df)
     define_from(::Type{Plot{Data}}, cascade; kwargs...)
     define_from(::Type{T}, cascade::Cascade{Data}; kwargs...) where T<:Axis
 
 # Keyword Arguments
 - `ylabel::String`, y-axis label
-- 
 """
+function define_from(::Type{Cascade{Data}}, directory::String; kwargs...)
+    files = readdir(directory)
+    value_files = joinpath.(directory, files[.!isnothing.(match.(r"(value.*.csv)", files))])
+    amt = CSV.read(joinpath(directory,"amounts.csv"), DataFrames.DataFrame)
+    opt = CSV.read(joinpath(directory,"options.csv"), DataFrames.DataFrame)[:,2:end]
+    
+    # Read data and save start/stop values.
+    data = read_from.(Vector{Data}, value_files; index=:Index=>"MJSP", kwargs...)
+    start = _aggregate(first(data); label="start", sublabel="")
+    stop = _aggregate(last(data); label="stop", sublabel="")
+    N = length(data)-1
+
+    # Assume steps are net current values at each step, and not differences.
+    # Calculate differences and save as steps.
+    tmp = copy.(data[1])
+    order = amt[:,:Order]
+
+    v1 = collect_value(data[1:end-1], order)
+    v2 = collect_value(data[2:end], order)
+    value = vectorize(v2.-v1)
+
+    steps = Data.(
+        get_label.(tmp)[order],
+        get_sublabel.(tmp)[order],
+        fill(collect(1:length(first(tmp))), N),
+        value
+    )
+
+    return update_stop!(Cascade( ;
+        start = start,
+        stop = stop,
+        steps = steps,
+        permutation = order,
+        correlation = I(N+2),
+        ispermuted = true,
+        iscorrelated = true,
+    ))
+end
+
+
+function define_from(::Type{Plot{T}}, directory::String; kwargs...) where T<:Geometry
+    cascade = define_from(Cascade{Data}, directory; kwargs...)
+    plot = define_from(Plot{T}, copy(cascade); nsample=length(cascade), kwargs...)
+    plot.path = joinpath(directory, lowercase(string(T))*".png")
+    return plot
+end
+
+
 function define_from(::Type{Cascade{Data}}, df::DataFrames.DataFrame;
     permutation = missing,
     correlate = true,
