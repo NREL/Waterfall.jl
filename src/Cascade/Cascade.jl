@@ -68,14 +68,38 @@ This function returns a list of major y-axis ticks
 function collect_ticks(cascade; kwargs...)
     vmin, vmax, vscale = vlim(cascade; kwargs...)
     # !!!! Problem if minimum order is zero.
-    return collect(vmin:max(2, minimum(get_order.([vmin,vmax]))):vmax)
+    return collect(vmin:max(1, minimum(get_order.([vmin,vmax]))):vmax)
     # return collect(vmin:minimum(get_order.([vmin,vmax])):vmax)
 end
 
 
 """
+    collect_value(cascade::Cascade)
+This method returns a matrix of values stored in cascade, with `cascdade.start` in the first
+row and `cascade.stop` in the last.
+
+    collect_value(lst::Vector{Matrix{T}}, order) where T<:Any
+    collect_value(lst::Vector{Vector{Data}}, order)
+This method iterates over the list entries and selects the iith permutated order from each
+list entry to return them in the order in which the investments will be made, which is also
+the order in which they will be plotted.
+
+# Arguments
+- `lst::Vector{Matrix{T}}` or `lst::Vector{Vector{Data}}`, all value entries as calculated
+    before each investment step, listed in the order calculated. So, the first entry is the
+    value before any investments have been made, the second entry is the value before the
+    second investment has been made, and so on.
+- `order`, the order in which the investments will be plotted.
 """
 collect_value(cascade::Cascade) = get_value(collect_data(cascade))
+
+function collect_value(lst::Vector{Matrix{T}}, order) where T<:Any
+    result = fill(0.0, size(first(lst)))
+    [result[ii,:] .= v[ii,:] for (ii,v) in zip(order,lst)]
+    return result
+end
+
+collect_value(data::Vector{Vector{Data}}, order) = collect_value(get_value.(data), order)
 
 
 """

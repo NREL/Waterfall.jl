@@ -48,6 +48,13 @@ cumulative_v(x::Cascade{Data}; kwargs...) = cumulative_v(collect_value(x); kwarg
 
 
 """
+"""
+# function subtractive(lst::Vector{Matrix{T}}) where T<:Real
+#     # v1 = 
+# end
+
+
+"""
     correlate(v::AbstractVector, A::AbstractMatrix)
 This function applies a correlation matrix `A` to the vector `v`.
 
@@ -84,9 +91,10 @@ function correlate(v::AbstractArray, A::AbstractMatrix, order::AbstractVector{In
     # Now, populate the final, correlated value with the iith ROW (the current investment)
     # of the iith list element (the impact of ALL investments, IN THE PERMUTED ORDER)
     # on ALL values thus far.
-    vout = copy.(v)
-    [vout[ii,:] .= lst[ii,:] for (ii,lst) in zip(order, lst_v)]
-    return update_stop!(convert(Matrix, vout))
+    # vout = copy.(v)
+    # [vout[ii,:] .= lst[ii,:] for (ii,lst) in zip(order, lst_v)]
+    # return update_stop!(convert(Matrix, vout))
+    update_stop!(collect_values(lst_v, order))
 end
 
 

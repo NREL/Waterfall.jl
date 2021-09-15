@@ -34,10 +34,10 @@ draw(x::T) where T<:Geometry = draw(x.shape)
 # Draw all Type values
 draw(x::T; kwargs...) where T<:Plot = _draw(x)
 draw(x::T) where T<:Axis = _draw(x)
-# draw(x::Annotation) = _draw(x)
-# draw(x::Handle) = _draw(x)
-draw(x::Annotation) = nothing
-draw(x::Handle) = nothing
+draw(x::Annotation) = _draw(x)
+draw(x::Handle) = _draw(x)
+# draw(x::Annotation) = nothing
+# draw(x::Handle) = nothing
 draw(x::String) = nothing
 draw(x::Missing) = nothing
 
@@ -58,10 +58,12 @@ function _draw(lab::Label{String})
 end
 
 function _draw(lab::Label{Vector{String}})
-    Luxor.textbox(lab.text, lab.position;
-        alignment = lab.halign,
-        leading = lab.leading*lab.scale*FONTSIZE,
-    )
+    if !all(isempty.(lab.text))
+        Luxor.textbox(lab.text, lab.position;
+            alignment = lab.halign,
+            leading = lab.leading*lab.scale*FONTSIZE,
+        )
+    end
     return nothing
 end
 
@@ -76,24 +78,32 @@ _draw(shape::Poly) = Luxor.poly(shape.position, close=true, shape.style)
 # Draw all Type values.
 _draw(x::Any) = draw(collect(values(x)))
 
-"""
-    _draw_legend()
-"""
-function _draw_legend()
-    Luxor.text("mean", Luxor.Point(WIDTH-5*SEP,5*SEP); halign=:left, valign=:middle)
-    draw(Box(
-        (Luxor.Point(WIDTH-7.5*SEP,4.5*SEP),Luxor.Point(WIDTH-5.5*SEP,5.5*SEP)),
-        _define_from(Coloring, "black"),
-        :stroke,
-    ))
-    return nothing
-end
+# """
+#     _draw_legend()
+# """
+# function _draw_legend()
+#     Luxor.text("mean", Luxor.Point(WIDTH-5*SEP,5*SEP); halign=:left, valign=:middle)
+#     draw(Box(
+#         (Luxor.Point(WIDTH-7.5*SEP,4.5*SEP),Luxor.Point(WIDTH-5.5*SEP,5.5*SEP)),
+#         _define_from(Coloring, "black"),
+#         :stroke,
+#     ))
+#     return nothing
+# end
 
 
 """
 """
-function padding(ax::XAxis)
-    lab = ax.ticksublabels
-    lines = maximum(length.(getfield.(lab,:text)))
-    return lines * FONTSIZE
+function _padding(lab::Vector{T}) where T<:Label
+    result = maxlines(lab) * FONTSIZE * lab[1].scale * lab[1].leading
+    return convert(Int, ceil(result))
 end
+
+_padding(ax::XAxis) = _padding(ax.ticklabels) + _padding(ax.ticksublabels)
+_padding(plot::Plot) = _padding(plot.axes[1])
+
+
+"""
+"""
+maxlines(lab::Vector{Label{Vector{String}}}) = maximum(length.(getfield.(lab,:text)))
+maxlines(lab::Vector{Label{String}}) = 1

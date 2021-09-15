@@ -50,14 +50,14 @@ end
 
 function define_from(::Type{Data}, sdf::DataFrames.SubDataFrame;
     label,
-    sublabel,
+    sublabel=missing,
     value=VALUE_COL,
     order=[],
     kwargs...,
 )
     return Data( ; 
         label = sdf[1,label],
-        sublabel = sdf[1,sublabel],
+        sublabel = ismissing(sublabel) ? "" : sdf[1,sublabel],
         value = sdf[:,value],
         order = isempty(order) ? collect(1:size(sdf,1)) : order,
     )
@@ -93,16 +93,16 @@ end
 
 
 function define_from(::Type{XAxis}, cascade::Cascade{Data}; kwargs...)
-    label_type = Vector{Label{Vector{String}}}
+    T = Vector{Label{Vector{String}}}
     pad = SEP/2
     
     return XAxis( ;
-        ticklabels = _define_from(label_type, cascade, XAxis, :label;
+        ticklabels = _define_from(T, cascade, XAxis, :label;
             yshift = pad,    
             scale = 0.9,
             kwargs...,
         ),
-        ticksublabels = _define_from(label_type, cascade, XAxis, :sublabel;
+        ticksublabels = _define_from(T, cascade, XAxis, :sublabel;
             yshift = pad+FONTSIZE,
             scale = 0.8,
             kwargs...,
@@ -254,11 +254,11 @@ function _define_from(::Type{T}, text, pos::Luxor.Point;
 end
 
 
-function _define_from(::Type{T}, text::String, pos::Luxor.Point, width::Float64;
+function _define_from(::Type{T}, txt::String, pos::Luxor.Point, wid::Float64;
     scale = 1,
     kwargs...,
 ) where T <: Label
-    return _define_from(T, wrap_to(text, width; scale), pos; scale=scale, kwargs...)
+    return _define_from(T, wrap_to(txt, wid; scale), pos; scale=scale, kwargs...)
 end
 
 
@@ -279,8 +279,7 @@ end
 
 
 function _define_from(::Type{T}, x; kwargs...) where T<:Label
-    # If no point is given, initialize label position to (0,0)
-    return _define_from(Label, x, Luxor.Point(0,0); kwargs...)
+    return _define_from(T, x, Luxor.Point(0,0); kwargs...)
 end
 
 
@@ -362,7 +361,8 @@ This function calculates an alpha for `N` samples to scale transparency for over
 - `fun::Function=log`, scaling function ``\\ln``
 """
 function _define_alpha(N::Int; factor::Real=0.25, fun::Function=log, kwargs...)
-    return min(factor/fun(N) ,1.0)
+    # @info(N)
+    return min(factor/fun(N), 1.0)
 end
 
 _define_alpha(x; kwargs...) = x
@@ -486,7 +486,7 @@ function _define_path(x::Cascade, Geometry;
         ], separator,
     ) * ext)
 
-    println("Writing plot: $str")
+    # println("Writing plot: $str")
     return str
 end
 

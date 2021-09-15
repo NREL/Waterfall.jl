@@ -198,17 +198,17 @@ _scale_by(v, f; on, kwargs...) = (on[sign(f)<0 ? 1 : 2] - v) * abs(f) + v
 
 
 """
-    wrap_to(str, width; scale)
-This function wraps an input string `str` to the input `width`, calculated assuming a
+    wrap_to(str, wid; scale)
+This function wraps an input string `str` to the input `wid`, calculated assuming a
 font size `scale` and returns an array of strings.
 """
-function wrap_to(str::String, width; scale)
+function wrap_to(str::String, wid; scale)
     Luxor.@png begin
         tmp = Luxor.get_fontsize()
         Luxor.fontsize(FONTSIZE * scale)
 
         str = uppercase(str)
-        lst = Luxor.textlines.(Luxor.textlines(str, width), width)
+        lst = Luxor.textlines.(Luxor.textlines(str, wid), wid)
 
         idx = .!.&(isempty.(getindex.(lst,1)), length.(lst).==1)
         lst = lst[idx]
@@ -216,9 +216,9 @@ function wrap_to(str::String, width; scale)
         idx = length.(lst).==2
 
         if any(idx)
-            lst[idx] = Luxor.textlines.(_break(getindex.(lst[idx],2)), width)
+            lst[idx] = Luxor.textlines.(_break(getindex.(lst[idx],2)), wid)
             lst = vcat(lst...)
-            lst = Luxor.textlines(string(lst[.!isempty.(lst)] .* " "...), width)
+            lst = Luxor.textlines(string(lst[.!isempty.(lst)] .* " "...), wid)
         else
             lst = vcat(lst...)
         end
@@ -227,7 +227,9 @@ function wrap_to(str::String, width; scale)
         Luxor.fontsize(tmp)
     end
 
-    return lst[.!isempty.(lst)]
+    lst = lst[.!isempty.(lst)]
+    return isempty(lst) ? Vector{String}() : lst
+    # return lst[.!isempty.(lst)]
 end
 
 

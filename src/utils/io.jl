@@ -12,8 +12,8 @@ function fuzzify(df;
     value = VALUE_COL,
     sample = SAMPLE_COL,
     units = :Units,
-    label,
-    sublabel,
+    label = missing,
+    sublabel = missing,
     kwargs...,
 )
     # If samples are not already included in the DataFrame, add them.

@@ -20,7 +20,7 @@ end
 function set_geometry(cascade, ::Type{Horizontal}, args...; usegradient=missing, kwargs...)
     # !!!! want to show gradient if there's only one cascade element. Is this working??
     usegradient = coalesce(usegradient, length(cascade)==1)
-    
+
     return _set_geometry(cascade, Horizontal, Box, usegradient ? Blending : Coloring, args...;
         alpha=length(cascade),
         style=:fill,
@@ -60,11 +60,8 @@ function _set_geometry(cascade::Cascade{Data}, Geometry, Shape, Color, args...;
     data = Geometry.(label, shape, length(cascade))
     
     return Cascade(
-        # What if there AREN'T start/stop columns?
-        # start = set_hue!(first(data), "black"),
-        # stop = set_hue!(last(data), "black"),
-        start = first(data),
-        stop = last(data),
+        start = set_hue!(first(data), "black"),
+        stop = set_hue!(last(data), "black"),
         steps = colorcycle ? set_hue!.(data[2:end-1], cascade.permutation) : data[2:end-1],
         permutation = cascade.permutation,
         correlation = cascade.correlation,
