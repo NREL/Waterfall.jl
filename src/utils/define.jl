@@ -15,54 +15,6 @@ saved to `directory/horizontal.png`.
 # Keyword Arguments
 - `ylabel::String`, y-axis label
 """
-function define_from(::Type{Cascade{Data}}, directory::String; kwargs...)
-    files = readdir(directory)
-    value_files = joinpath.(directory, files[.!isnothing.(match.(r"(value.*.csv)", files))])
-    amt = CSV.read(joinpath(directory,"amounts.csv"), DataFrames.DataFrame)
-    opt = CSV.read(joinpath(directory,"options.csv"), DataFrames.DataFrame)[:,2:end]
-    
-    # Read data and save start/stop values.
-    data = read_from.(Vector{Data}, value_files; index=:Index=>"MJSP", kwargs...)
-    start = _aggregate(first(data); label="start", sublabel="")
-    stop = _aggregate(last(data); label="stop", sublabel="")
-    N = length(data)-1
-
-    # Assume steps are net current values at each step, and not differences.
-    # Calculate differences and save as steps.
-    tmp = copy.(data[1])
-    order = amt[:,:Order]
-
-    v1 = collect_value(data[1:end-1], order)
-    v2 = collect_value(data[2:end], order)
-    value = vectorize(v2.-v1)
-
-    steps = Data.(
-        get_label.(tmp)[order],
-        get_sublabel.(tmp)[order],
-        fill(collect(1:length(first(tmp))), N),
-        value
-    )
-
-    return update_stop!(Cascade( ;
-        start = start,
-        stop = stop,
-        steps = steps,
-        permutation = order,
-        correlation = I(N+2),
-        ispermuted = true,
-        iscorrelated = true,
-    ))
-end
-
-
-function define_from(::Type{Plot{T}}, directory::String; kwargs...) where T<:Geometry
-    cascade = define_from(Cascade{Data}, directory; kwargs...)
-    plot = define_from(Plot{T}, copy(cascade); nsample=length(cascade), kwargs...)
-    plot.path = joinpath(directory, lowercase(string(T))*".png")
-    return plot
-end
-
-
 function define_from(::Type{Cascade{Data}}, df::DataFrames.DataFrame;
     permutation = missing,
     correlate = true,
@@ -101,7 +53,7 @@ function define_from(::Type{Cascade{Data}}, df::DataFrames.DataFrame;
 end
 
 
-function define_from(::Type{Data}, sdf::DataFrames.SubDataFrame;
+function define_from(::Type{Data}, sdf::DataFrames.AbstractDataFrame;
     label,
     sublabel=missing,
     value=VALUE_COL,
@@ -130,17 +82,19 @@ end
 
 
 function define_from(::Type{Plot{T}}, cascade::Cascade{Data}; kwargs...) where T<:Geometry
-    cascade_geometry = set_geometry(cascade, T; kwargs...)
-    legend = _define_legend(cascade_geometry; kwargs...)
+    nsample = length(cascade)
+    cascade_geometry = set_geometry(cascade, T; nsample=nsample, kwargs...)
+    legend = _define_legend(cascade_geometry; nsample=nsample, kwargs...)
     
     return Plot( ;
         cascade = cascade_geometry,
-        xaxis = define_from(XAxis, cascade; kwargs...),
-        yaxis = define_from(YAxis, cascade; kwargs...),
-        title = _define_title(cascade; kwargs...),
-        path = _define_path(cascade, T; kwargs...),
+        xaxis = define_from(XAxis, cascade; nsample=nsample, kwargs...),
+        yaxis = define_from(YAxis, cascade; nsample=nsample, kwargs...),
+        title = _define_title(cascade; nsample=nsample, kwargs...),
+        path = _define_path(cascade, T; nsample=nsample, kwargs...),
         # Add other annotations to the legend.
-        legend = _push!(legend, cascade, Horizontal, Statistics.mean; kwargs...),
+        # legend = legend,
+        legend = _push!(legend, cascade, Horizontal, Statistics.mean; nsample=nsample, kwargs...),
     )
 end
 
@@ -306,6 +260,10 @@ function _define_from(::Type{T}, text, pos::Luxor.Point;
     )
 end
 
+function _define_from(::Type{T}, x::Float64, args...; kwargs...) where T<:Label
+    txt = @Printf.sprintf("%.2g", x)
+    return _define_from(T, txt, args...; kwargs...)
+end
 
 function _define_from(::Type{T}, txt::String, pos::Luxor.Point, wid::Float64;
     scale = 1,
@@ -631,7 +589,9 @@ function _define_text(cascade, fun::Function, args...; kwargs...)
     v = collect_value(cascade)
     v = calculate(v, fun, args...)
 
-    digits = abs(minimum(get_order.(v))) + 1
+    # Round before `get_order` to ignore really small numbers.
+    # !!!! Could definitely improve this.
+    digits = max(abs(minimum(get_order.(round.(v; digits=6)))) + 1,2)
 
     str = _define_text.(v; digits=digits)
     [str[ii] = str[ii][2:end] for ii in [1,size(str,1)]]
@@ -710,6 +670,7 @@ end
 
 "Format title string for normal distribution function"
 _title_normal(x) = "f(x; $(x[1]) < s < $(x[2]))"
+
 
 "Format title string for uniform distribution function"
 function _title_uniform(x; abs::Bool=false)

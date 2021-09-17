@@ -206,7 +206,7 @@ function wrap_to(str::String, wid; scale)
     Luxor.@png begin
         tmp = Luxor.get_fontsize()
         Luxor.fontsize(FONTSIZE * scale)
-
+        
         str = uppercase(str)
         lst = Luxor.textlines.(Luxor.textlines(str, wid), wid)
 

@@ -31,23 +31,169 @@ end
 
 
 """
-    read_from(::Type{DataFrames.DataFrame}, path; kwargs...)
-    read_from(::Type{Vector{Data}}, path; kwargs...)
-This method reads the data file in `path` into the given `DataType`
+    read_from(::Type{DataFrames.DataFrame}, file; kwargs...)
+    read_from(::Type{Vector{Data}}, file; kwargs...)
+This method reads the data file in `file` into the given `DataType`
 
 # Arguments
-- `path::String` to '.csv' file storing values.
+- `file::String` to '.csv' file storing values.
 """
-function read_from(::Type{DataFrames.DataFrame}, path::String; index, kwargs...)
-    idx = DataFrames.DataFrame(index)
-    df = CSV.read(path, DataFrames.DataFrame)
-    return DataFrames.innerjoin(idx, df, on=intersect(propertynames(idx),propertynames(df)))
+function read_from(::Type{DataFrames.DataFrame}, file::String; options::Dict=Dict(), kwargs...)
+    df = CSV.read(file, DataFrames.DataFrame)
+    if !isempty(options)
+        options = DataFrames.DataFrame(options)
+        df = DataFrames.innerjoin(df, options,
+            on = intersect(propertynames(options), propertynames(df)),
+        )
+    end
+    return df
 end
 
-function read_from(::Type{Vector{Data}}, path::String; kwargs...)
-    df = read_from(DataFrames.DataFrame, path; kwargs...)
-    return define_from(Vector{Data}, df; kwargs...)
+function read_from(::Type{DataFrames.GroupedDataFrame}, file::String, cols; kwargs...)
+    df = read_from(DataFrames.DataFrame, file; kwargs...)
+    cols = get_names(df, cols)
+    return DataFrames.groupby(df, cols)
 end
+
+function read_from(::Type{DataFrames.SubDataFrame},
+    file::String,
+    idx::Int,
+    cols = DataFrames.Not([Float64,Int]) ;
+    kwargs...,
+)
+    gdf = read_from(DataFrames.GroupedDataFrame, file, cols; kwargs...)
+    return gdf[idx]
+end
+
+# function read_from(::Type{Vector{Data}}, file::String; kwargs...)
+#     df = read_from(DataFrames.DataFrame, file; kwargs...)
+#     return define_from(Vector{Data}, df; kwargs...)
+# end
+
+
+function _read_values(directory; kwargs...)
+    files = readdir(directory)
+    files = joinpath.(directory, files[.!isnothing.(match.(r"(value.*.csv)", files))])
+    return CSV.read.(files, DataFrames.DataFrame)
+end
+
+_read_values(directory, idx; kwargs...) = _read_values(directory; kwargs...)[idx]
+
+
+function read_from(::Type{Cascade{Data}}, directory; kwargs...)
+    # Read other information.
+    amt = CSV.read(joinpath(directory,"amounts.csv"), DataFrames.DataFrame)
+    permutation = CSV.read(joinpath(directory,"order.csv"), DataFrames.DataFrame)[:,1]
+    
+    files = readdir(directory)
+    files = joinpath.(directory, files[.!isnothing.(match.(r"(value.*.csv)", files))])
+    
+    start = _read_start_stop(first(files); label_value="start", kwargs...)
+    stop = _read_start_stop(last(files); label_value="stop", kwargs...)
+    steps = _read_step(files, permutation; kwargs...)
+    N = length(steps)
+
+    return update_stop!(Cascade( ; 
+        start = start,
+        stop = stop,
+        steps = steps,
+        permutation = permutation,
+        correlation = I(N+2),
+        ispermuted = !(permutation==1:N),
+        iscorrelated = true,
+    ))
+end
+
+function read_from(::Type{Plot{T}}, directory::String;
+    ylabel=:Index,
+    units=:Units,
+    options::Dict,
+    kwargs...,
+) where T<:Geometry
+
+    cascade = read_from(Cascade{Data}, directory; options=options, kwargs...)
+
+    # Read ylabel info.
+    df = _read_values(directory, 1; kwargs...)
+    ylabel_str, units_str = values(df[df[:,ylabel].==options[ylabel], [ylabel,units]][1,:])
+    metric_str = "Optimized for " * df[1,:Metric]
+
+    plot = define_from(Plot{T}, copy(cascade);
+        ylabel = "$ylabel_str ($units_str)",
+        nsample=length(cascade),
+        kwargs...,
+    )
+
+    plot.title.text = [uppercase.([metric_str, options[:Technology]]); plot.title.text]
+
+
+    plot.path = joinpath(
+        joinpath(splitpath(directory)[1:end-1]...),
+        lowercase(join([
+            string(T),
+            "n" * string(length(cascade)),
+            join([string(x) for x in cascade.permutation],""),
+        ], "_"),
+    ) * ".png")
+    return plot
+end
+
+
+"""
+    _read_step(file, idx; kwargs...)
+"""
+function _read_step(file::String, idx::Int; kwargs...)
+    sdf = read_from(DataFrames.SubDataFrame, file, idx; kwargs...)
+    return define_from(Data, sdf; kwargs...)
+end
+
+function _read_step(paths::Vector{String}, idx::Vector{Int};
+    calculate_difference=true,
+    kwargs...,
+)
+    v2 = _read_step.(paths[2:end], idx; kwargs...)
+
+    if calculate_difference
+        v1 = _read_step.(paths[1:end-1], idx; kwargs...)
+        set_value!(v2, get_value(v2) .- get_value(v1))
+    end
+
+    return v2
+end
+
+
+"""
+    _read_start_stop(file::String; kwargs...)
+"""
+function _read_start_stop(file::String;
+    label,
+    sublabel=missing,
+    label_value=missing,
+    sublabel_value=missing,
+    kwargs...,
+)
+    # df = read_from(DataFrames.DataFrame, file; options=options)
+    cols = DataFrames.Not(ismissing(sublabel) ? [Float64,label] : [Float64,label,sublabel])
+    gdf = read_from(DataFrames.GroupedDataFrame, file, cols; kwargs...)
+    val = get_names(first(gdf), Float64)
+
+    df = DataFrames.combine(gdf, val .=> sum .=> val)
+
+    !ismissing(label_value) && (df[!,label] .= label_value)
+    !ismissing(sublabel_value) && (df[!,sublabel] .= sublabel_value)
+    return define_from(Data, df; label=label, sublabel=sublabel, kwargs...)
+end
+
+
+"""
+"""
+get_names(df, type::DataType) = DataFrames.propertynames(df)[get_type(df).==type]
+get_names(df, col::Symbol) = intersect(DataFrames.propertynames(df), [col;])
+get_names(df, lst) = union([get_names(df, x) for x in lst]...)
+get_names(df, x::DataFrames.InvertedIndex) = DataFrames.Not(get_names(df, x.skip))
+
+
+get_type(df) = DataFrames.eltype.(DataFrames.skipmissing.(DataFrames.eachcol(df)))
 
 
 """

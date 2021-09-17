@@ -1,6 +1,6 @@
 mutable struct Data <: Sampling
-    label::String
-    sublabel::String
+    label::Any
+    sublabel::Any
     order::Vector{Integer}
     value::Vector{Real}
 end

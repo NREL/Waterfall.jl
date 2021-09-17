@@ -33,10 +33,10 @@ end
 
 
 # index = :Index => "Reduction in MJSP"
-DATA_DIR = "/Users/chughes/Documents/Git/tyche-graphics/tyche/src/waterfall/data/278d4ec6-6987-3726-bba9-bb89f9d39b48"
+DATA_DIR = "/Users/chughes/Documents/Git/tyche-graphics/tyche/src/waterfall/data/f79234a0-201a-3cb8-9a1a-d6766df2e4c6"
 
-# cascade = define_from(Cascade{Data}, DATA_DIR; kwargs...)
-plot = define_from(Plot{T}, DATA_DIR; kwargs...)
+cascade = define_from(Cascade{Data}, DATA_DIR; kwargs...)
+# plot = define_from(Plot{T}, DATA_DIR; kwargs...)
 
 Luxor.@png begin
     Luxor.fontface("Gill Sans")
@@ -46,4 +46,4 @@ Luxor.@png begin
 
     draw(plot)
     
-end WIDTH+LEFT_BORDER+RIGHT_BORDER HEIGHT+TOP_BORDER+BOTTOM_BORDER+_padding(plot) plot.path
+end WIDTH+LEFT_BORDER+RIGHT_BORDER HEIGHT+TOP_BORDER+BOTTOM_BORDER+height(plot) plot.path
