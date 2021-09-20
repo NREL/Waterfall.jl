@@ -93,9 +93,9 @@ centered at (x0,y0) and fits within the bounds of `(2*dx, 2*dy)`. The label is a
 middle/left at `(x0+dx+space, y0)`
 """
 function set_position!(handle::Handle;
-    x0 = WIDTH-100,
+    x0 = WIDTH-75,
     y0 = 3*SEP,
-    dx = 2*SEP,
+    dx = 1*SEP,
     dy = SEP,
     space = SEP,
     idx = 1,

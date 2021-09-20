@@ -1,13 +1,6 @@
 import Base
 
 """
-    define_from(Cascade{Data}, directory; kwargs...)
-    define_from(Plot{T}, directory; kwargs...) where T<:Geometry
-These methods read data from a `directory` into the specified `DataType`.
-Defining a plot preserves `plot.path=directory`, and names the output data file for the
-plot geometry, so that if, for example, a horizontal plot is defined and plotted, it will be
-saved to `directory/horizontal.png`.
-
     define_from(::Type{Cascade{Data}}, df)
     define_from(::Type{Plot{Data}}, cascade; kwargs...)
     define_from(::Type{T}, cascade::Cascade{Data}; kwargs...) where T<:Axis
@@ -81,10 +74,13 @@ function define_from(::Type{Vector{Data}}, df::DataFrames.DataFrame; kwargs...)
 end
 
 
-function define_from(::Type{Plot{T}}, cascade::Cascade{Data}; kwargs...) where T<:Geometry
+function define_from(::Type{Plot{T}}, cascade::Cascade{Data};
+    legend = missing,
+    kwargs...,
+) where T<:Geometry
     nsample = length(cascade)
     cascade_geometry = set_geometry(cascade, T; nsample=nsample, kwargs...)
-    legend = _define_legend(cascade_geometry; nsample=nsample, kwargs...)
+    legd = _define_legend(cascade_geometry; nsample=nsample, kwargs...)
     
     return Plot( ;
         cascade = cascade_geometry,
@@ -93,8 +89,7 @@ function define_from(::Type{Plot{T}}, cascade::Cascade{Data}; kwargs...) where T
         title = _define_title(cascade; nsample=nsample, kwargs...),
         path = _define_path(cascade, T; nsample=nsample, kwargs...),
         # Add other annotations to the legend.
-        # legend = legend,
-        legend = _push!(legend, cascade, Horizontal, Statistics.mean; nsample=nsample, kwargs...),
+        legend = _push!(legd, cascade, Horizontal, legend; nsample=nsample, kwargs...),
     )
 end
 
@@ -309,7 +304,7 @@ end
 ## Define Handle
 
 function _define_from(::Type{Handle}, cascade::Cascade{T}, str::String;
-    scale = 0.8,
+    scale = 0.75,
     kwargs...,
 ) where T <: Geometry
     shape = get_shape(cascade)
@@ -319,7 +314,7 @@ end
 
 
 function _define_from(::Type{Handle}, cascade, fun::Function, args...; kwargs...)
-    return _define_from(Handle, cascade, string(fun); kwargs...)
+    return _define_from(Handle, cascade, _title_function(fun, args...); kwargs...)
 end
 
 
@@ -455,14 +450,26 @@ function _push!(
     legend::Vector{Pair{Handle,T}},
     cascade::Cascade{Data},
     Geometry::DataType,
+    fun::Function,
     args...;
     kwargs...,
 ) where T<:Any
-    a =  _define_from(Annotation, cascade, Geometry, args...; kwargs...)
-    h = _define_from(Handle, a.cascade, args...; idx=length(legend)+1, kwargs...)
+    a =  _define_from(Annotation, cascade, Geometry, fun, args...; kwargs...)
+    h = _define_from(Handle, a.cascade, fun, args...; idx=length(legend)+1, kwargs...)
     push!(legend, h => a)
     return legend
 end
+
+function _push!(legend, cascade, Geometry, args::Tuple; kwargs...)
+    return _push!(legend, cascade, Geometry, args...; kwargs...)
+end
+
+function _push!(legend, cascade, Geometry, lst::Vector; kwargs...)
+    [_push!(legend, cascade, Geometry, args...; kwargs...) for args in lst]
+    return legend
+end
+
+_push!(legend, cascade, Geometry, args::Missing; kwargs...) = legend
 
 
 """
@@ -665,6 +672,29 @@ function _define_title(cascade::Cascade{Data}; nsample,
         angle = 0,
         leading = titleleading,
     )
+end
+
+
+function _title_function(fun::Function, args...)
+    return if fun==Statistics.quantile
+        _title_quantile(args...)
+    else
+        string(fun)
+    end
+end
+
+
+function _title_quantile(p::Float64)
+    if p==0.5
+        return "median"
+    else
+        str = Printf.@sprintf("%.d", p*100)
+        return if str[end]=='1';  str * "st %ile"
+        elseif str[end]=='2';     str * "nd %ile"
+        elseif str[end]=='3';     str * "rd %ile"
+        else;                     str * "th %ile"
+        end
+    end
 end
 
 

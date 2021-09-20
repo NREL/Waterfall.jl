@@ -1,8 +1,3 @@
-#= !!!!
-    Make sure we have all of the optimization info.
-    Maybe in a struct?
-=# 
-
 using Waterfall
 include(joinpath(WATERFALL_DIR,"src","includes.jl"))
 
@@ -11,39 +6,44 @@ nsample = 10
 value = :Value
 sample = :Sample
 label = :Category
+sublabel = :Amount
 colorcycle = true
-ylabel = "MJSP"
 
-kwargs = (value=value, sample=sample, label=label, colorcycle=colorcycle, ylabel=ylabel)
+kwargs = (value=value, sample=sample, label=label, colorcycle=colorcycle)
 
 
-"""
-    _aggregate(data; kwargs...)
+# Read amounts and save investment order.
 
-# Keyword Arguments
-- `label`
-- `sublabel`
-- `order`
-"""
-function _aggregate(data; label, sublabel="", order=missing, kwargs...)
-    value = Statistics.sum(get_value(data); dims=1)[1,:]
-    order = coalesce(order, collect(1:length(value)))
-    return Data( ; label=label, sublabel=sublabel, order=order, value=value)
+options = Dict(:Index=>"MJSP", :Technology=>"HEFA Camelina")
+directory = "/Users/chughes/Documents/Git/tyche-graphics/tyche/src/waterfall/data/b9a641ce-33be-3de3-b11f-3a53783e87e9"
+subdirs = joinpath.(directory, readdir(directory))
+subdirs = subdirs[isnothing.(match.(r"(.*[.].*)", subdirs))]
+
+cascades = Dict()
+plots = Dict()
+
+for subdir in subdirs
+    println("")
+    println(directory)
+    println(subdir)
+    local cascade = read_from(Cascade{Data}, subdir; options=options, kwargs...)
+    global plot = read_from(Plot{T}, subdir;
+        legend = (Statistics.quantile, 0.5),
+        options = options,
+        kwargs...,
+    )
+
+    global cascades[parse.(Int, split(splitpath(subdir)[end],""))...] = copy(cascade)
+    # global plot[]
+
+    Luxor.@png begin
+        Luxor.fontface("Gill Sans")
+        Luxor.fontsize(FONTSIZE)
+        Luxor.setline(2.0)
+        Luxor.setmatrix([1 0 0 1 LEFT_BORDER TOP_BORDER])
+
+        draw(plot)
+        println("Saving $(plot.path)")
+        
+    end WIDTH+LEFT_BORDER+RIGHT_BORDER HEIGHT+TOP_BORDER+BOTTOM_BORDER+height(plot) plot.path
 end
-
-
-# index = :Index => "Reduction in MJSP"
-DATA_DIR = "/Users/chughes/Documents/Git/tyche-graphics/tyche/src/waterfall/data/f79234a0-201a-3cb8-9a1a-d6766df2e4c6"
-
-cascade = define_from(Cascade{Data}, DATA_DIR; kwargs...)
-# plot = define_from(Plot{T}, DATA_DIR; kwargs...)
-
-Luxor.@png begin
-    Luxor.fontface("Gill Sans")
-    Luxor.fontsize(FONTSIZE)
-    Luxor.setline(1.0)
-    Luxor.setmatrix([1 0 0 1 LEFT_BORDER TOP_BORDER])
-
-    draw(plot)
-    
-end WIDTH+LEFT_BORDER+RIGHT_BORDER HEIGHT+TOP_BORDER+BOTTOM_BORDER+height(plot) plot.path

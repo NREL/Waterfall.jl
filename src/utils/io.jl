@@ -33,7 +33,12 @@ end
 """
     read_from(::Type{DataFrames.DataFrame}, file; kwargs...)
     read_from(::Type{Vector{Data}}, file; kwargs...)
-This method reads the data file in `file` into the given `DataType`
+    define_from(Cascade{Data}, directory; kwargs...)
+    define_from(Plot{T}, directory; kwargs...) where T<:Geometry
+These methods read data from a `directory` into the specified `DataType`.
+Defining a plot preserves `plot.path=directory`, and names the output data file for the
+plot geometry, so that if, for example, a horizontal plot is defined and plotted, it will be
+saved to `directory/horizontal.png`.
 
 # Arguments
 - `file::String` to '.csv' file storing values.
@@ -49,11 +54,13 @@ function read_from(::Type{DataFrames.DataFrame}, file::String; options::Dict=Dic
     return df
 end
 
+
 function read_from(::Type{DataFrames.GroupedDataFrame}, file::String, cols; kwargs...)
     df = read_from(DataFrames.DataFrame, file; kwargs...)
     cols = get_names(df, cols)
     return DataFrames.groupby(df, cols)
 end
+
 
 function read_from(::Type{DataFrames.SubDataFrame},
     file::String,
@@ -65,20 +72,6 @@ function read_from(::Type{DataFrames.SubDataFrame},
     return gdf[idx]
 end
 
-# function read_from(::Type{Vector{Data}}, file::String; kwargs...)
-#     df = read_from(DataFrames.DataFrame, file; kwargs...)
-#     return define_from(Vector{Data}, df; kwargs...)
-# end
-
-
-function _read_values(directory; kwargs...)
-    files = readdir(directory)
-    files = joinpath.(directory, files[.!isnothing.(match.(r"(value.*.csv)", files))])
-    return CSV.read.(files, DataFrames.DataFrame)
-end
-
-_read_values(directory, idx; kwargs...) = _read_values(directory; kwargs...)[idx]
-
 
 function read_from(::Type{Cascade{Data}}, directory; kwargs...)
     # Read other information.
@@ -88,8 +81,8 @@ function read_from(::Type{Cascade{Data}}, directory; kwargs...)
     files = readdir(directory)
     files = joinpath.(directory, files[.!isnothing.(match.(r"(value.*.csv)", files))])
     
-    start = _read_start_stop(first(files); label_value="start", kwargs...)
-    stop = _read_start_stop(last(files); label_value="stop", kwargs...)
+    start = _read_pool(first(files); label_value="state of technology", kwargs...)
+    stop = _read_pool(last(files); label_value="stop", kwargs...)
     steps = _read_step(files, permutation; kwargs...)
     N = length(steps)
 
@@ -116,16 +109,21 @@ function read_from(::Type{Plot{T}}, directory::String;
     # Read ylabel info.
     df = _read_values(directory, 1; kwargs...)
     ylabel_str, units_str = values(df[df[:,ylabel].==options[ylabel], [ylabel,units]][1,:])
-    metric_str = "Optimized for " * df[1,:Metric]
-
+    metric_str = df[1,:Metric]
+    
+    cascade.stop.label = "Anticipated " * ylabel_str
+    
     plot = define_from(Plot{T}, copy(cascade);
         ylabel = "$ylabel_str ($units_str)",
         nsample=length(cascade),
         kwargs...,
     )
-
-    plot.title.text = [uppercase.([metric_str, options[:Technology]]); plot.title.text]
-
+    
+    metric_str = "Optimized for " * metric_str
+    plot.title.text = [uppercase.([
+        options[:Technology],
+        metric_str,
+    ]); plot.title.text]
 
     plot.path = joinpath(
         joinpath(splitpath(directory)[1:end-1]...),
@@ -163,9 +161,9 @@ end
 
 
 """
-    _read_start_stop(file::String; kwargs...)
+    _read_pool(file::String; kwargs...)
 """
-function _read_start_stop(file::String;
+function _read_pool(file::String;
     label,
     sublabel=missing,
     label_value=missing,
@@ -183,6 +181,17 @@ function _read_start_stop(file::String;
     !ismissing(sublabel_value) && (df[!,sublabel] .= sublabel_value)
     return define_from(Data, df; label=label, sublabel=sublabel, kwargs...)
 end
+
+
+"""
+"""
+function _read_values(directory; kwargs...)
+    files = readdir(directory)
+    files = joinpath.(directory, files[.!isnothing.(match.(r"(value.*.csv)", files))])
+    return CSV.read.(files, DataFrames.DataFrame)
+end
+
+_read_values(directory, idx; kwargs...) = _read_values(directory; kwargs...)[idx]
 
 
 """
