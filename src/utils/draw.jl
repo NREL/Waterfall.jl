@@ -79,6 +79,41 @@ _draw(x::Any) = draw(collect(values(x)))
 
 """
 """
+function animate(x::T, N; kwargs...) where T<:Plot
+    _animate(x, N)
+    # x.path = _title_animation_step(x.path, N)
+    return nothing
+end
+
+function animate(x::Cascade{T}, N) where T<:Geometry
+    println("drawing cascade")
+    data = collect_data(x)
+    shapes = getindex.(getproperty.(data,:shape), Ref(1:N))
+    draw(shapes)
+    return nothing
+end
+
+animate(lst::Vector, N) = [animate(x,N) for x in lst]
+# animate(x::T, N) where T<:Shape = animate(x, N)
+animate(x, N) = draw(x)
+
+
+_animate(x::Any, N) = animate(collect(values(x)), N)
+
+
+
+function _title_animation_step(x::String, N)
+    m = match(Regex("(.*\\_n)(\\d*)(.*)"), x)
+    step = join([
+        m[2],
+        Printf.@sprintf("%09.0f", N)[end-(length(m[2])-1):end],
+    ], "-")
+    return m[1] * step * m[3]
+end
+
+
+"""
+"""
 function height(lab::Vector{T}) where T<:Label
     result = maxlines(lab) * FONTSIZE * lab[1].scale * lab[1].leading
     return convert(Int, ceil(result))

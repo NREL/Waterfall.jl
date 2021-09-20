@@ -129,8 +129,10 @@ function read_from(::Type{Plot{T}}, directory::String;
         joinpath(splitpath(directory)[1:end-1]...),
         lowercase(join([
             string(T),
-            "n" * string(length(cascade)),
             join([string(x) for x in cascade.permutation],""),
+            # Number of steps needs to go last to make the list of files less annoying
+            # if we have a lot of them.
+            "n" * string(length(cascade)),
         ], "_"),
     ) * ".png")
     return plot

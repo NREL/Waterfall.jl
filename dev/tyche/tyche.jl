@@ -22,7 +22,7 @@ subdirs = subdirs[isnothing.(match.(r"(.*[.].*)", subdirs))]
 cascades = Dict()
 plots = Dict()
 
-for subdir in subdirs
+for subdir in subdirs[[1]]
     println("")
     println(directory)
     println(subdir)
@@ -36,14 +36,16 @@ for subdir in subdirs
     global cascades[parse.(Int, split(splitpath(subdir)[end],""))...] = copy(cascade)
     # global plot[]
 
+    N = 2
     Luxor.@png begin
         Luxor.fontface("Gill Sans")
         Luxor.fontsize(FONTSIZE)
         Luxor.setline(2.0)
         Luxor.setmatrix([1 0 0 1 LEFT_BORDER TOP_BORDER])
 
-        draw(plot)
-        println("Saving $(plot.path)")
+        # draw(plot, 2)
+        animate(plot, N)
+        println("Saving $(_title_animation_step(plot.path,N))")
         
-    end WIDTH+LEFT_BORDER+RIGHT_BORDER HEIGHT+TOP_BORDER+BOTTOM_BORDER+height(plot) plot.path
+    end WIDTH+LEFT_BORDER+RIGHT_BORDER HEIGHT+TOP_BORDER+BOTTOM_BORDER+height(plot) _title_animation_step(plot.path,N)
 end
