@@ -22,30 +22,43 @@ subdirs = subdirs[isnothing.(match.(r"(.*[.].*)", subdirs))]
 cascades = Dict()
 plots = Dict()
 
-for subdir in subdirs[[1]]
+for subdir in subdirs[[3]]
     println("")
     println(directory)
     println(subdir)
     local cascade = read_from(Cascade{Data}, subdir; options=options, kwargs...)
-    global plot = read_from(Plot{T}, subdir;
-        legend = (Statistics.quantile, 0.5),
-        options = options,
-        kwargs...,
-    )
+    vlims = vlim(cascade; kwargs...)
 
-    global cascades[parse.(Int, split(splitpath(subdir)[end],""))...] = copy(cascade)
-    # global plot[]
+    for N = 1:length(cascade)
 
-    N = 2
-    Luxor.@png begin
-        Luxor.fontface("Gill Sans")
-        Luxor.fontsize(FONTSIZE)
-        Luxor.setline(2.0)
-        Luxor.setmatrix([1 0 0 1 LEFT_BORDER TOP_BORDER])
+        # global plot = read_from(Plot{T}, subdir;
+        #     legend = (Statistics.quantile, 0.5),
+        #     options = options,
+        #     kwargs...,
+        # )
+        global plot = read_from(Plot{T}, subdir;
+            rng = 1:N,
+            legend = (Statistics.quantile, 0.5),
+            options = options,
+            vlims...,
+            kwargs...,
+        )
 
-        # draw(plot, 2)
-        animate(plot, N)
-        println("Saving $(_title_animation_step(plot.path,N))")
-        
-    end WIDTH+LEFT_BORDER+RIGHT_BORDER HEIGHT+TOP_BORDER+BOTTOM_BORDER+height(plot) _title_animation_step(plot.path,N)
+        global cascades[parse.(Int, split(splitpath(subdir)[end],""))...] = copy(cascade)
+        # global plot[]
+
+        # N = 2
+        Luxor.@png begin
+            Luxor.fontface("Gill Sans")
+            Luxor.fontsize(FONTSIZE)
+            Luxor.setline(2.0)
+            Luxor.setmatrix([1 0 0 1 LEFT_BORDER TOP_BORDER])
+
+            draw(plot)
+            println("Saving to :" * plot.path)
+            # animate(plot, N)
+            # println("Saving $(_title_animation_step(plot.path,N))")
+            
+        end WIDTH+LEFT_BORDER+RIGHT_BORDER HEIGHT+TOP_BORDER+BOTTOM_BORDER+height(plot) plot.path
+    end
 end

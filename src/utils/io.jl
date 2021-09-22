@@ -98,6 +98,7 @@ function read_from(::Type{Cascade{Data}}, directory; kwargs...)
 end
 
 function read_from(::Type{Plot{T}}, directory::String;
+    rng=missing,
     ylabel=:Index,
     units=:Units,
     options::Dict,
@@ -105,6 +106,10 @@ function read_from(::Type{Plot{T}}, directory::String;
 ) where T<:Geometry
 
     cascade = read_from(Cascade{Data}, directory; options=options, kwargs...)
+    nsample = length(cascade)
+
+    !ismissing(rng) && getindex!(cascade, rng)
+
 
     # Read ylabel info.
     df = _read_values(directory, 1; kwargs...)
@@ -115,15 +120,21 @@ function read_from(::Type{Plot{T}}, directory::String;
     
     plot = define_from(Plot{T}, copy(cascade);
         ylabel = "$ylabel_str ($units_str)",
-        nsample=length(cascade),
+        nsample=nsample,
         kwargs...,
     )
-    
+
+    rng_str = ismissing(rng) ? "" : Printf.@sprintf("%2.0f", rng[end])
+
+
     metric_str = "Optimized for " * metric_str
-    plot.title.text = [uppercase.([
+    plot.title.text = uppercase.([
         options[:Technology],
         metric_str,
-    ]); plot.title.text]
+        (ismissing(rng) ? "" : Printf.@sprintf("%2.0f/", rng[end])) *
+            "$nsample SAMPLE" * 
+            (nsample==1 ? "" : "S"),
+    ])
 
     plot.path = joinpath(
         joinpath(splitpath(directory)[1:end-1]...),
@@ -132,7 +143,7 @@ function read_from(::Type{Plot{T}}, directory::String;
             join([string(x) for x in cascade.permutation],""),
             # Number of steps needs to go last to make the list of files less annoying
             # if we have a lot of them.
-            "n" * string(length(cascade)),
+            "n" * string(nsample) * (!ismissing(rng) ? Printf.@sprintf("-%02.0f", rng[end]) : ""),
         ], "_"),
     ) * ".png")
     return plot

@@ -76,9 +76,11 @@ end
 
 function define_from(::Type{Plot{T}}, cascade::Cascade{Data};
     legend = missing,
+    nsample = missing,
     kwargs...,
 ) where T<:Geometry
-    nsample = length(cascade)
+    nsample = coalesce(nsample, length(cascade))
+    # cascade_geometry = set_geometry(cascade, T; nsample=nsample, kwargs...)
     cascade_geometry = set_geometry(cascade, T; nsample=nsample, kwargs...)
     legd = _define_legend(cascade_geometry; nsample=nsample, kwargs...)
     

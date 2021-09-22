@@ -1,3 +1,12 @@
+function getindex!(cascade, rng)
+    data = collect_data(cascade)
+    value = getindex.(get_value.(data), Ref(rng))
+    set_value!.(data, value)
+    return cascade
+end
+
+
+
 """
     set(x::Coloring)
     set(x::Blending)
@@ -94,7 +103,6 @@ function animate(x::Cascade{T}, N) where T<:Geometry
 end
 
 animate(lst::Vector, N) = [animate(x,N) for x in lst]
-# animate(x::T, N) where T<:Shape = animate(x, N)
 animate(x, N) = draw(x)
 
 

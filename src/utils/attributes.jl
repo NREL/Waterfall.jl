@@ -17,12 +17,19 @@ function set_geometry(cascade, ::Type{Vertical}, args...; kwargs...)
 end
 
 
-function set_geometry(cascade, ::Type{Horizontal}, args...; usegradient=missing, kwargs...)
+function set_geometry(cascade, ::Type{Horizontal}, args...;
+    # usegradient=missing,
+    usegradient=false,
+    nsample=missing,
+    kwargs...,
+)
     # !!!! want to show gradient if there's only one cascade element. Is this working??
-    usegradient = coalesce(usegradient, length(cascade)==1)
+    # usegradient = coalesce(usegradient, length(cascade)==1)
+
+    nsample = coalesce(nsample, length(cascade))
 
     return _set_geometry(cascade, Horizontal, Box, usegradient ? Blending : Coloring, args...;
-        alpha=length(cascade),
+        alpha=nsample,
         style=:fill,
         subdivide=false,
         space=true,
