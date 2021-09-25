@@ -22,7 +22,7 @@ isvector(vec::AbstractVector) = true
 
 
 "Drops zero values."
-dropzero(mat::Matrix) = mat[all.(eachrow(mat.>=1E-10)),:]
+dropzero(mat::Matrix) = mat[all.(eachrow(abs.(mat).>=1E-10)),:]
 dropzero(vec::Vector) = vec[abs.(vec).>=1E-10]
 
 
@@ -94,7 +94,7 @@ function correlate(v::AbstractArray, A::AbstractMatrix, order::AbstractVector{In
     # vout = copy.(v)
     # [vout[ii,:] .= lst[ii,:] for (ii,lst) in zip(order, lst_v)]
     # return update_stop!(convert(Matrix, vout))
-    update_stop!(collect_values(lst_v, order))
+    update_stop!(collect_value(lst_v, order))
 end
 
 

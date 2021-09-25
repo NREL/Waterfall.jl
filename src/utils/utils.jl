@@ -5,6 +5,12 @@ import Base
 get_order(x::T) where T<:Real = parse(Int, match(r"e(.*)", Printf.@sprintf("%e", x))[1])
 
 
+_major_order(x::AbstractArray) = maximum(get_order.(dropzero(x)))
+_major_order(x::Cascade{Data}) = _major_order(get_value(x.steps))
+
+_minor_order(x::AbstractArray) = minimum(get_order.(dropzero(x)))
+_minor_order(x::Cascade{Data}) = _minor_order(get_value(x.steps))
+
 """
     matrix(mat; )
 

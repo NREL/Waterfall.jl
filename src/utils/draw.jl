@@ -122,6 +122,24 @@ end
 
 """
 """
+function width(lab::Label{String})
+    tmp = Luxor.get_fontsize()
+    Luxor.fontsize(FONTSIZE * lab.scale)
+    wid = getindex(Luxor.textextents(lab.text), 3)
+    Luxor.fontsize(tmp)
+    return ceil(wid)
+end
+
+width(lab::Vector{Label{String}}) = maximum(width.(lab))
+
+width(ax::XAxis) = ax.frame.position[2][1]
+width(ax::YAxis) = abs(ax.label.position[1]) + height(ax.label)
+
+width(plot::Plot) = sum(width.(plot.axes)) + 2*SEP
+
+
+"""
+"""
 function height(lab::Vector{T}) where T<:Label
     result = maxlength(lab) * FONTSIZE * lab[1].scale * lab[1].leading
     return convert(Int, ceil(result))
@@ -133,10 +151,18 @@ function height(lab::T) where T<:Label
 end
 
 height(ax::XAxis) = height(ax.ticklabels) + height(ax.ticksublabels)
-# height(plot::Plot) = height(plot.axes[1])
+height(ax::YAxis) = ax.frame.position[1][2]
+
+height(plot::Plot) = sum(height.(plot.axes)) -plot.title.position[2] + 1.5*SEP
+
+
+"Return the left border of the plot in pixels."
+left_border(plot::Plot) = width(plot.axes[2])+SEP
+
+"Return the top border of the plot in pixels."
+top_border(plot::Plot) = -plot.title.position[2]
 
 
 """
-
 """
 maxlength(lab::Vector{T}) where T<:Label = maximum(length.(lab))

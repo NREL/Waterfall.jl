@@ -15,8 +15,8 @@ TOP_BORDER=48+SEP
 # Read amounts and save investment order.
 
 options = Dict(
-    :Index=>"Reduction in MJSP",
-    # :Index=>"Reduction in Jet GHG",
+    # :Index=>"Reduction in MJSP",
+    :Index=>"Reduction in Jet GHG",
     :Technology=>"HEFA Camelina",
 )
 
@@ -28,7 +28,7 @@ subdirs = subdirs[.&(isnothing.(match.(r"(.*[.].*)", subdirs)), isnothing.(match
 cascades = Dict()
 plots = Dict()
 
-for subdir in subdirs[[end]]
+for subdir in subdirs
     println("")
     println(subdir)
 
@@ -38,32 +38,32 @@ for subdir in subdirs[[end]]
         options = options,
         kwargs...,
     )
-    vlims = vlim(cascade; kwargs...)
+    global vlims = vlim(cascade; kwargs...)
 
     # for N = 1:length(cascade)
     for N = [length(cascade)]
-        # Save to cascade dictionary.
+        rng = missing
+
         global cascades[parse.(Int, split(splitpath(subdir)[end],""))...] = copy(cascade)
         
         # Would be nice to use define_from here.
         global plot = read_from(Plot{T}, subdir;
-            rng = 1:N,
             legend = (Statistics.quantile, 0.5),
             options = options,
+            rng = rng,
             vlims...,
             kwargs...,
         )
-
+        
         Luxor.@png begin
             Luxor.fontface("Gill Sans")
             Luxor.fontsize(FONTSIZE)
             Luxor.setline(2.0)
-            Luxor.setmatrix([1 0 0 1 LEFT_BORDER TOP_BORDER])
+            Luxor.setmatrix([1 0 0 1 left_border(plot) top_border(plot)])
 
             draw(plot)
-            Luxor.circle(Luxor.Point(0,0), 20)
             println("Saving to: " * plot.path)
-            
-        end WIDTH+LEFT_BORDER+RIGHT_BORDER  HEIGHT+TOP_BORDER+BOTTOM_BORDER+height(plot.axes[1])  plot.path
+
+        end width(plot) height(plot) plot.path
     end
 end

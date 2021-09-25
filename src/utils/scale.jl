@@ -6,7 +6,7 @@ function scale_for(cascade, ::Type{Violin}; kwargs...)
     v2 = cumulative_v(cascade; shift= 0.0, kwargs...)
     
     vkde = calculate(v2, KernelDensity.kde)
-    vlims = vlim(v1; kwargs...)
+    vlims = vlim(cascade; kwargs...)
 
     xl, xr = scale_x(vkde; kwargs...)
     y = scale_y(vkde; vlims...)
@@ -19,7 +19,7 @@ function scale_for(cascade, ::Type{T}; kwargs...) where T<:Geometry
     v1 = cumulative_v(cascade; shift=-1.0, kwargs...)
     v2 = cumulative_v(cascade; shift= 0.0, kwargs...)
     
-    vlims = vlim(v1; kwargs...)
+    vlims = vlim(cascade; kwargs...)
 
     y1 = scale_y(v1; vlims...)
     y2 = scale_y(v2; vlims...)
@@ -101,8 +101,8 @@ scale_x(cascade::T; kwargs...) where T <: Cascade = scale_x(collect_data(cascade
 """
     scale_y(data::Data)
 """
-function scale_y(v::AbstractArray; kwargs...)
-    vmin, vmax, vscale = vlim(v; kwargs...)
+function scale_y(v::AbstractArray; vmin, vmax, vscale, kwargs...)
+    # vmin, vmax, vscale = vlim(v; kwargs...)
     return -vscale * (max.(v,vmin) .- vmax)
 end
 
@@ -110,8 +110,11 @@ function scale_y(lst::AbstractArray{T}; kwargs...) where T <: KernelDensity.Univ
     return matrix(scale_y.(getfield.(lst,:x); kwargs...))
 end
 
-scale_y(cascade::Cascade{Data}; kwargs...) = scale_y(collect_data(cascade); kwargs...)
-scale_y(data::Vector{Data}; kwargs...) = scale_y(get_value(data); vlim(data)...)
+function scale_y(cascade::Cascade{Data}; kwargs...)
+    vlims = vlim(cascade; kwargs...)
+    return scale_y(collect_value(cascade); vlims..., kwargs...)
+end
+# scale_y(data::Vector{Data}; kwargs...) = scale_y(get_value(data); vlim(data)...)
 
 
 """
@@ -124,25 +127,50 @@ y-axis ticks.
 - `vmax::Float64`: (rounded) minimum data value
 - `vscale::Float64`: scaling factor to convert value coordinates to drawing coordinates.
 """
-function vlim(mat::AbstractArray; vmin=missing, vmax=missing, kwargs...)
+function vlim(cascade; vmin=missing, vmax=missing, kwargs...)
     if |(ismissing(vmin), ismissing(vmax))
-        mat = dropzero(mat)
-        order = minimum(get_order.(mat))
-
-        vmin = coalesce(vmin, floor(minimum(mat) - 0.5*exp10(order-1)))
-        vmax = coalesce(vmax, ceil(maximum(mat) + 0.5*exp10(order-1)) + 0.5*exp10(order-1))
+        tcks = collect_ticks(cascade; vmin=vmin, vmax=vmax, kwargs...)
+        vmin = first(tcks)
+        vmax = convert(Float64, last(tcks) + 0.5*tcks.step)
     end
-    
-    vscale = HEIGHT/(vmax-vmin)
+
+    vscale = HEIGHT / (vmax-vmin)
     return (vmin=vmin, vmax=vmax, vscale=vscale)
 end
 
 
-function vlim(data::Vector{Data}; kwargs...)
-    return vlim(Statistics.cumsum(get_value(data); dims=1); kwargs...)
-end
+"""
+    collect_ticks(x::Cascade{Data}; kwargs...)
+This function returns a list of major y-axis ticks
+"""
+function collect_ticks(cascade::Cascade{Data}; vmin=missing, vmax=missing, kwargs...)
+    if |(ismissing(vmin), ismissing(vmax))
+        major = _major_order(cascade)
+        minor = _minor_order(cascade)
+        
+        vsum = Statistics.cumsum(collect_value(cascade); dims=1)[1:end-1,:]
+        vsum = round.(vsum; digits=-minor)
 
-vlim(cascade::Cascade{Data}; kwargs...) = vlim(collect_data(cascade); kwargs...)
+        if ismissing(vmin)
+            vmin = minimum(vsum)
+            vmin!=0.0 && (vmin = floor(vmin-0.5*exp10(major); digits=-major))
+        end
+
+        if ismissing(vmax)
+            vmax = maximum(vsum)
+            vmax!=0.0 && (vmax = ceil(maximum(vsum) + 0.5*exp10(major); digits=-major))
+        else
+            vmax = floor(vmax; digits=major)
+        end
+    else
+        major = _major_order([vmin,vmax])
+        vmax = floor(vmax; digits=-major)
+    end
+    
+    ticks = vmin:exp10(major):vmax
+    length(ticks)<5 && (ticks = vmin:0.5*exp10(major):vmax)
+    return ticks
+end
 
 
 """
@@ -160,7 +188,6 @@ This function decreases or increases `color` saturation by a factor of ``s \\in 
     `hsv.v` ``\\in [0,255]``.
 """
 function scale_hsv(hsv::Luxor.HSV; lightness=missing, h=0, s=0, v=0, kwargs...)
-
     return if !ismissing(lightness)
         scale_hsv(hsv; s=-lightness, v=lightness)
     else
@@ -170,6 +197,7 @@ function scale_hsv(hsv::Luxor.HSV; lightness=missing, h=0, s=0, v=0, kwargs...)
         Luxor.Colors.HSV(h, s, v)
     end
 end
+
 
 function scale_hsv(rgb::Luxor.RGB; kwargs...)
     hsv = scale_hsv(convert(Luxor.HSV, rgb); kwargs...)

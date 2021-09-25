@@ -61,16 +61,13 @@ function collect_permutation(x::T; kwargs...) where T<:Cascade
 end
 
 
-"""
-    collect_ticks(x::Cascade{Data}; kwargs...)
-This function returns a list of major y-axis ticks
-"""
-function collect_ticks(cascade; kwargs...)
-    vmin, vmax, vscale = vlim(cascade; kwargs...)
-    # !!!! Problem if minimum order is zero.
-    return collect(vmin:max(1, minimum(get_order.([vmin,vmax]))):vmax)
-    # return collect(vmin:minimum(get_order.([vmin,vmax])):vmax)
-end
+
+# function collect_ticks(cascade; kwargs...)
+#     vmin, vmax, vscale = vlim(cascade; kwargs...)
+#     # !!!! Problem if minimum order is zero.
+#     return collect(vmin:max(1, minimum(get_order.([vmin,vmax]))):vmax)
+#     # return collect(vmin:minimum(get_order.([vmin,vmax])):vmax)
+# end
 
 
 """

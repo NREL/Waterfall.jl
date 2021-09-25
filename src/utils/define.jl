@@ -112,7 +112,7 @@ function define_from(::Type{XAxis}, cascade::Cascade{Data}; kwargs...)
             scale = 0.8,
             kwargs...,
         ),
-        frame = _define_from(Line, (Luxor.Point(0,HEIGHT), Luxor.Point(WIDTH+2*SEP,HEIGHT)))
+        frame = _define_from(Line, (Luxor.Point(0,HEIGHT), Luxor.Point(WIDTH+SEP,HEIGHT)))
     )
 end
 
@@ -123,19 +123,23 @@ function define_from(::Type{YAxis}, cascade::Cascade{Data};
     y = HEIGHT,
     kwargs...,
 )
-    label_type = Label{String}
+    T = Label{String}
 
+    ticks = _define_ticks(cascade, YAxis; kwargs...)
+    ticklabels = _define_from(Vector{T}, cascade, YAxis;
+        halign = :right,
+        xshift = -SEP,
+        scale = 0.9,
+        kwargs...,
+    )
+    print(width(ticklabels))
+    
     return YAxis( ;
-        ticks = _define_ticks(cascade, YAxis; kwargs...),
-        label = _define_from(label_type, uppercase(ylabel), Luxor.Point(-(LEFT_BORDER-SEP/2), HEIGHT/2);
+        ticks = ticks,
+        ticklabels = ticklabels,
+        label = _define_from(T, ylabel, Luxor.Point(-width(ticklabels)-2*SEP, HEIGHT/2);
             angle = -pi/2,
-            valign = :top,
-        ),
-        ticklabels = _define_from(Vector{label_type}, cascade, YAxis;
-            halign = :right,
-            xshift = -SEP,
-            scale = 0.9,
-            kwargs...,
+            valign = :bottom,
         ),
         frame = _define_from(Arrow, (Luxor.Point(0,HEIGHT), Luxor.Point(0,0))),
     )
@@ -248,7 +252,7 @@ function _define_from(::Type{T}, text, pos::Luxor.Point;
     kwargs...,
 ) where T <: Label
     return Label( ;
-        text = text,
+        text = uppercase.(text),
         scale = scale,
         position = pos,
         halign = halign,
@@ -457,7 +461,7 @@ function _push!(
     args...;
     kwargs...,
 ) where T<:Any
-    a =  _define_from(Annotation, cascade, Geometry, fun, args...; kwargs...)
+    a = _define_from(Annotation, cascade, Geometry, fun, args...; kwargs...)
     h = _define_from(Handle, a.cascade, fun, args...; idx=length(legend)+1, kwargs...)
     push!(legend, h => a)
     return legend
@@ -646,9 +650,8 @@ function _define_text(cascade, fun::Function, args...; kwargs...)
     v = collect_value(cascade)
     v = calculate(v, fun, args...)
 
-    # Round before `get_order` to ignore really small numbers.
-    # !!!! Could definitely improve this.
-    digits = max(abs(minimum(get_order.(round.(v; digits=4)))) + 1,2)
+    digits = -_minor_order(cascade)
+    digits==0 && (digits=1)
 
     str = _define_text.(v; digits=digits)
     [str[ii] = str[ii][2:end] for ii in [1,size(str,1)]]
@@ -662,7 +665,9 @@ end
 
 function _define_text(cascade, ::Type{YAxis}; scale=0.9, kwargs...)
     v = collect_ticks(cascade; kwargs...)
-    digits = max(abs(minimum(get_order.(v))),1)
+    # Take digits from the order of the tick step in case we added half steps.
+    digits = -get_order(convert(Float64, v.step))
+    digits==0 && (digits=1)
     return _define_text.(v; digits=digits, sgn=false)
 end
 
@@ -682,10 +687,8 @@ function _define_ticks(cascade, ::Type{T};
     len = SEP,
     kwargs...,
 ) where T <: Axis
-
     p1 = _define_position(cascade, T; x=x-0.5*len, y=y-0.5*len, kwargs...)
     p2 = _define_position(cascade, T; x=x+0.5*len, y=y+0.5*len, kwargs...)
-
     return _define_from.(Line, tuple.(p1,p2))
 end
 
@@ -710,7 +713,7 @@ function _define_title(str::Vector{String};
 
     lab.position = Luxor.Point(
         WIDTH/2,
-        -(height(lab) * ((length(str)-1)/length(str)) + SEP),
+        -height(lab) * ((length(str)-1)/length(str)),
     )
 
     return lab
