@@ -101,19 +101,20 @@ function define_from(::Type{XAxis}, cascade::Cascade{Data}; kwargs...)
     T = Vector{Label{Vector{String}}}
     pad = SEP/2
     
-    return XAxis( ;
-        ticklabels = _define_from(T, cascade, XAxis, :label;
-            yshift = pad,    
-            scale = 0.9,
-            kwargs...,
-        ),
-        ticksublabels = _define_from(T, cascade, XAxis, :sublabel;
-            yshift = pad+FONTSIZE,
-            scale = 0.8,
-            kwargs...,
-        ),
-        frame = _define_from(Line, (Luxor.Point(0,HEIGHT), Luxor.Point(WIDTH+SEP,HEIGHT)))
+    ticklabels = _define_from(T, cascade, XAxis, :label;
+        yshift = pad,
+        scale = 0.9,
+        kwargs...,
     )
+    ticksublabels = _define_from(T, cascade, XAxis, :sublabel;
+        yshift = height(ticklabels)+SEP,
+        scale = 0.8,
+        # currency = true,
+        kwargs...,
+    )
+    frame = _define_from(Line, Luxor.Point.((0,WIDTH+SEP), HEIGHT))
+
+    return XAxis(ticklabels, ticksublabels, frame)
 end
 
 
@@ -132,17 +133,13 @@ function define_from(::Type{YAxis}, cascade::Cascade{Data};
         scale = 0.9,
         kwargs...,
     )
-    print(width(ticklabels))
-    
-    return YAxis( ;
-        ticks = ticks,
-        ticklabels = ticklabels,
-        label = _define_from(T, ylabel, Luxor.Point(-width(ticklabels)-2*SEP, HEIGHT/2);
-            angle = -pi/2,
-            valign = :bottom,
-        ),
-        frame = _define_from(Arrow, (Luxor.Point(0,HEIGHT), Luxor.Point(0,0))),
+    label = _define_from(T, ylabel, Luxor.Point(-width(ticklabels)-2*SEP, HEIGHT/2);
+        angle = -pi/2,
+        valign = :bottom,
     )
+    frame = _define_from(Arrow, Luxor.Point.(0, (HEIGHT,0)))
+    
+    return YAxis(label, ticks, ticklabels, frame)
 end
 
 
@@ -635,12 +632,16 @@ This method formats `x` as a string.
     _define_text(cascade, fun::Function, args...; kwargs...)
 This method calculates a value 
 """
-function _define_text(x::Float64; sgn=true, digits=2)
+function _define_text(x::Float64; sgn=true, digits=2, currency=false, kwargs...)
     x = round(x; digits=digits)
     sgn = sgn ? sgn : Base.sign(x)<0
     
-    len = length(string(abs(convert(Int, round(x))))) + 1 + sgn
-    str = sgn ? @Printf.sprintf("%+2.10f", x) : @Printf.sprintf("%2.10f", x)
+    if currency
+        str = _define_currency(x; major=digits)
+    else
+        len = length(string(abs(convert(Int, round(x))))) + 1 + sgn
+        str = sgn ? @Printf.sprintf("%+2.10f", x) : @Printf.sprintf("%2.10f", x)
+    end
 
     return string(str[1:len+digits])
 end
@@ -653,7 +654,7 @@ function _define_text(cascade, fun::Function, args...; kwargs...)
     digits = -_minor_order(cascade)
     digits==0 && (digits=1)
 
-    str = _define_text.(v; digits=digits)
+    str = _define_text.(v; digits=digits, kwargs...)
     [str[ii] = str[ii][2:end] for ii in [1,size(str,1)]]
     
     iszero = .!isnothing.(match.(r"[+-]0[.]0+$", str))
@@ -673,10 +674,53 @@ end
 
 
 function _define_text(cascade, ::Type{XAxis}, field::Symbol; kwargs...)
-    return getfield.(collect_data(cascade), field)
+    txt = getfield.(collect_data(cascade), field)
+    return _define_currency(txt)
 end
 
-_define_text(x) = x
+
+# _define_text(x) = x
+
+
+"""
+"""
+function _define_currency(lst::Vector{Float64}; kwargs...)
+    minor = _minor_order(lst)
+    str = _define_currency.(lst; minor=minor)
+    [str[ii] = "+ " * str[ii] for ii in 2:length(str)-1]
+    return str
+end
+
+
+function _define_currency(x::Float64; minor=missing)
+    str = if x==0.0
+        "-"
+    else
+        major = coalesce(minor, get_order(x))
+        dgts = get_order(x)-minor
+        dgts==0 && (dgts=1)
+
+        str = Printf.@sprintf("%.10e", round(x; digits=-minor))
+        replace(str,
+            match(Regex("\\d[.]0{$dgts}(.*)"), str)[1] => _get_suffix(minor),
+        )
+    end
+    return "\$" * str
+end
+
+_define_currency(x; kwargs...) = x
+
+
+"""
+"""
+function _get_suffix(x::Int)
+    d = Dict(3=>"k", 6=>"M", 9=>"b", 12=>"T")
+    d = Dict(k:k+2 => v for (k,v) in d)
+    k = collect(keys(d))
+    ii = in.(x,k)
+    return any(ii) ? d[k[ii][1]] : ""
+end
+
 
 
 """

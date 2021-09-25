@@ -8,7 +8,7 @@ sample = :Sample
 label = :Category
 sublabel = :Amount
 colorcycle = true
-kwargs = (value=value, sample=sample, label=label, colorcycle=colorcycle)
+kwargs = (value=value, sample=sample, label=label, sublabel=sublabel, colorcycle=colorcycle)
 
 TOP_BORDER=48+SEP
 
