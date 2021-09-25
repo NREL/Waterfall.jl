@@ -8,34 +8,44 @@ sample = :Sample
 label = :Category
 sublabel = :Amount
 colorcycle = true
-
 kwargs = (value=value, sample=sample, label=label, colorcycle=colorcycle)
 
+TOP_BORDER=48+SEP
 
 # Read amounts and save investment order.
 
-options = Dict(:Index=>"MJSP", :Technology=>"HEFA Camelina")
-directory = "/Users/chughes/Documents/Git/tyche-graphics/tyche/src/waterfall/data/b9a641ce-33be-3de3-b11f-3a53783e87e9"
+options = Dict(
+    :Index=>"Reduction in MJSP",
+    # :Index=>"Reduction in Jet GHG",
+    :Technology=>"HEFA Camelina",
+)
+
+# Define the directory, and make sure only to save directory 
+directory = "/Users/chughes/Documents/Git/tyche-graphics/tyche/src/waterfall/data/6f84f6cf-0b43-31a2-9706-576272778f20"
 subdirs = joinpath.(directory, readdir(directory))
-subdirs = subdirs[isnothing.(match.(r"(.*[.].*)", subdirs))]
+subdirs = subdirs[.&(isnothing.(match.(r"(.*[.].*)", subdirs)), isnothing.(match.(r".*/fig", subdirs)))]
 
 cascades = Dict()
 plots = Dict()
 
-for subdir in subdirs[[3]]
+for subdir in subdirs[[end]]
     println("")
-    println(directory)
     println(subdir)
-    local cascade = read_from(Cascade{Data}, subdir; options=options, kwargs...)
+
+    # When creating an animation, we first need to read the complete cascade to calculate
+    # the y-axis limits in order to maintain consistent scaling throughout.
+    global cascade = read_from(Cascade{Data}, subdir;
+        options = options,
+        kwargs...,
+    )
     vlims = vlim(cascade; kwargs...)
 
-    for N = 1:length(cascade)
-
-        # global plot = read_from(Plot{T}, subdir;
-        #     legend = (Statistics.quantile, 0.5),
-        #     options = options,
-        #     kwargs...,
-        # )
+    # for N = 1:length(cascade)
+    for N = [length(cascade)]
+        # Save to cascade dictionary.
+        global cascades[parse.(Int, split(splitpath(subdir)[end],""))...] = copy(cascade)
+        
+        # Would be nice to use define_from here.
         global plot = read_from(Plot{T}, subdir;
             rng = 1:N,
             legend = (Statistics.quantile, 0.5),
@@ -44,10 +54,6 @@ for subdir in subdirs[[3]]
             kwargs...,
         )
 
-        global cascades[parse.(Int, split(splitpath(subdir)[end],""))...] = copy(cascade)
-        # global plot[]
-
-        # N = 2
         Luxor.@png begin
             Luxor.fontface("Gill Sans")
             Luxor.fontsize(FONTSIZE)
@@ -55,10 +61,9 @@ for subdir in subdirs[[3]]
             Luxor.setmatrix([1 0 0 1 LEFT_BORDER TOP_BORDER])
 
             draw(plot)
-            println("Saving to :" * plot.path)
-            # animate(plot, N)
-            # println("Saving $(_title_animation_step(plot.path,N))")
+            Luxor.circle(Luxor.Point(0,0), 20)
+            println("Saving to: " * plot.path)
             
-        end WIDTH+LEFT_BORDER+RIGHT_BORDER HEIGHT+TOP_BORDER+BOTTOM_BORDER+height(plot) plot.path
+        end WIDTH+LEFT_BORDER+RIGHT_BORDER  HEIGHT+TOP_BORDER+BOTTOM_BORDER+height(plot.axes[1])  plot.path
     end
 end

@@ -100,7 +100,10 @@ centered at (x0,y0) and fits within the bounds of `(2*dx, 2*dy)`. The label is a
 middle/left at `(x0+dx+space, y0)`
 """
 function set_position!(handle::Handle;
-    x0 = WIDTH-75,
+    # x0 = WIDTH-75,
+    # y0 = 3*SEP,
+    x0 = 4*SEP,
+    # y0 = ceil(FONTSIZE*1.33),
     y0 = 3*SEP,
     dx = 1*SEP,
     dy = SEP,

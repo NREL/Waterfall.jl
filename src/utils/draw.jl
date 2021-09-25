@@ -123,16 +123,20 @@ end
 """
 """
 function height(lab::Vector{T}) where T<:Label
-    result = maxlines(lab) * FONTSIZE * lab[1].scale * lab[1].leading
+    result = maxlength(lab) * FONTSIZE * lab[1].scale * lab[1].leading
+    return convert(Int, ceil(result))
+end
+
+function height(lab::T) where T<:Label
+    result = length(lab) * FONTSIZE * lab.scale * lab.leading
     return convert(Int, ceil(result))
 end
 
 height(ax::XAxis) = height(ax.ticklabels) + height(ax.ticksublabels)
-height(plot::Plot) = height(plot.axes[1])
+# height(plot::Plot) = height(plot.axes[1])
 
 
 """
 
 """
-maxlines(lab::Vector{Label{Vector{String}}}) = maximum(length.(getfield.(lab,:text)))
-maxlines(lab::Vector{Label{String}}) = 1
+maxlength(lab::Vector{T}) where T<:Label = maximum(length.(lab))

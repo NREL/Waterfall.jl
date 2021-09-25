@@ -97,6 +97,7 @@ function read_from(::Type{Cascade{Data}}, directory; kwargs...)
     ))
 end
 
+
 function read_from(::Type{Plot{T}}, directory::String;
     rng=missing,
     ylabel=:Index,
@@ -104,12 +105,10 @@ function read_from(::Type{Plot{T}}, directory::String;
     options::Dict,
     kwargs...,
 ) where T<:Geometry
-
     cascade = read_from(Cascade{Data}, directory; options=options, kwargs...)
     nsample = length(cascade)
 
     !ismissing(rng) && getindex!(cascade, rng)
-
 
     # Read ylabel info.
     df = _read_values(directory, 1; kwargs...)
@@ -121,31 +120,29 @@ function read_from(::Type{Plot{T}}, directory::String;
     plot = define_from(Plot{T}, copy(cascade);
         ylabel = "$ylabel_str ($units_str)",
         nsample=nsample,
+        path=directory,
         kwargs...,
     )
 
-    rng_str = ismissing(rng) ? "" : Printf.@sprintf("%2.0f", rng[end])
+    plot.title = _define_title(options[:Technology]; metric=metric_str, nsample=nsample, rng=rng)
+    plot.path = _define_path(plot, directory; ylabel=ylabel_str, nsample=nsample, rng=rng)
 
+    # Define and make a path.
+    # path = joinpath(
+    #     splitpath(directory)[1:end-1]...,
+    #     lowercase(replace(options[ylabel], r" "=>"_")),
+    # )
+    # # !isdir(path) && mkpath(path)
 
-    metric_str = "Optimized for " * metric_str
-    plot.title.text = uppercase.([
-        options[:Technology],
-        metric_str,
-        (ismissing(rng) ? "" : Printf.@sprintf("%2.0f/", rng[end])) *
-            "$nsample SAMPLE" * 
-            (nsample==1 ? "" : "S"),
-    ])
+    # plot.path = joinpath(
+    #     path,
+    #     lowercase(join([
+    #         string(T),
+    #         join([string(x) for x in cascade.permutation],""),
+    #         "n" * string(nsample) * (!ismissing(rng) ? Printf.@sprintf("-%02.0f", rng[end]) : ""),
+    #     ], "_"),
+    # ) * ".png")
 
-    plot.path = joinpath(
-        joinpath(splitpath(directory)[1:end-1]...),
-        lowercase(join([
-            string(T),
-            join([string(x) for x in cascade.permutation],""),
-            # Number of steps needs to go last to make the list of files less annoying
-            # if we have a lot of them.
-            "n" * string(nsample) * (!ismissing(rng) ? Printf.@sprintf("-%02.0f", rng[end]) : ""),
-        ], "_"),
-    ) * ".png")
     return plot
 end
 

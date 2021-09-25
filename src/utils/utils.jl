@@ -69,6 +69,9 @@ Base.length(x::T) where T <: Geometry = x.nsample
 Base.length(x::T) where T <: Cascade = length(x.start)
 Base.length(x::T) where T <: Plot = length(x.cascade)
 Base.length(x::T) where T <: Shape = x.position
+
+Base.length(lab::Label{Vector{String}}) = length(getfield(lab,:text))
+Base.length(lab::Label{String}) = 1
 Base.length(x::Handle) = 1
 Base.length(x::Annotation) = 1
 Base.length(x::Coloring) = 1

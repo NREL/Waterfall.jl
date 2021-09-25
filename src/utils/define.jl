@@ -80,7 +80,8 @@ function define_from(::Type{Plot{T}}, cascade::Cascade{Data};
     kwargs...,
 ) where T<:Geometry
     nsample = coalesce(nsample, length(cascade))
-    # cascade_geometry = set_geometry(cascade, T; nsample=nsample, kwargs...)
+    # path = coalesce(path, _define_path(cascade, T; nsample=nsample, kwargs...))
+
     cascade_geometry = set_geometry(cascade, T; nsample=nsample, kwargs...)
     legd = _define_legend(cascade_geometry; nsample=nsample, kwargs...)
     
@@ -126,7 +127,7 @@ function define_from(::Type{YAxis}, cascade::Cascade{Data};
 
     return YAxis( ;
         ticks = _define_ticks(cascade, YAxis; kwargs...),
-        label = _define_from(label_type, ylabel, Luxor.Point(-(LEFT_BORDER-SEP/2), HEIGHT/2);
+        label = _define_from(label_type, uppercase(ylabel), Luxor.Point(-(LEFT_BORDER-SEP/2), HEIGHT/2);
             angle = -pi/2,
             valign = :top,
         ),
@@ -499,15 +500,41 @@ function _define_path(x::Cascade, Geometry;
 
     str = joinpath(path, join([
         Geometry,
-        "n" * _define_path(length(x); maxchar=get_order(maxsample)+1), # number of samples
+        # "n" * _define_path(length(x); maxchar=get_order(maxsample)+1), # number of samples
+        _path_sample(x; kwargs...),
         _define_path(get_label.(x.steps); kwargs...),                  # labels, in order
         "corr"       * _define_path(x.iscorrelated),                   # is it correlated?
         "colorcycle" * _define_path(colorcycle),                       # colorscheme?
         ], separator,
     ) * ext)
 
-    # println("Writing plot: $str")
     return str
+end
+
+
+function _define_path(plot::Plot{T}, directory::String;
+    ylabel, 
+    figdir="fig",
+    ext=".png",
+    kwargs...,
+) where T<:Geometry
+    # path = match(r"(.*)/data/.*$", directory)[1]
+    ylabel = lowercase(replace(ylabel, r" "=>"-"))
+    
+    path = joinpath(splitpath(directory)[1:end-1]..., figdir, ylabel)
+    if !isdir(path)
+        @info("Creating directory: $path")
+        mkpath(path)
+    end
+
+    file = lowercase(join([
+        ylabel,
+        string(T),
+        _define_path(string.(plot.cascade.permutation)),
+        _path_sample(plot.cascade; kwargs...),
+    ], "_"))
+    
+    return joinpath(path, file*ext)
 end
 
 
@@ -521,6 +548,27 @@ end
 _define_path(x::Int; maxchar=1) = string(Printf.@sprintf("%010.0f", x)[end-(maxchar-1):end])
 _define_path(x::Bool; kwargs...) = string(convert(Int, x))
 _define_path(x::String; kwargs...) = x
+
+
+"""
+"""
+_path_sample(nsample::Int, rng::Missing; kwargs...) = _path_sample(nsample; kwargs...)
+
+function _path_sample(nsample::Int, rng::AbstractArray{Int}; kwargs...)
+    return join([
+        _path_sample(nsample; kwargs...),
+        lpad(rng[end], length(string(nsample)), "0"),
+    ], "-")
+end
+
+function _path_sample(nsample::Int; maxsample=50, kwargs...)
+    return "n" * _define_path(nsample; maxchar=get_order(maxsample)+1)
+end
+
+function _path_sample(x::Cascade; nsample=missing, rng=missing, kwargs...)
+    nsample = coalesce(nsample, length(x))
+    return _path_sample(nsample, rng; kwargs...)
+end
 
 
 """
@@ -600,10 +648,13 @@ function _define_text(cascade, fun::Function, args...; kwargs...)
 
     # Round before `get_order` to ignore really small numbers.
     # !!!! Could definitely improve this.
-    digits = max(abs(minimum(get_order.(round.(v; digits=6)))) + 1,2)
+    digits = max(abs(minimum(get_order.(round.(v; digits=4)))) + 1,2)
 
     str = _define_text.(v; digits=digits)
     [str[ii] = str[ii][2:end] for ii in [1,size(str,1)]]
+    
+    iszero = .!isnothing.(match.(r"[+-]0[.]0+$", str))
+    str[iszero] .= replace.(str[iszero], r"[+-]"=>"+/-")
 
     return str
 end
@@ -611,7 +662,7 @@ end
 
 function _define_text(cascade, ::Type{YAxis}; scale=0.9, kwargs...)
     v = collect_ticks(cascade; kwargs...)
-    digits = abs(minimum(get_order.(v)))
+    digits = max(abs(minimum(get_order.(v))),1)
     return _define_text.(v; digits=digits, sgn=false)
 end
 
@@ -647,11 +698,26 @@ This method formats a title to describe, where applicable:
 3. The distribution function (normal or uniform) used to create samples
     (if more than one sample).
 """
-function _define_title(cascade::Cascade{Data}; nsample,
+function _define_title(str::Vector{String};
     titlescale = 1.1,
     titleleading = 1.2,
     kwargs...,
 )
+    lab = _define_from(Label{Vector{String}}, str;
+        scale=titlescale,
+        leading=titleleading,
+    )
+
+    lab.position = Luxor.Point(
+        WIDTH/2,
+        -(height(lab) * ((length(str)-1)/length(str)) + SEP),
+    )
+
+    return lab
+end
+
+
+function _define_title(cascade::Cascade{Data}; nsample, kwargs...)
     # Select which rows of the title to show:
     # (1) Always show the number of samples,
     # (2) Show correlation range if one is applied,
@@ -663,20 +729,27 @@ function _define_title(cascade::Cascade{Data}; nsample,
         _title_correlation( ; kwargs...),
         _title_distribution( ; kwargs...)
     ][idx]
+
     str = String.(str[.!isempty.(str)])
 
-    return Label( ; 
-        text = str,
-        scale = titlescale,
-        position = Luxor.Point(WIDTH/2, -TOP_BORDER),
-        halign = :center,
-        valign = :middle,
-        angle = 0,
-        leading = titleleading,
-    )
+    return _define_title(str; kwargs...)
 end
 
 
+function _define_title(
+    str::String;
+    metric,
+    kwargs...,
+)
+    return _define_title(uppercase.([
+        str,
+        "Optimized for $metric",
+        _title_sample( ; kwargs...),
+    ]))
+end
+
+
+""
 function _title_function(fun::Function, args...)
     return if fun==Statistics.quantile
         _title_quantile(args...)
@@ -731,4 +804,15 @@ function _title_correlation( ; interactivity=missing, kwargs...)
     else
         "CORRELATION COEFFICIENT: " * _title_uniform(interactivity; abs=true)
     end
+end
+
+
+"Format string to print number of samples for a plot title."
+function _title_sample( ; nsample, rng=missing, kwargs...)
+    return string(
+        ismissing(rng) ? "" : lpad(rng[end], length(string(nsample)), " ")*"/",
+        nsample,
+        " SAMPLE",
+        (nsample==1 ? "" : "S"),
+    )
 end
