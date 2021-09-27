@@ -307,6 +307,25 @@ end
 
 ## Define Handle
 
+function _define_from(::Type{Handle}, cascade::Cascade{Violin};
+    scale = 0.8,
+    colorcycle,
+    kwargs...,
+)
+    N = length(cascade)
+    # if colorcycle
+        str = "$N SAMPLE" * (N>1 ? "S" : "")
+        shape = Box( ; 
+            position = Luxor.Point.((0,1),0),
+            color = Coloring(_define_colorant("black"), cascade.start.shape.color.alpha),
+            style = :fill,
+        )
+        label = _define_from(Label, uppercase(str); halign=:left, scale=scale)
+    # end
+    return [set_position!(Handle(shape, label); scale=scale, kwargs...)]
+end
+
+
 function _define_from(::Type{Handle}, cascade::Cascade{T}, str::String;
     scale = 0.8,
     kwargs...,
@@ -336,7 +355,7 @@ function _define_from(::Type{Handle}, cascade; colorcycle, kwargs...)
     return if colorcycle
         [_define_from(Handle, cascade, "SAMPLE", "black"; idx=1, kwargs...)]
     else
-        [_define_from(Handle, cascade, str, hue; idx=idx, kwargs...)
+        [_define_from(Handle, cascade, str, hue; idx=idx, colorcycle=colorcycle, kwargs...)
             for (idx, str, hue) in zip(1:2, ["GAIN","LOSS"], [HEX_GAIN,HEX_LOSS])]
     end
 end
