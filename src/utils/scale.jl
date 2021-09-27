@@ -10,8 +10,12 @@ function scale_for(cascade, ::Type{Violin}; kwargs...)
 
     xl, xr = scale_x(vkde; kwargs...)
     y = scale_y(vkde; vlims...)
-
-    return vectorize(Luxor.Point.(hcat(xl,xr), hcat(y,y)))
+    
+    # Ensure first point is also last point so the polygon will be closed.
+    return vectorize(Luxor.Point.(
+        hcat(xl,reverse(xr; dims=2)),
+        hcat(y,reverse(y; dims=2))),
+    )
 end
 
 
@@ -75,7 +79,7 @@ function scale_x(lst::AbstractArray{T}; kwargs...) where T <: KernelDensity.Univ
     v = matrix(getfield.(lst,:density))
 
     ROW, COL = size(v)
-    xmid = scale_x( ; nrow=ROW, kwargs..., ncol=COL)
+    xmid = scale_x( ; nrow=ROW, kwargs..., ncol=COL, subdivide=false)
 
     w = width(ROW)
     vmax = maximum(v; dims=2)
@@ -102,7 +106,6 @@ scale_x(cascade::T; kwargs...) where T <: Cascade = scale_x(collect_data(cascade
     scale_y(data::Data)
 """
 function scale_y(v::AbstractArray; vmin, vmax, vscale, kwargs...)
-    # vmin, vmax, vscale = vlim(v; kwargs...)
     return -vscale * (max.(v,vmin) .- vmax)
 end
 
@@ -114,7 +117,6 @@ function scale_y(cascade::Cascade{Data}; kwargs...)
     vlims = vlim(cascade; kwargs...)
     return scale_y(collect_value(cascade); vlims..., kwargs...)
 end
-# scale_y(data::Vector{Data}; kwargs...) = scale_y(get_value(data); vlim(data)...)
 
 
 """
@@ -148,7 +150,10 @@ function collect_ticks(cascade::Cascade{Data}; vmin=missing, vmax=missing, kwarg
         major = _major_order(cascade)
         minor = _minor_order(cascade)
         
-        vsum = Statistics.cumsum(collect_value(cascade); dims=1)[1:end-1,:]
+        vsum = cumulative_v(cascade; shift= 0.0, kwargs...)[1:end-1,:]
+        # CUT IF NOT SUMMING FOR VIOLIN?
+        # vkde = getfield.(calculate(v2, KernelDensity.kde),:x)
+        # vsum = hcat(first.(vkde), last.(vkde))
         vsum = round.(vsum; digits=-minor)
 
         if ismissing(vmin)
