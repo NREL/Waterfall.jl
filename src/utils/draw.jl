@@ -38,10 +38,16 @@ end
 
 # Draw some type values.
 draw(x::Cascade{T}) where T<:Geometry = draw(collect_data(x))
+draw(x::Cascade{Violin}) = draw(x.steps)
 draw(x::T) where T<:Geometry = draw(x.shape)
 
 # Draw all Type values
-draw(x::T; kwargs...) where T<:Plot = _draw(x)
+function draw(x::T; disclaimer=true, kwargs...) where T<:Plot
+    _draw(x)
+    disclaimer && _draw_disclaimer()
+    return nothing
+end
+
 draw(x::T) where T<:Axis = _draw(x)
 draw(x::Annotation) = _draw(x)
 draw(x::Handle) = _draw(x)
@@ -166,3 +172,21 @@ top_border(plot::Plot) = -plot.title.position[2]
 """
 """
 maxlength(lab::Vector{T}) where T<:Label = maximum(length.(lab))
+
+
+function _draw_disclaimer()
+    pt = Luxor.Point(WIDTH/2, HEIGHT-SEP)
+    lab = _define_from(Label{String}, "demonstration purposes only", pt;
+        scale=1.2,
+        valign=:bottom,
+    )
+
+    b = Box(
+        Tuple(Luxor.Point.([-1,1]*width(lab)/2, [-1,0]*18)) .+ pt,
+        Coloring(_define_colorant("white"), 0.25),
+        :fill,
+    )
+    draw([b,lab])
+
+    return nothing
+end

@@ -8,7 +8,6 @@ end
 
 
 function set_geometry(cascade, ::Type{Vertical}, args...; kwargs...)
-    # println(kwargs)
     return _set_geometry(cascade, Vertical, Box, Blending, args...;
         style=:fill,
         subdivide=true,
@@ -26,11 +25,11 @@ function set_geometry(cascade, ::Type{Horizontal}, args...;
 )
     # !!!! want to show gradient if there's only one cascade element. Is this working??
     # usegradient = coalesce(usegradient, length(cascade)==1)
-
     nsample = coalesce(nsample, length(cascade))
 
     return _set_geometry(cascade, Horizontal, Box, usegradient ? Blending : Coloring, args...;
         alpha=nsample,
+        nsample=nsample,
         style=:fill,
         subdivide=false,
         space=true,
@@ -48,6 +47,7 @@ function set_geometry(cascade, ::Type{Parallel}, args...;
         quantile = convert(Float64, slope),
         # alpha = length(cascade),
         alpha = nsample,
+        nsample = nsample,
         factor = 0.5,
         style = :stroke,
         subdivide = false,

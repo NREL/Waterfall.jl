@@ -115,7 +115,7 @@ function read_from(::Type{Plot{T}}, directory::String;
     ylabel_str, units_str = values(df[df[:,ylabel].==options[ylabel], [ylabel,units]][1,:])
     metric_str = df[1,:Metric]
     
-    cascade.stop.label = "Anticipated " * ylabel_str
+    cascade.stop.label = "Projected " * ylabel_str
     
     plot = define_from(Plot{T}, copy(cascade);
         ylabel = "$ylabel_str ($units_str)",

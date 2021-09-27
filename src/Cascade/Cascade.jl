@@ -61,15 +61,6 @@ function collect_permutation(x::T; kwargs...) where T<:Cascade
 end
 
 
-
-# function collect_ticks(cascade; kwargs...)
-#     vmin, vmax, vscale = vlim(cascade; kwargs...)
-#     # !!!! Problem if minimum order is zero.
-#     return collect(vmin:max(1, minimum(get_order.([vmin,vmax]))):vmax)
-#     # return collect(vmin:minimum(get_order.([vmin,vmax])):vmax)
-# end
-
-
 """
     collect_value(cascade::Cascade)
 This method returns a matrix of values stored in cascade, with `cascdade.start` in the first

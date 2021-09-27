@@ -6,7 +6,7 @@ value = :Value
 sample = :Sample
 label = :Category
 sublabel = :Amount
-kwargs = (value=value, sample=sample, label=label, sublabel=sublabel, colorcycle=colorcycle)
+kwargs = (value=value, sample=sample, label=label, sublabel=sublabel)
 
 TOP_BORDER=48+SEP
 
@@ -18,7 +18,6 @@ subdirs = subdirs[.&(isnothing.(match.(r"(.*[.].*)", subdirs)), isnothing.(match
 
 cascades = Dict()
 plots = Dict()
-
 
 # THIS PLOT IS WILD!!
 for subdir in subdirs[[3]]
@@ -35,23 +34,21 @@ for subdir in subdirs[[3]]
         )
         global vlims = vlim(cascade; kwargs...)
 
-        # for T in [Horizontal, Vertical, Parallel, Violin]
-        for T in [Horizontal]
+        for T in [Horizontal, Vertical, Parallel, Violin]
             println("\n$(string(T))")
-            
+
             rngs = Any[missing]
-            T==Horizontal && append!(rngs, UnitRange.(1, 1:length(cascade)))
-
+            T!==Violin && append!(rngs, UnitRange.(1, 1:length(cascade)))
             for rng in rngs
-
+                
                 for colorcycle in [true,false]
+                    push!(cascades, cascade.permutation=>copy(cascade))
 
-                    global cascades[parse.(Int, split(splitpath(subdir)[end],""))...] = copy(cascade)
-                    
                     global plot = read_from(Plot{T}, subdir;
                         legend = (Statistics.quantile, 0.5),
                         options = options,
                         rng = rng,
+                        colorcycle = colorcycle,
                         vlims...,
                         kwargs...,
                     )
@@ -62,9 +59,9 @@ for subdir in subdirs[[3]]
                         Luxor.setline(2.0)
                         Luxor.setmatrix([1 0 0 1 left_border(plot) top_border(plot)])
 
-                        draw(plot)
-                        println("Saving to: " * relpath(plot.path))
+                        draw(plot; disclaimer=true)
 
+                        println("Saving to: " * relpath(plot.path))
                     end width(plot) height(plot) plot.path
                 end
             end

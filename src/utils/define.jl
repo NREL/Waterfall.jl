@@ -368,12 +368,15 @@ function _define_from(::Type{Annotation}, cascade::Cascade{Data}, Geometry::Data
     scale = 0.8,
     kwargs...,
 )
-    # !!!! Maybe better way to align violin plot position?
-    valign = Geometry==Violin ? :top : :bottom
-    return Annotation(
-        label = _define_label(cascade, Geometry, args...; scale=scale, valign=valign, kwargs...),
-        cascade = set_geometry(cascade, Horizontal, args...; alpha=1.0, style=:stroke, kwargs...),
-    )
+
+println(length(cascade))
+# !!!! Maybe better way to align violin plot position?
+valign = Geometry==Violin ? :top : :bottom
+
+return Annotation( ;
+    label = _define_label(cascade, Geometry, args...; scale=scale, valign=valign, kwargs...),
+    cascade = set_geometry(update_stop!(copy(calculate(cascade, args...))), Horizontal, args...; alpha=1.0, style=:stroke, kwargs...),
+)
 end
 
 
@@ -710,7 +713,7 @@ end
 function _define_currency(lst::Vector{Float64}; kwargs...)
     minor = _minor_order(lst)
     str = _define_currency.(lst; minor=minor)
-    [str[ii] = "+ " * str[ii] for ii in 2:length(str)-1]
+    [str[ii] = "+" * str[ii] for ii in 2:length(str)-1]
     return str
 end
 

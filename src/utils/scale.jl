@@ -19,7 +19,7 @@ function scale_for(cascade, ::Type{Violin}; kwargs...)
 end
 
 
-function scale_for(cascade, ::Type{T}; kwargs...) where T<:Geometry
+function scale_for(cascade, ::Type{T}; nsample, kwargs...) where T<:Geometry
     v1 = cumulative_v(cascade; shift=-1.0, kwargs...)
     v2 = cumulative_v(cascade; shift= 0.0, kwargs...)
     
@@ -28,17 +28,25 @@ function scale_for(cascade, ::Type{T}; kwargs...) where T<:Geometry
     y1 = scale_y(v1; vlims...)
     y2 = scale_y(v2; vlims...)
 
-    x1, x2 = scale_x(cascade; kwargs...)
+    x1, x2 = scale_x(cascade; kwargs..., ncol=nsample)
 
-    pos = vectorize(Luxor.Point.(x1,y1), Luxor.Point.(x2,y2))
+    pos = vectorize(
+        Luxor.Point.(x1[:, 1:length(cascade)],y1),
+        Luxor.Point.(x2[:, 1:length(cascade)],y2),
+    )
     return all(length.(pos).==1) ? (pos = getindex.(pos,1)) : pos
-    return pos
 end
 
 
-function scale_for(cascade, ::Type{T}, fun::Function, args...; kwargs...) where T<:Geometry
+function scale_for(cascade, ::Type{T}, fun::Function; kwargs...) where T<:Geometry
     vlims = vlim(cascade; kwargs...)
-    return scale_for(calculate(copy(cascade), fun, args...), T; vlims...)
+    return scale_for(calculate(copy(cascade), fun), T; quantile=quantile, vlims..., kwargs...)
+end
+
+
+function scale_for(cascade, ::Type{T}, fun::Function, quantile::Float64; kwargs...) where T<:Geometry
+    vlims = vlim(cascade; kwargs...)
+    return scale_for(calculate(copy(cascade), fun, quantile), T; vlims..., kwargs...)
 end
 
 
@@ -56,7 +64,7 @@ function scale_x( ;
 )
     ROW, COL = nrow, (subdivide ? ncol : 1)
     extend = -sign(-0.5-shift) * (0.5*SEP * !space * !subdivide)
-    
+
     wstep = width(nrow)
     wsample = wstep/COL
 
