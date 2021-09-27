@@ -49,14 +49,14 @@ This function scales
 function scale_x( ;
     nrow,
     shift::Float64=-0.5,
-    ncol=1, # !!!! rename this kwarg because it's messing things up for violin plots (maybe? I don't know)
+    ncol=1,
     subdivide=true,
     space=true,
     kwargs...,
 )
     ROW, COL = nrow, (subdivide ? ncol : 1)
     extend = -sign(-0.5-shift) * (0.5*SEP * !space * !subdivide)
-
+    
     wstep = width(nrow)
     wsample = wstep/COL
 

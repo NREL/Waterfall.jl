@@ -125,24 +125,8 @@ function read_from(::Type{Plot{T}}, directory::String;
     )
 
     plot.title = _define_title(options[:Technology]; metric=metric_str, nsample=nsample, rng=rng)
-    plot.path = _define_path(plot, directory; ylabel=ylabel_str, nsample=nsample, rng=rng)
-
-    # Define and make a path.
-    # path = joinpath(
-    #     splitpath(directory)[1:end-1]...,
-    #     lowercase(replace(options[ylabel], r" "=>"_")),
-    # )
-    # # !isdir(path) && mkpath(path)
-
-    # plot.path = joinpath(
-    #     path,
-    #     lowercase(join([
-    #         string(T),
-    #         join([string(x) for x in cascade.permutation],""),
-    #         "n" * string(nsample) * (!ismissing(rng) ? Printf.@sprintf("-%02.0f", rng[end]) : ""),
-    #     ], "_"),
-    # ) * ".png")
-
+    plot.path = _define_path(plot, directory; ylabel=ylabel_str, nsample=nsample, rng=rng, kwargs...)
+    
     return plot
 end
 

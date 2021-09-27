@@ -8,6 +8,7 @@ end
 
 
 function set_geometry(cascade, ::Type{Vertical}, args...; kwargs...)
+    # println(kwargs)
     return _set_geometry(cascade, Vertical, Box, Blending, args...;
         style=:fill,
         subdivide=true,

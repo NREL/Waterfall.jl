@@ -535,7 +535,8 @@ end
 
 
 function _define_path(plot::Plot{T}, directory::String;
-    ylabel, 
+    ylabel,
+    colorcycle,
     figdir="fig",
     ext=".png",
     kwargs...,
@@ -552,6 +553,7 @@ function _define_path(plot::Plot{T}, directory::String;
     file = lowercase(join([
         ylabel,
         string(T),
+        "colorcycle" * _define_path(colorcycle),
         _define_path(string.(plot.cascade.permutation)),
         _path_sample(plot.cascade; kwargs...),
     ], "_"))
