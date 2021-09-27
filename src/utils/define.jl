@@ -308,7 +308,7 @@ end
 ## Define Handle
 
 function _define_from(::Type{Handle}, cascade::Cascade{T}, str::String;
-    scale = 0.75,
+    scale = 0.8,
     kwargs...,
 ) where T <: Geometry
     shape = get_shape(cascade)
@@ -649,7 +649,7 @@ end
 
 function _define_text(cascade, fun::Function, args...; kwargs...)
     v = collect_value(cascade)
-    v = calculate(v, fun, args...)
+    v = update_stop!(calculate(v, fun, args...))
 
     digits = -_minor_order(cascade)
     digits==0 && (digits=1)
@@ -694,7 +694,7 @@ end
 
 function _define_currency(x::Float64; minor=missing)
     str = if x==0.0
-        "-"
+        " –"
     else
         major = coalesce(minor, get_order(x))
         dgts = get_order(x)-minor
@@ -720,7 +720,6 @@ function _get_suffix(x::Int)
     ii = in.(x,k)
     return any(ii) ? d[k[ii][1]] : ""
 end
-
 
 
 """
