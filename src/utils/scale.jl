@@ -13,8 +13,8 @@ function scale_for(cascade, ::Type{Violin}; kwargs...)
     
     # Ensure first point is also last point so the polygon will be closed.
     return vectorize(Luxor.Point.(
-        hcat(xl,reverse(xr; dims=2)),
-        hcat(y,reverse(y; dims=2))),
+        hcat(xl, reverse(xr; dims=2)),
+        hcat(y, reverse(y; dims=2))),
     )
 end
 

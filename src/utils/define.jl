@@ -92,7 +92,7 @@ function define_from(::Type{Plot{T}}, cascade::Cascade{Data};
         title = _define_title(cascade; nsample=nsample, kwargs...),
         path = _define_path(cascade, T; nsample=nsample, kwargs...),
         # Add other annotations to the legend.
-        legend = _push!(legd, cascade, Horizontal, legend; nsample=nsample, kwargs...),
+        legend = _push!(legd, cascade, T, legend; nsample=nsample, kwargs...),
     )
 end
 
@@ -368,9 +368,11 @@ function _define_from(::Type{Annotation}, cascade::Cascade{Data}, Geometry::Data
     scale = 0.8,
     kwargs...,
 )
+    # !!!! Maybe better way to align violin plot position?
+    valign = Geometry==Violin ? :top : :bottom
     return Annotation(
-        label = _define_label(cascade, Geometry, args...; scale=scale, kwargs...),
-        cascade = set_geometry(cascade, Geometry, args...; alpha=1.0, style=:stroke, kwargs...),
+        label = _define_label(cascade, Geometry, args...; scale=scale, valign=valign, kwargs...),
+        cascade = set_geometry(cascade, Horizontal, args...; alpha=1.0, style=:stroke, kwargs...),
     )
 end
 

@@ -38,10 +38,15 @@ function set_geometry(cascade, ::Type{Horizontal}, args...;
 end
 
 
-function set_geometry(cascade, ::Type{Parallel}, args...; slope::Bool=true, kwargs...)
+function set_geometry(cascade, ::Type{Parallel}, args...;
+    slope::Bool=true,
+    nsample,
+    kwargs...,
+)
     return _set_geometry(cascade, Parallel, Line, Coloring, args...;
         quantile = convert(Float64, slope),
-        alpha = length(cascade),
+        # alpha = length(cascade),
+        alpha = nsample,
         factor = 0.5,
         style = :stroke,
         subdivide = false,
