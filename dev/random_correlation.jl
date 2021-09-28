@@ -1,16 +1,17 @@
 using StatsPlots
 using IndexedTables
 
+# This demonstrates the PROCESS by plotting a correlation matrix I THINK.
 include(joinpath(WATERFALL_DIR,"src","includes.jl"))
 
 begin value=:Value; label=:Label; sample=:Sample end
 distribution=:normal
 fuzziness=(0.01,0.3)
 numsample=1000
-numcorrelated=2
+ncor=2
 kwargs = (label=label, distribution=distribution, fuzziness=fuzziness,
     numsample=numsample,
-    numcorrelated=numcorrelated,
+    ncor=ncor,
 )
 
 
@@ -24,7 +25,7 @@ dfw = DataFrames.unstack(DataFrames.select(df, [sample,label,value]), label, val
 steps = size(dfw,2)-1
 
 cols = propertynames(dfw)[2:end]
-vcorr = random_correlation(steps, numcorrelated)
+vcorr = random_correlation(steps, ncor)
 # @df iris corrplot(cols(1:4), grid = false)
 
 StatsPlots.gr(size=(800,800))
@@ -37,8 +38,6 @@ iis = unique([[ii for ii in collect(2:steps+1) .* iis if ii!==0]; steps+1])
     compact=true,
     label =["$i" for i=iis],
 )
-
-
 
 # using StatsPlots
 # using IndexedTables

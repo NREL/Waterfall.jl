@@ -6,38 +6,61 @@ import Base
 import CSV
 import Printf
 
+import Combinatorics
 import Statistics
+import StatsBase
 import Random
 import Distributions
 import KernelDensity
+import SparseArrays
 
 import LinearAlgebra, LinearAlgebra.I
 
-abstract type Sampling end
-abstract type Geometry <: Sampling end
+abstract type WaterfallType end
 
+include(joinpath(WATERFALL_DIR,"src","Figure","Color","Coloring.jl"))
+include(joinpath(WATERFALL_DIR,"src","Figure","Color","Blending.jl"))
+
+abstract type Shape <: WaterfallType end
+include(joinpath(WATERFALL_DIR,"src","Figure","Shape","Box.jl"))
+include(joinpath(WATERFALL_DIR,"src","Figure","Shape","Line.jl"))
+include(joinpath(WATERFALL_DIR,"src","Figure","Shape","Point.jl"))
+include(joinpath(WATERFALL_DIR,"src","Figure","Shape","Poly.jl"))
+
+include(joinpath(WATERFALL_DIR,"src","Figure","Text","Label.jl"))
+
+abstract type Sampling <:WaterfallType end
+abstract type Geometry <: Sampling end
 include(joinpath(WATERFALL_DIR,"src","Cascade","Data.jl"))
 include(joinpath(WATERFALL_DIR,"src","Cascade","Cascade.jl"))
-include(joinpath(WATERFALL_DIR,"src","Cascade","Horizontal.jl"))
-include(joinpath(WATERFALL_DIR,"src","Cascade","Parallel.jl"))
-include(joinpath(WATERFALL_DIR,"src","Cascade","Vertical.jl"))
-include(joinpath(WATERFALL_DIR,"src","Cascade","Violin.jl"))
+include(joinpath(WATERFALL_DIR,"src","Cascade","Geometry","Horizontal.jl"))
+include(joinpath(WATERFALL_DIR,"src","Cascade","Geometry","Parallel.jl"))
+include(joinpath(WATERFALL_DIR,"src","Cascade","Geometry","Vertical.jl"))
+include(joinpath(WATERFALL_DIR,"src","Cascade","Geometry","Violin.jl"))
 
-include(joinpath(WATERFALL_DIR,"src","Figure","Coloring.jl"))
-include(joinpath(WATERFALL_DIR,"src","Figure","Blending.jl"))
+include(joinpath(WATERFALL_DIR,"src","Figure","Shape","Arrow.jl"))
+include(joinpath(WATERFALL_DIR,"src","Figure","Shape","Box.jl"))
+include(joinpath(WATERFALL_DIR,"src","Figure","Shape","Line.jl"))
+include(joinpath(WATERFALL_DIR,"src","Figure","Shape","Point.jl"))
+include(joinpath(WATERFALL_DIR,"src","Figure","Shape","Poly.jl"))
 
-include(joinpath(WATERFALL_DIR,"src","Figure","Attributes.jl"))
-include(joinpath(WATERFALL_DIR,"src","Figure","Axis.jl"))
+abstract type Axis <: WaterfallType end
+include(joinpath(WATERFALL_DIR,"src","Figure","XAxis.jl"))
+include(joinpath(WATERFALL_DIR,"src","Figure","YAxis.jl"))
+include(joinpath(WATERFALL_DIR,"src","Figure","Annotation.jl"))
+include(joinpath(WATERFALL_DIR,"src","Figure","Handle.jl"))
 include(joinpath(WATERFALL_DIR,"src","Figure","Legend.jl"))
 include(joinpath(WATERFALL_DIR,"src","Figure","Plot.jl"))
-include(joinpath(WATERFALL_DIR,"src","Figure","Annotation.jl"))
 
 include(joinpath(WATERFALL_DIR,"src","definitions.jl"))
 include(joinpath(WATERFALL_DIR,"src","options.jl"))
 
+include(joinpath(WATERFALL_DIR,"src","utils","attributes.jl"))
 include(joinpath(WATERFALL_DIR,"src","utils","io.jl"))
 include(joinpath(WATERFALL_DIR,"src","utils","calc.jl"))
 include(joinpath(WATERFALL_DIR,"src","utils","draw.jl"))
 include(joinpath(WATERFALL_DIR,"src","utils","random.jl"))
 include(joinpath(WATERFALL_DIR,"src","utils","scale.jl"))
 include(joinpath(WATERFALL_DIR,"src","utils","utils.jl"))
+
+include(joinpath(WATERFALL_DIR,"src","utils","define.jl"))

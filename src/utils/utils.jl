@@ -1,20 +1,159 @@
+import Base
+
+"""
+"""
+get_order(x::T) where T<:Real = parse(Int, match(r"e(.*)", Printf.@sprintf("%e", x))[1])
+
+
+_major_order(x::AbstractArray) = maximum(get_order.(dropzero(x)))
+_major_order(x::Cascade{Data}) = _major_order(get_value(x.steps))
+
+_minor_order(x::AbstractArray) = minimum(get_order.(dropzero(x)))
+_minor_order(x::Cascade{Data}) = _minor_order(get_value(x.steps))
+
+"""
+    matrix(mat; )
+
+```jldoctest
+julia> matrix(1:3)
+3×1 Array{Int64,2}:
+ 1
+ 2
+ 3
+```
+"""
+function matrix(lst::Vector{T}) where T<:AbstractMatrix
+    !isvector(first(lst)) && error("Error in concatenating the list")
+
+    # If the input is a list of *COLUMN* matrices,
+    findmin(size(first(lst)))[2] == 1 && (lst = LinearAlgebra.adjoint.(lst))
+
+    return _matrix(lst)
+end
+
+matrix(lst) = lst
+matrix(lst::Vector{T}) where T<:Union{Vector,Real} = _matrix(lst)
+matrix(lst::Matrix{T}) where T<:Union{Vector,Real} = isvector(lst) && _matrix(lst)
+
+matrix(T::UnionAll, N; value=0) = T(fill(value, N, N))
+matrix(T::LinearAlgebra.UniformScaling, N) = T(N)*1.0
+
+_matrix(lst) = convert(Matrix, cat(lst...; dims=2)')
+
+
+"""
+    vectorize(x::Any)
+This method returns a list of vectors.
+
+```jldoctest
+julia> mat =  [[1,4]  [2,5]  [3,6]]
+2×3 Array{Int64,2}:
+ 1  2  3
+ 4  5  6
+
+julia> vectorize(mat)
+2-element Array{Array{Int64,1},1}:
+ [1, 2, 3]
+ [4, 5, 6]
+```
+"""
+vectorize(x::Vararg{Any}) = vectorize(Tuple.(hcat.(x...)))
 vectorize(x::Matrix) = collect.(collect(eachrow(x)))
-vectorize(mat...) = vectorize(Tuple.(hcat.(mat...)))
-
-get_x(x::KernelDensity.UnivariateKDE) = x.x
-get_x(args...) = _get(get_x, args...)
-
-get_density(x::KernelDensity.UnivariateKDE) = x.density
-get_density(args...) = _get(get_density, args...)
+vectorize(x::Vector) = x
+vectorize(x::Any) = [x;]
+vectorize(x::Poly) = x
 
 
-Base.sign(data::T) where T <: Data = Integer.(sign.(get_value(data)))
+"These methods extend `Base.sign` to `Waterfall` types."
+Base.sign(data::T) where T <: Data = sign.(get_value(data))
+Base.sign(cascade::Cascade{Data}) = sign.(collect_data(cascade))
 
 
-Base.length(x::T) where T <: Geometry = length(x.sign)
+"These methods extend `Base.length` to `Waterfall` types."
+Base.length(x::Data) = length(x.order)
+Base.length(x::T) where T <: Geometry = x.nsample
 Base.length(x::T) where T <: Cascade = length(x.start)
-Base.length(x::T) where T <: Axis = length(x.ticks)
-Base.length(x::Plot{T}) where T<:Geometry = length(x.cascade)
+Base.length(x::T) where T <: Plot = length(x.cascade)
+Base.length(x::T) where T <: Shape = x.position
+
+Base.length(lab::Label{Vector{String}}) = length(getfield(lab,:text))
+Base.length(lab::Label{String}) = 1
+Base.length(x::Handle) = 1
+Base.length(x::Annotation) = 1
+Base.length(x::Coloring) = 1
+Base.length(x::Blending) = 1
+# Base.length(x::T) where T <: Axis = length(x.ticks)
+
+
+"These methods extend `Base.value` to `Waterfall` Types"
+Base.values(x::Data) = _values(x)
+Base.values(x::Cascade) = _values(x)
+Base.values(x::Axis) = _values(x)
+Base.values(x::Plot) = _values(x)
+Base.values(x::Coloring) = _values(x)
+Base.values(x::Blending) = _values(x)
+Base.values(x::Handle) = _values(x)
+Base.values(x::Annotation) = _values(x)
+_values(x::T) where T <: Any = Tuple([getproperty(x, f) for f in fieldnames(T)])
+
+
+"These methods extend `Base.copy` to `Waterfall` and `Luxor` Types"
+Base.copy(x::Symbol) = x
+Base.copy(x::Axis) = _copy(x)
+Base.copy(x::Data) = _copy(x)
+Base.copy(x::Vector{Data}) = _copy.(x)
+
+Base.copy(x::Luxor.Point) = _copy(x)
+Base.copy(x::Tuple{Luxor.Point,Luxor.Point}) = _copy.(x)
+
+Base.copy(x::Luxor.RGB) = _copy(x)
+Base.copy(x::Vector{Luxor.RGB}) = _copy.(x)
+Base.copy(x::Coloring) = _copy(x)
+Base.copy(x::Blending) = _copy(x)
+
+Base.copy(x::T) where T<:Shape = T(copy.(_values(x))...)
+Base.copy(x::Cascade) = Cascade(copy.(_values(x))...)
+Base.copy(x::Plot) = Plot(copy.(_values(x))...)
+
+_copy(x::T) where T <: Any = T(values(x)...)
+
+
+"""
+    Base.minimum(pos::Vector{Luxor.Point}; kwargs...)
+    Base.minimum(pos::Vector{Tuple}; kwargs...)
+These methods extend `Base.minimum` to find the minimum `x` or `y` value of a list of points
+or list of pairs of points, with `dims` indicating whether to return the `x` (`dims=1`) or
+`y` (`dims=2`) element.
+
+# Keyword Arguments
+- `dims`
+"""
+Base.maximum(lst::Vector{T}; dims) where T<:Luxor.Point = maximum(getindex.(lst,dims))
+Base.maximum(lst::Vector{T}; kwargs...) where T<:Tuple = maximum(vcat(collect.(lst)...); kwargs...)
+
+
+"""
+    Base.maximum(pos::Vector{Luxor.Point}; kwargs...)
+    Base.maximum(pos::Vector{Tuple}; kwargs...)
+These methods extend `Base.maximum` to find the maximum `x` or `y` value of a list of points
+or list of pairs of points, with `dims` indicating whether to return the `x` (`dims=1`) or
+`y` (`dims=2`) element.
+
+# Keyword Arguments
+- `dims`
+"""
+Base.minimum(lst::Vector{T}; dims) where T<:Luxor.Point = minimum(getindex.(lst,dims))
+Base.minimum(lst::Vector{T}; kwargs...) where T<:Tuple = minimum(vcat(collect.(lst)...); kwargs...)
+
+
+"""
+This function finds the midpoint between the minimum and maximum values of the list of
+input points or pairs of points.
+
+# Keyword Arguments
+- `dims`
+"""
+mid(pos; kwargs...) = Statistics.mean([minimum(pos; kwargs...), maximum(pos; kwargs...)])
 
 
 "This function returns all permutations of the elements in the input vectors or vector of vectors"
@@ -33,77 +172,82 @@ end
 
 
 """
-This function returns a filename
+    Base.convert(::Type{SparseArrays.SparseMatrixCSC}, order::AbstractVector{Int})
+This method converts an `Nx1` list of indices into a sparce matrix ``S`` that,
+if multiplied by a matrix `A`:
+- ``S \\cdot A`` will reorder the **rows** of ``A`` to `order`
+- ``A \\cdot S`` will reorder the **columns** of ``A`` to `order`
+
+```jldoctest
+julia> order = [1,3,2];
+
+julia> sparse_matrix = convert(SparseArrays.SparseMatrixCSC, order)
+3×3 SparseArrays.SparseMatrixCSC{Int64,Int64} with 3 stored entries:
+  [1, 1]  =  1
+  [3, 2]  =  1
+  [2, 3]  =  1
+
+julia> Matrix(sparse_matrix)
+  3×3 Array{Int64,2}:
+   1  0  0
+   0  0  1
+   0  1  0
+
+julia> sparse_matrix * collect(1:length(order)) == order
+   true
+```
+
+
+    convert(::Type{DataFrames.DataFrame}, cascade::Cascade)
+This method converts `cascade` into a "sample-by-step"-dimension DataFrame with the step
+labels as property property names.
+
+
+    Base.convert(::Type{Matrix}, lst::AbstractVector; dims=2)
 """
-function filename(p::Plot{T}, stat; opacity="", distribution=:normal, frame=missing,
-) where T <: Geometry
-    dir = joinpath(FIG_DIR,lowercase(string(T)))
-    fig = Printf.@sprintf("%s_n%02.0f_%s", T, length(p), distribution)
-
-    !isempty(stat) && (fig = Printf.@sprintf("%s_%s", fig, _write_stat(stat)))
-
-    if !ismissing(frame)
-        dir = joinpath(dir, fig)
-        fig = Printf.@sprintf("frame%02.0f", frame)
-    end
-
-    !isdir(dir) && mkpath(dir)
-    return joinpath(dir, lowercase(fig * ".png"))
+function Base.convert(::Type{SparseArrays.SparseMatrixCSC}, order::T) where T <: AbstractVector{Int}
+    N = length(order)
+    return SparseArrays.sparse(1:N, order, fill(1,N))
 end
 
 
-function filename(p::Plot{T}, stat::AbstractArray; kwargs...) where T <: Geometry
-    stat = copy(stat)
-    iitup = typeof.(stat) .<: Tuple
-    stat[iitup] .= sort(stat[iitup])
-    return filename(p, string(string.(_write_stat.(stat),"_")...)[1:end-1]; kwargs...)
+function Base.convert(::Type{DataFrames.DataFrame}, x::Cascade)
+    data = collect_data(x)
+    sublabel = getindex.(match.(r"(\S*)", get_sublabel.(data)),1)
+    label = get_label.(data)
+    [label[ii] = "$(label[ii]) ($(sublabel[ii]))" for ii in [1,length(data)]]
+
+    value = get_value(data)
+
+    return DataFrames.DataFrame(value', label; makeunique=true)
 end
 
 
-function filename(p::Plot{T}; opacity="", distribution=:normal, frame=missing, mean
-) where T <: Geometry
-
-    dir = joinpath(FIG_DIR,lowercase(string(T)))
-    fig = Printf.@sprintf("%s_n%02.0f_%s_mean%g", T, length(p), distribution, mean)
-
-    if !ismissing(frame)
-        dir = joinpath(dir, fig)
-        fig = Printf.@sprintf("frame%02.0f", frame)
-    end
-
-    !isdir(dir) && mkpath(dir)
-    return joinpath(dir, lowercase(fig * ".png"))
-end
+"""
+    isinteger(x::String)
+This method returns true if `x` can be parsed as an integer.
+"""
+Base.isinteger(x::String) = getindex(match(r"(\d*)", x),1)==x
 
 
-""
-_write_stat(x::String) = x
-_write_stat(x::Tuple) = x[1] * Printf.@sprintf("%03.0f", x[2]*100)
+"""
+    tryinteger(x::String)
+This method parses `x` as an `Int64` if possible, and otherwise returns `x`.
 
-_label_stat(x::String) = x
-_label_stat(x::Tuple) = ordinal(x[2])
-
-function ordinal(x::Float64)
-    suffix = " %ile"
-    str = Printf.@sprintf("%.0f", x*100)
-    return if str[end]=='1'; str * "st" * suffix
-    elseif str[end]=='2';    str * "nd" * suffix
-    else;                    str * "th" * suffix
-    end
-end
+    tryinteger(lst::Vector{String})
+This methods `lst` as `Vector{Int64}` if this is possible for **all** array elements.
+"""
+tryinteger(x::String) = isinteger(x) ? parse(Int64,x) : x
+tryinteger(lst::AbstractArray) = all(isinteger.(lst)) ? parse.(Int64,lst) : lst
 
 
-
-
-
-
-
-
-
-
-
-function draw_highlight(p::Plot{Data}, stat; kwargs...)
-    phighlight = highlight(p, stat)
-    draw(phighlight; style=:stroke, opacity=1.0)
-
+"""
+    swapat!(lst::AbstractArray, a, b)
+This function swaps the values of `lst` at elements `a` and `b`.
+"""
+function swapat!(lst::AbstractArray, a::Int, b::Int)
+    tmp = lst[a]
+    lst[a] = lst[b]
+    lst[b] = tmp
+    return lst
 end
