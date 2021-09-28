@@ -6,7 +6,6 @@ function getindex!(cascade, rng)
 end
 
 
-
 """
     set(x::Coloring)
     set(x::Blending)
@@ -42,9 +41,9 @@ draw(x::Cascade{Violin}) = draw(x.steps)
 draw(x::T) where T<:Geometry = draw(x.shape)
 
 # Draw all Type values
-function draw(x::T; disclaimer=true, kwargs...) where T<:Plot
+function draw(x::T; kwargs...) where T<:Plot
     _draw(x)
-    disclaimer && _draw_disclaimer()
+    _disclaimer( ; kwargs...)
     return nothing
 end
 
@@ -101,7 +100,6 @@ function animate(x::T, N; kwargs...) where T<:Plot
 end
 
 function animate(x::Cascade{T}, N) where T<:Geometry
-    println("drawing cascade")
     data = collect_data(x)
     shapes = getindex.(getproperty.(data,:shape), Ref(1:N))
     draw(shapes)
@@ -128,45 +126,54 @@ end
 
 """
 """
-function width(lab::Label{String})
+function _extents(lab::Label{String}, idx)
     tmp = Luxor.get_fontsize()
     Luxor.fontsize(FONTSIZE * lab.scale)
-    wid = getindex(Luxor.textextents(lab.text), 3)
+    measurement = getindex(Luxor.textextents(lab.text), idx)
     Luxor.fontsize(tmp)
-    return ceil(wid)
+    return measurement
 end
+
+
+
+width(lab::Label{String}) = _extents(lab, 3)
 
 width(lab::Vector{Label{String}}) = maximum(width.(lab))
 
 width(ax::XAxis) = ax.frame.position[2][1]
 width(ax::YAxis) = abs(ax.label.position[1]) + height(ax.label)
 
-width(plot::Plot) = sum(width.(plot.axes)) + 2*SEP
+width(plot::Plot) = ceil(sum(width.(plot.axes)) + 2*SEP) |> Int
 
 
 """
 """
+
 function height(lab::Vector{T}) where T<:Label
     result = maxlength(lab) * FONTSIZE * lab[1].scale * lab[1].leading
-    return convert(Int, ceil(result))
+    # return convert(Int, ceil(result))
+    return result
 end
 
-function height(lab::T) where T<:Label
+function height(lab::Label{Vector{String}})
     result = length(lab) * FONTSIZE * lab.scale * lab.leading
-    return convert(Int, ceil(result))
+    return result
+    # return convert(Int, ceil(result))
 end
+
+height(lab::Label{String}) = _extents(lab, 4)
 
 height(ax::XAxis) = height(ax.ticklabels) + height(ax.ticksublabels)
 height(ax::YAxis) = ax.frame.position[1][2]
 
-height(plot::Plot) = sum(height.(plot.axes)) -plot.title.position[2] + 1.5*SEP
+height(plot::Plot) = ceil(sum(height.(plot.axes)) -plot.title.position[2] + 1.5*SEP) |> Int
 
 
 "Return the left border of the plot in pixels."
-left_border(plot::Plot) = width(plot.axes[2])+SEP
+left_border(plot::Plot) = ceil(width(plot.axes[2])+SEP) |> Int
 
 "Return the top border of the plot in pixels."
-top_border(plot::Plot) = -plot.title.position[2]
+top_border(plot::Plot) = -ceil(plot.title.position[2]) |> Int
 
 
 """
@@ -174,19 +181,49 @@ top_border(plot::Plot) = -plot.title.position[2]
 maxlength(lab::Vector{T}) where T<:Label = maximum(length.(lab))
 
 
-function _draw_disclaimer()
-    pt = Luxor.Point(WIDTH/2, HEIGHT-SEP)
-    lab = _define_from(Label{String}, "demonstration purposes only", pt;
-        scale=1.2,
-        valign=:bottom,
-    )
+function _disclaimer( ; disclaimer=missing, kwargs...)
+    if !ismissing(disclaimer)
+        border = SEP/2
+        pt = Luxor.Point(WIDTH/2, HEIGHT-SEP-FONTSIZE*scale)
 
-    b = Box(
-        Tuple(Luxor.Point.([-1,1]*width(lab)/2, [-1,0]*18)) .+ pt,
-        Coloring(_define_colorant("white"), 0.25),
-        :fill,
-    )
-    draw([b,lab])
+        lab = _define_from(Label{String}, disclaimer, pt;
+            scale=1.2,
+            valign=:bottom,
+        )
 
+        box = Box(
+            Tuple(Luxor.Point.(
+                [-1,1]*width(lab)/2 + [-1,1]*border,
+                [-1,0]*height(lab) .+ [-1,1]*border,
+            ) .+ pt),
+            Coloring(_define_colorant("white"), 0.5),
+            :fill,
+        )
+        draw([box,lab])
+    end
     return nothing
 end
+
+
+# function _draw_disclaimer()
+#     scale = 1.0
+#     border = 2
+#     alpha = 0.5
+
+#     center = Luxor.Point(WIDTH/2, HEIGHT-SEP-FONTSIZE*scale)
+#     lab = _define_from(Label{String}, "demonstration purposes only", center;
+#         scale=scale,
+#         valign=:bottom,
+#     )
+    
+#     shift = [-1; 1] * ([width(lab) height(lab)].+2*border)/2
+    
+#     box = Box(
+#         Tuple(Luxor.Point.(Tuple.(vectorize(shift))) .+ center),
+#         Coloring(_define_colorant("white"), 0.5),
+#         :fill,
+#     )
+#     draw([box,lab])
+
+#     return nothing
+# end

@@ -124,7 +124,7 @@ function read_from(::Type{Plot{T}}, directory::String;
         kwargs...,
     )
 
-    plot.title = _define_title(options[:Technology]; metric=metric_str, nsample=nsample, rng=rng)
+    plot.title = _define_title(options[:Technology]; ylabel=ylabel_str, metric=metric_str, nsample=nsample, rng=rng)
     plot.path = _define_path(plot, directory; ylabel=ylabel_str, nsample=nsample, rng=rng, kwargs...)
     
     return plot
@@ -164,13 +164,13 @@ function _read_pool(file::String;
     sublabel_value=missing,
     kwargs...,
 )
-    # df = read_from(DataFrames.DataFrame, file; options=options)
+    df = read_from(DataFrames.DataFrame, file; options=options)
     cols = DataFrames.Not(ismissing(sublabel) ? [Float64,label] : [Float64,label,sublabel])
     gdf = read_from(DataFrames.GroupedDataFrame, file, cols; kwargs...)
     val = get_names(first(gdf), Float64)
 
     df = DataFrames.combine(gdf, val .=> sum .=> val)
-
+    
     !ismissing(label_value) && (df[!,label] .= label_value)
     !ismissing(sublabel_value) && (df[!,sublabel] .= sublabel_value)
     return define_from(Data, df; label=label, sublabel=sublabel, kwargs...)

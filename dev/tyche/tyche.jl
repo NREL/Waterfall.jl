@@ -23,7 +23,8 @@ plots = Dict()
 for subdir in subdirs[[3]]
     println("\n$subdir")
     
-    for idx in ["Reduction in MJSP", "Reduction in Jet GHG"]
+    for idx in ["MJSP Reduction", "Jet GHG Reduction"][[2]]
+        println("\n\n$idx\n")
         options = Dict(:Index=>idx, :Technology=>"HEFA Camelina")
         
         # When creating an animation, we first need to read the complete cascade to calculate
@@ -36,9 +37,9 @@ for subdir in subdirs[[3]]
 
         for T in [Horizontal, Vertical, Parallel, Violin]
             println("\n$(string(T))")
-
-            rngs = Any[missing]
-            T!==Violin && append!(rngs, UnitRange.(1, 1:length(cascade)))
+            # rngs = Any[missing]
+            # T!==Violin && append!(rngs, UnitRange.(1, 1:length(cascade)))
+            rngs = [missing; UnitRange.(1, 1:length(cascade))]
             for rng in rngs
                 
                 for colorcycle in [true,false]
@@ -59,7 +60,7 @@ for subdir in subdirs[[3]]
                         Luxor.setline(2.0)
                         Luxor.setmatrix([1 0 0 1 left_border(plot) top_border(plot)])
 
-                        draw(plot; disclaimer=true)
+                        draw(plot; disclaimer="demonstration purposes only")
 
                         println("Saving to: " * relpath(plot.path))
                     end width(plot) height(plot) plot.path

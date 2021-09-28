@@ -35,7 +35,7 @@ nsample=5
 
 kwargs = (
     label=label,
-    sublabel=sublabel,
+    # sublabel=sublabel,
     distribution=distribution,
     fuzziness=fuzziness,
     interactivity=interactivity,

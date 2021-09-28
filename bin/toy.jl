@@ -82,4 +82,4 @@ Luxor.@png begin
 
     draw(plot)
     
-end WIDTH+LEFT_BORDER+RIGHT_BORDER HEIGHT+TOP_BORDER+BOTTOM_BORDER+padding(plot.axes[1]) "saf.png"
+end WIDTH+LEFT_BORDER+RIGHT_BORDER HEIGHT+TOP_BORDER+BOTTOM_BORDER+height(plot.axes[1]) "saf.png"

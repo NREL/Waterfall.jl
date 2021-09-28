@@ -115,6 +115,14 @@ end
 
 
 """
+"""
+function get_trend(cascade)
+    vmax = maximum.([cascade.start.value, -cascade.stop.value])
+    return sign(vmax[end]-vmax[1])
+end
+
+
+"""
     update_stop!(x::)
 This function updates `cascade.stop` or the last row of a matrix to equal the negative
 of the cumulative sum of all previous values.

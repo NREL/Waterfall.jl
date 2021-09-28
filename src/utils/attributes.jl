@@ -3,7 +3,7 @@
 Given a cascade and geometry, return a cascade with an updated type.
 """
 function set_geometry(cascade, ::Type{Violin}, args...; kwargs...)
-    return _set_geometry(cascade, Violin, Poly, Coloring, args...; style=:fill, kwargs...)
+    return _set_geometry(cascade, Violin, Poly, Coloring, args...; alpha=0.66, style=:fill, kwargs...)
 end
 
 
@@ -11,7 +11,7 @@ function set_geometry(cascade, ::Type{Vertical}, args...; kwargs...)
     return _set_geometry(cascade, Vertical, Box, Blending, args...;
         style=:fill,
         subdivide=true,
-        space=true, 
+        space=true,
         kwargs...,
     )
 end
@@ -106,10 +106,8 @@ centered at (x0,y0) and fits within the bounds of `(2*dx, 2*dy)`. The label is a
 middle/left at `(x0+dx+space, y0)`
 """
 function set_position!(handle::Handle;
-    # x0 = WIDTH-75,
-    # y0 = 3*SEP,
-    x0 = 4*SEP,
-    # y0 = ceil(FONTSIZE*1.33),
+    # location=:left,
+    trend,
     y0 = 3*SEP,
     dx = 1*SEP,
     dy = SEP,
@@ -117,6 +115,12 @@ function set_position!(handle::Handle;
     idx = 1,
     kwargs...,
 )
+    # Select x0 based on the overall plot trend.
+    x0 = if trend>1; 3*SEP
+    elseif trend<1;  WIDTH-110
+    end
+
+    # Shift y0 based on the number legend entries.
     y0 = y0 + (2*dy+space)*(idx-1)
     
     setproperty!(handle.shape, :position, (

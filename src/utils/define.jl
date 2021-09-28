@@ -80,10 +80,11 @@ function define_from(::Type{Plot{T}}, cascade::Cascade{Data};
     kwargs...,
 ) where T<:Geometry
     nsample = coalesce(nsample, length(cascade))
+    trend = get_trend(cascade)
     # path = coalesce(path, _define_path(cascade, T; nsample=nsample, kwargs...))
 
     cascade_geometry = set_geometry(cascade, T; nsample=nsample, kwargs...)
-    legd = _define_legend(cascade_geometry; nsample=nsample, kwargs...)
+    legd = _define_legend(cascade_geometry; nsample=nsample, trend=trend, kwargs...)
     
     return Plot( ;
         cascade = cascade_geometry,
@@ -92,7 +93,7 @@ function define_from(::Type{Plot{T}}, cascade::Cascade{Data};
         title = _define_title(cascade; nsample=nsample, kwargs...),
         path = _define_path(cascade, T; nsample=nsample, kwargs...),
         # Add other annotations to the legend.
-        legend = _push!(legd, cascade, T, legend; nsample=nsample, kwargs...),
+        legend = _push!(legd, cascade, T, legend; trend=trend, nsample=nsample, kwargs...),
     )
 end
 
@@ -103,12 +104,12 @@ function define_from(::Type{XAxis}, cascade::Cascade{Data}; kwargs...)
     
     ticklabels = _define_from(T, cascade, XAxis, :label;
         yshift = pad,
-        scale = 0.9,
+        scale = 0.85,
         kwargs...,
     )
     ticksublabels = _define_from(T, cascade, XAxis, :sublabel;
         yshift = height(ticklabels)+SEP,
-        scale = 0.8,
+        scale = 0.9,
         # currency = true,
         kwargs...,
     )
@@ -198,7 +199,7 @@ end
 
 
 function _define_from(::Type{Coloring}, sign, args...;
-    alpha = 0.8,
+    alpha = 0.66,
     kwargs...,
 )
     hue = define_from(Luxor.RGB, sign; kwargs...)
@@ -365,18 +366,24 @@ end
 
 function _define_from(::Type{Annotation}, cascade::Cascade{Data}, Geometry::DataType,
     args...;
-    scale = 0.8,
+    scale = 0.9,
+    vmin=missing,
+    vmax=missing,
+    vscale=missing,
     kwargs...,
 )
+    # !!!! Maybe better way to align violin plot position?
+    valign = Geometry==Violin ? :top : :bottom
+    if any(ismissing.([vmin,vmax,vscale]))
+        vlims = vlim(cascade; kwargs...)
+    end
+    c = update_stop!(copy(calculate(cascade, args...)))
 
-println(length(cascade))
-# !!!! Maybe better way to align violin plot position?
-valign = Geometry==Violin ? :top : :bottom
-
-return Annotation( ;
-    label = _define_label(cascade, Geometry, args...; scale=scale, valign=valign, kwargs...),
-    cascade = set_geometry(update_stop!(copy(calculate(cascade, args...))), Horizontal, args...; alpha=1.0, style=:stroke, kwargs...),
-)
+    return Annotation( ;
+        label = _define_label(cascade, Geometry, args...; scale=scale, valign=valign, kwargs...),
+        # println(round.(collect_value(c); digits=2))
+        cascade = set_geometry(c, Horizontal, args...; alpha=1.0, style=:stroke, vlims..., kwargs...),
+    )
 end
 
 
@@ -483,7 +490,10 @@ function _push!(
     kwargs...,
 ) where T<:Any
     a = _define_from(Annotation, cascade, Geometry, fun, args...; kwargs...)
-    h = _define_from(Handle, a.cascade, fun, args...; idx=length(legend)+1, kwargs...)
+    h = _define_from(Handle, a.cascade, fun, args...;
+        idx=length(legend)+1,
+        kwargs...,
+    )
     push!(legend, h => a)
     return legend
 end
@@ -810,12 +820,14 @@ end
 
 function _define_title(
     str::String;
+    ylabel,
     metric,
     kwargs...,
 )
     return _define_title(uppercase.([
         str,
-        "Optimized for $metric",
+        "$ylabel per investment",
+        "Goal: Maximize $metric",
         _title_sample( ; kwargs...),
     ]))
 end
