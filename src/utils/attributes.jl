@@ -116,8 +116,8 @@ function set_position!(handle::Handle;
     kwargs...,
 )
     # Select x0 based on the overall plot trend.
-    x0 = if trend>1; 3*SEP
-    elseif trend<1;  WIDTH-110
+    x0 = if trend>0; 3*SEP
+    else;            WIDTH-110
     end
 
     # Shift y0 based on the number legend entries.

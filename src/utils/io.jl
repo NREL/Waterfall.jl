@@ -81,8 +81,8 @@ function read_from(::Type{Cascade{Data}}, directory; kwargs...)
     files = readdir(directory)
     files = joinpath.(directory, files[.!isnothing.(match.(r"(value.*.csv)", files))])
     
-    start = _read_pool(first(files); label_value="state of technology", kwargs...)
-    stop = _read_pool(last(files); label_value="stop", kwargs...)
+    start = _read_pool(first(files), 1; kwargs...)
+    stop = _read_pool(last(files), 2; kwargs...)
     steps = _read_step(files, permutation; kwargs...)
     N = length(steps)
 
@@ -108,24 +108,21 @@ function read_from(::Type{Plot{T}}, directory::String;
     cascade = read_from(Cascade{Data}, directory; options=options, kwargs...)
     nsample = length(cascade)
 
-    !ismissing(rng) && getindex!(cascade, rng)
-
     # Read ylabel info.
     df = _read_values(directory, 1; kwargs...)
     ylabel_str, units_str = values(df[df[:,ylabel].==options[ylabel], [ylabel,units]][1,:])
     metric_str = df[1,:Metric]
     
-    cascade.stop.label = "Projected " * ylabel_str
-    
     plot = define_from(Plot{T}, copy(cascade);
         ylabel = "$ylabel_str ($units_str)",
-        nsample=nsample,
-        path=directory,
+        nsample = nsample,
+        dir = joinpath(splitpath(directory)[1:end-1]...),
+        subdir = ylabel_str,
         kwargs...,
     )
-
+    
     plot.title = _define_title(options[:Technology]; ylabel=ylabel_str, metric=metric_str, nsample=nsample, rng=rng)
-    plot.path = _define_path(plot, directory; ylabel=ylabel_str, nsample=nsample, rng=rng, kwargs...)
+    # plot.path = _define_path(plot, directory; ylabel=ylabel_str, nsample=nsample, rng=rng, kwargs...)
     
     return plot
 end
@@ -157,22 +154,25 @@ end
 """
     _read_pool(file::String; kwargs...)
 """
-function _read_pool(file::String;
+function _read_pool(file::String, idx::Int;
+    options,
     label,
     sublabel=missing,
-    label_value=missing,
-    sublabel_value=missing,
+    ylabel=:Index,
     kwargs...,
 )
     df = read_from(DataFrames.DataFrame, file; options=options)
     cols = DataFrames.Not(ismissing(sublabel) ? [Float64,label] : [Float64,label,sublabel])
-    gdf = read_from(DataFrames.GroupedDataFrame, file, cols; kwargs...)
+    gdf = DataFrames.groupby(df, get_names(df, cols))
     val = get_names(first(gdf), Float64)
 
     df = DataFrames.combine(gdf, val .=> sum .=> val)
-    
-    !ismissing(label_value) && (df[!,label] .= label_value)
-    !ismissing(sublabel_value) && (df[!,sublabel] .= sublabel_value)
+
+    if .&(:Category in [label,sublabel], !(:Category in propertynames(df)))
+        # df[!,:Category] .= df[1,:Amount]<1E-2 ? "State of Technology" : "Projected $(df[1,ylabel])"
+        df[!,:Category] .= idx==1 ? "State of Technology" : "Projected $(df[1,ylabel])"
+    end
+
     return define_from(Data, df; label=label, sublabel=sublabel, kwargs...)
 end
 

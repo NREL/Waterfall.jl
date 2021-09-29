@@ -14,7 +14,6 @@ function define_from(::Type{Cascade{Data}}, df::DataFrames.DataFrame;
     permute = true,
     kwargs...,
 )
-    # !!!! Make generic enough.
     rows = size(df,1)
     maxstep = min(rows-2,length(COLORCYCLE))
 
@@ -65,7 +64,7 @@ end
 function define_from(::Type{Vector{Data}}, df::DataFrames.DataFrame; kwargs...)
     gdf = fuzzify(df; kwargs...)
     data = [define_from(Data, sdf; kwargs...) for sdf in gdf]
-    
+
     # Sort "start" samples by magnitude. Ensure consistent ordering in all subsequent steps.
     iiorder = sortperm(get_value(data[1]))
     [set_order!(data[ii], iiorder) for ii in 1:length(data)]
@@ -75,25 +74,28 @@ end
 
 
 function define_from(::Type{Plot{T}}, cascade::Cascade{Data};
+    rng = missing,
     legend = missing,
     nsample = missing,
     kwargs...,
 ) where T<:Geometry
+    vlims = vlim(cascade; kwargs...)
     nsample = coalesce(nsample, length(cascade))
+    !ismissing(rng) && getindex!(cascade, rng)
     trend = get_trend(cascade)
     # path = coalesce(path, _define_path(cascade, T; nsample=nsample, kwargs...))
-
-    cascade_geometry = set_geometry(cascade, T; nsample=nsample, kwargs...)
-    legd = _define_legend(cascade_geometry; nsample=nsample, trend=trend, kwargs...)
+    
+    cascade_geometry = set_geometry(cascade, T; nsample=nsample, vlims..., kwargs...)
+    legd = _define_legend(cascade_geometry; nsample=nsample, trend=trend, vlims..., kwargs...)
     
     return Plot( ;
         cascade = cascade_geometry,
-        xaxis = define_from(XAxis, cascade; nsample=nsample, kwargs...),
-        yaxis = define_from(YAxis, cascade; nsample=nsample, kwargs...),
-        title = _define_title(cascade; nsample=nsample, kwargs...),
-        path = _define_path(cascade, T; nsample=nsample, kwargs...),
+        xaxis = define_from(XAxis, cascade; nsample=nsample, vlims..., kwargs...),
+        yaxis = define_from(YAxis, cascade; nsample=nsample, vlims..., kwargs...),
+        title = _define_title(cascade; nsample=nsample, vlims..., kwargs...),
+        path = _define_path(cascade, T; nsample=nsample, vlims..., kwargs...),
         # Add other annotations to the legend.
-        legend = _push!(legd, cascade, T, legend; trend=trend, nsample=nsample, kwargs...),
+        legend = _push!(legd, cascade, T, legend; trend=trend, nsample=nsample, vlims..., kwargs...),
     )
 end
 
@@ -367,22 +369,17 @@ end
 function _define_from(::Type{Annotation}, cascade::Cascade{Data}, Geometry::DataType,
     args...;
     scale = 0.9,
-    vmin=missing,
-    vmax=missing,
-    vscale=missing,
     kwargs...,
 )
     # !!!! Maybe better way to align violin plot position?
     valign = Geometry==Violin ? :top : :bottom
-    if any(ismissing.([vmin,vmax,vscale]))
-        vlims = vlim(cascade; kwargs...)
-    end
+
     c = update_stop!(copy(calculate(cascade, args...)))
 
     return Annotation( ;
         label = _define_label(cascade, Geometry, args...; scale=scale, valign=valign, kwargs...),
         # println(round.(collect_value(c); digits=2))
-        cascade = set_geometry(c, Horizontal, args...; alpha=1.0, style=:stroke, vlims..., kwargs...),
+        cascade = set_geometry(c, Horizontal, args...; alpha=1.0, style=:stroke, kwargs...),
     )
 end
 
@@ -515,63 +512,32 @@ _push!(legend, cascade, Geometry, args::Missing; kwargs...) = legend
 This method defines the path to which to write the file:
     Geometry/Geometry_n<nsample>_colorcycle<0/1>_corr<0/1>_<permutation>.png
 """
-function _define_path(x::Cascade, Geometry;
-    colorcycle,
-    ext = ".png",
-    figdir = "fig",
-    maxsample = 50,
-    kwargs...,
-)
-    separator = "_"
-    Geometry = lowercase(string(Geometry))
-
-    # Define the path name and create the directory if it doesn't already exist.
-    path = joinpath(WATERFALL_DIR, figdir, Geometry)
-
-    if !isdir(path)
-        @info("Creating directory: $path")
-        mkpath(path)
-    end
-
-    str = joinpath(path, join([
-        Geometry,
-        # "n" * _define_path(length(x); maxchar=get_order(maxsample)+1), # number of samples
-        _path_sample(x; kwargs...),
-        _define_path(get_label.(x.steps); kwargs...),                  # labels, in order
-        "corr"       * _define_path(x.iscorrelated),                   # is it correlated?
-        "colorcycle" * _define_path(colorcycle),                       # colorscheme?
-        ], separator,
-    ) * ext)
-
-    return str
-end
-
-
-function _define_path(plot::Plot{T}, directory::String;
-    ylabel,
-    colorcycle,
+function _define_path(cascade::Cascade, T::DataType;
+    colorcycle::Bool,
+    dir=WATERFALL_DIR,
+    subdir="",
     figdir="fig",
     ext=".png",
     kwargs...,
-) where T<:Geometry
-    # path = match(r"(.*)/data/.*$", directory)[1]
-    ylabel = lowercase(replace(ylabel, r" "=>"-"))
+)
+    subdir = lowercase(replace(subdir, r" "=>"-"))
+
+    file = unique(lowercase.([
+        subdir,
+        string(T),
+        _define_path(string.(cascade.permutation)),
+        "colorcycle" * _define_path(colorcycle),
+        _path_sample(cascade; kwargs...),
+    ]))
+    file = file[.!isempty.(file)]
     
-    path = joinpath(splitpath(directory)[1:end-1]..., figdir, ylabel)
+    path = joinpath(dir, figdir, file[1])
     if !isdir(path)
         @info("Creating directory: $path")
         mkpath(path)
     end
 
-    file = lowercase(join([
-        ylabel,
-        string(T),
-        "colorcycle" * _define_path(colorcycle),
-        _define_path(string.(plot.cascade.permutation)),
-        _path_sample(plot.cascade; kwargs...),
-    ], "_"))
-    
-    return joinpath(path, file*ext)
+    return joinpath(path, join(file,"_")) * ext
 end
 
 
@@ -790,10 +756,7 @@ function _define_title(str::Vector{String};
         leading=titleleading,
     )
 
-    lab.position = Luxor.Point(
-        WIDTH/2,
-        -height(lab) * ((length(str)-1)/length(str)),
-    )
+    lab.position = Luxor.Point(WIDTH/2, -height(lab))
 
     return lab
 end
