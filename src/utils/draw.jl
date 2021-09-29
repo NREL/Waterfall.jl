@@ -182,14 +182,13 @@ maxlength(lab::Vector{T}) where T<:Label = maximum(length.(lab))
 
 
 function _disclaimer( ; disclaimer=missing, kwargs...)
+    scale=1.3
+    
     if !ismissing(disclaimer)
         border = SEP/2
         pt = Luxor.Point(WIDTH/2, HEIGHT-SEP-FONTSIZE*scale)
 
-        lab = _define_from(Label{String}, disclaimer, pt;
-            scale=1.2,
-            valign=:bottom,
-        )
+        lab = _define_from(Label{String}, disclaimer, pt; scale=scale, valign=:bottom)
 
         box = Box(
             Tuple(Luxor.Point.(

@@ -114,13 +114,14 @@ function read_from(::Type{Plot{T}}, directory::String;
     metric_str = df[1,:Metric]
     
     plot = define_from(Plot{T}, copy(cascade);
-        ylabel = "$ylabel_str ($units_str)",
+        rng = rng,
         nsample = nsample,
+        ylabel = "$ylabel_str ($units_str)",
         dir = joinpath(splitpath(directory)[1:end-1]...),
         subdir = ylabel_str,
         kwargs...,
     )
-    
+
     plot.title = _define_title(options[:Technology]; ylabel=ylabel_str, metric=metric_str, nsample=nsample, rng=rng)
     # plot.path = _define_path(plot, directory; ylabel=ylabel_str, nsample=nsample, rng=rng, kwargs...)
     

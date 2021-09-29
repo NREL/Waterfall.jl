@@ -83,8 +83,7 @@ function define_from(::Type{Plot{T}}, cascade::Cascade{Data};
     nsample = coalesce(nsample, length(cascade))
     !ismissing(rng) && getindex!(cascade, rng)
     trend = get_trend(cascade)
-    # path = coalesce(path, _define_path(cascade, T; nsample=nsample, kwargs...))
-    
+
     cascade_geometry = set_geometry(cascade, T; nsample=nsample, vlims..., kwargs...)
     legd = _define_legend(cascade_geometry; nsample=nsample, trend=trend, vlims..., kwargs...)
     
@@ -93,7 +92,7 @@ function define_from(::Type{Plot{T}}, cascade::Cascade{Data};
         xaxis = define_from(XAxis, cascade; nsample=nsample, vlims..., kwargs...),
         yaxis = define_from(YAxis, cascade; nsample=nsample, vlims..., kwargs...),
         title = _define_title(cascade; nsample=nsample, vlims..., kwargs...),
-        path = _define_path(cascade, T; nsample=nsample, vlims..., kwargs...),
+        path = _define_path(cascade, T; nsample=nsample, rng=rng, vlims..., kwargs...),
         # Add other annotations to the legend.
         legend = _push!(legd, cascade, T, legend; trend=trend, nsample=nsample, vlims..., kwargs...),
     )

@@ -177,7 +177,8 @@ function collect_ticks(cascade::Cascade{Data}; vmin=missing, vmax=missing, kwarg
         end
     else
         major = _major_order([vmin,vmax])
-        vmax = floor(vmax; digits=-major)
+        minor = get_order(vmax-vmin)
+        vmax = floor(vmax; digits=-minor)
     end
     
     ticks = vmin:exp10(major):vmax
