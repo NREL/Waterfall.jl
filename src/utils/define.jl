@@ -66,8 +66,8 @@ function define_from(::Type{Vector{Data}}, df::DataFrames.DataFrame; kwargs...)
     data = [define_from(Data, sdf; kwargs...) for sdf in gdf]
 
     # Sort "start" samples by magnitude. Ensure consistent ordering in all subsequent steps.
-    iiorder = sortperm(get_value(data[1]))
-    [set_order!(data[ii], iiorder) for ii in 1:length(data)]
+    # iiorder = sortperm(get_value(data[1]))
+    # [set_order!(data[ii], iiorder) for ii in 1:length(data)]
 
     return data
 end
@@ -700,7 +700,8 @@ end
 """
 function _define_currency(lst::Vector{Float64}; kwargs...)
     minor = _minor_order(lst)
-    str = _define_currency.(lst; minor=minor)
+    # str = _define_currency.(lst; minor=minor)
+    str = _define_currency.(lst)
     [str[ii] = "+" * str[ii] for ii in 2:length(str)-1]
     return str
 end
@@ -710,16 +711,21 @@ function _define_currency(x::Float64; minor=missing)
     str = if x==0.0
         " –"
     else
-        major = coalesce(minor, get_order(x))
-        dgts = get_order(x)-minor
-        dgts==0 && (dgts=1)
+        order = get_order(x)
+        rpad(string(x)[1], mod(order,3)+1, "0") * _get_suffix(order)
+        # sffx = _get_suffix(order)
 
-        str = Printf.@sprintf("%.10e", round(x; digits=-minor))
-        replace(str,
-            match(Regex("\\d[.]0{$dgts}(.*)"), str)[1] => _get_suffix(minor),
-        )
+
+        # minor = coalesce(minor, get_order(x))
+        # dgts = get_order(x)-minor
+        # # dgts==0 && (dgts=1)
+
+        # str = Printf.@sprintf("%.10e", round(x; digits=-minor))
+        # replace(str,
+        #     match(Regex("\\d[.]0{$dgts}(.*)"), str)[1] => _get_suffix(minor),
+        # )
     end
-    return "\$" * str
+    return str * " USD"
 end
 
 _define_currency(x; kwargs...) = x

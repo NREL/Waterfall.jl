@@ -21,13 +21,14 @@ makedocs(clean = true,
     authors = "Caroline L. Hughes",
     # workdir = "../",
     pages = [
-        "Home" => "index.md",
-        "Data Generation" => Any[
-            "Architecture" => "man/data/overview.md",
-            "Distribution" => "man/data/distribution.md",
-            "Correlation" =>  "man/data/correlation.md",
+        "Home" => Any[
+            "Overview" => "index.md",
         ],
-        "API" => "api/functions.md",
+        "Methodology" => Any[
+            "Data Generation" => "man/generation.md",
+            "Visualization" => "man/visualization.md",
+        ],
+        # "API" => "api/functions.md",
     ]
 )
 

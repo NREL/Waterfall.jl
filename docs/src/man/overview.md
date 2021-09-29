@@ -147,19 +147,3 @@ There is the option to outline statistical values, with median sample value show
 **Coloring**
 Users are given the option to assign plot color such that each investment step is uniquely colored or such that there is a distinction between gains and losses.
 Up to 10 investments can be shown with distinguishable colors.
-
-
-```@raw html
-<table border="0" cellspacing="0" cellpadding="0">
-<tr>
-<td style="text-align:center"><em>
-	<img src='assets/output/horizontal_1234_colorcycle1_n10.png' alt='missing' />
-        <br>Investments uniquely colored
-</em></td>
-<td style="text-align:center"><em>
-    <img src='assets/output/horizontal_1234_colorcycle1_n10.png' alt='missing' />
-        <br>Gain (blue) vs. loss (red)
-</em></td>
-</tr>
-</table>
-```

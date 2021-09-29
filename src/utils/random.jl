@@ -149,12 +149,11 @@ R_{i,j} = R_{j,i} = x
 # Example
 
 ```jldoctest
-julia> random_rotation(4, 3)
-4×4 LinearAlgebra.UnitLowerTriangular{Float64,Array{Float64,2}}:
- 1.0         ⋅         ⋅    ⋅ 
- 0.766797   1.0        ⋅    ⋅ 
- 0.590845  -0.433763  1.0   ⋅ 
- 0.0        0.0       0.0  1.0
+julia> random_rotation(3)
+3×3 Array{Float64,2}:
+  1.0         0.0766797   0.0590845
+  0.0566237   1.0        -0.0205974
+ -0.0145853  -0.0539915   1.0
 ```
 """
 function random_rotation(dim::Integer;

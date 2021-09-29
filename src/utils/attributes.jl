@@ -8,6 +8,12 @@ end
 
 
 function set_geometry(cascade, ::Type{Vertical}, args...; kwargs...)
+    # Sort the sample order HERE. We want the samples to look random, not ordered in
+    # magnitude, for the animations.
+    data = collect_data(cascade)
+    iiorder = copy(sortperm(get_value(data[1])))
+    set_order!(data, iiorder)
+
     return _set_geometry(cascade, Vertical, Box, Blending, args...;
         style=:fill,
         subdivide=true,
