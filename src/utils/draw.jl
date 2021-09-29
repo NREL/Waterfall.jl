@@ -35,14 +35,22 @@ function draw(lab::T) where T <: Label
     return nothing
 end
 
+function draw(x::Cascade{Violin}; draw_start=true, kwargs...)
+    lst = x.steps
+    draw_start && insert!(lst, 1, plot.cascade.start)
+    draw(lst)
+    return nothing
+end
+
 # Draw some type values.
-draw(x::Cascade{T}) where T<:Geometry = draw(collect_data(x))
-draw(x::Cascade{Violin}) = draw(x.steps)
+draw(x::Cascade{T}; kwargs...) where T<:Geometry = draw(collect_data(x))
 draw(x::T) where T<:Geometry = draw(x.shape)
 
 # Draw all Type values
 function draw(x::T; kwargs...) where T<:Plot
-    _draw(x)
+    lst = collect(values(x))
+    draw(lst[1]; kwargs...)
+    _draw(lst[2:end])
     _disclaimer( ; kwargs...)
     return nothing
 end
@@ -183,7 +191,7 @@ maxlength(lab::Vector{T}) where T<:Label = maximum(length.(lab))
 
 function _disclaimer( ; disclaimer=missing, kwargs...)
     scale=1.3
-    
+
     if !ismissing(disclaimer)
         border = SEP/2
         pt = Luxor.Point(WIDTH/2, HEIGHT-SEP-FONTSIZE*scale)

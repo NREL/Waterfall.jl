@@ -122,9 +122,12 @@ function read_from(::Type{Plot{T}}, directory::String;
         kwargs...,
     )
 
-    plot.title = _define_title(options[:Technology]; ylabel=ylabel_str, metric=metric_str, nsample=nsample, rng=rng)
-    # plot.path = _define_path(plot, directory; ylabel=ylabel_str, nsample=nsample, rng=rng, kwargs...)
-    
+    plot.title = _define_title(options[:Technology];
+        ylabel=ylabel_str,
+        metric=metric_str,
+        nsample=nsample,
+        rng=rng,
+    )
     return plot
 end
 

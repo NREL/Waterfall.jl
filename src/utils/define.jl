@@ -80,6 +80,8 @@ function define_from(::Type{Plot{T}}, cascade::Cascade{Data};
     kwargs...,
 ) where T<:Geometry
     vlims = vlim(cascade; kwargs...)
+    println(vlims)
+
     nsample = coalesce(nsample, length(cascade))
     !ismissing(rng) && getindex!(cascade, rng)
     trend = get_trend(cascade)
@@ -91,7 +93,7 @@ function define_from(::Type{Plot{T}}, cascade::Cascade{Data};
         cascade = cascade_geometry,
         xaxis = define_from(XAxis, cascade; nsample=nsample, vlims..., kwargs...),
         yaxis = define_from(YAxis, cascade; nsample=nsample, vlims..., kwargs...),
-        title = _define_title(cascade; nsample=nsample, vlims..., kwargs...),
+        title = _define_title(cascade; nsample=nsample, rng=rng, vlims..., kwargs...),
         path = _define_path(cascade, T; nsample=nsample, rng=rng, vlims..., kwargs...),
         # Add other annotations to the legend.
         legend = _push!(legd, cascade, T, legend; trend=trend, nsample=nsample, vlims..., kwargs...),
@@ -365,21 +367,32 @@ end
 
 ## Define Annotation
 
-function _define_from(::Type{Annotation}, cascade::Cascade{Data}, Geometry::DataType,
+function _define_from(::Type{Annotation}, cascade::Cascade{Data}, T::DataType,
     args...;
     scale = 0.9,
     kwargs...,
 )
     # !!!! Maybe better way to align violin plot position?
-    valign = Geometry==Violin ? :top : :bottom
+    # valign = T==Violin ? :top : :bottom
+    valign = :bottom
 
-    c = update_stop!(copy(calculate(cascade, args...)))
+    cascade_args = update_stop!(copy(calculate(cascade, args...)))
+    label = _define_label(cascade, T, args...; scale=scale, valign=valign, kwargs...)
+    cascade = set_geometry(cascade_args, Horizontal, args...; alpha=1.0, style=:stroke, kwargs...)
 
-    return Annotation( ;
-        label = _define_label(cascade, Geometry, args...; scale=scale, valign=valign, kwargs...),
-        # println(round.(collect_value(c); digits=2))
-        cascade = set_geometry(c, Horizontal, args...; alpha=1.0, style=:stroke, kwargs...),
-    )
+    T==Violin && _shift_position!(label, cascade)
+
+    return Annotation(cascade, label)
+end
+
+
+function _shift_position!(label, cascade)
+    data = collect_data(cascade)
+    pts = collect.(getfield.(getindex.(getfield.(data,:shape),1),:position))
+    y = minimum.(pts; dims=2)
+
+    [label[ii].position = Luxor.Point(label[ii].position[1], y[ii]-SEP) for ii in 1:length(label)]
+    return label
 end
 
 
@@ -769,9 +782,9 @@ function _define_title(cascade::Cascade{Data}; nsample, kwargs...)
     idx = [true, cascade.iscorrelated, nsample>1]
 
     str = [
-        "$nsample SAMPLE" * (nsample>1 ? "S" : ""),
         _title_correlation( ; kwargs...),
-        _title_distribution( ; kwargs...)
+        _title_distribution( ; kwargs...),
+        _title_sample( ; nsample=nsample, kwargs...),
     ][idx]
 
     str = String.(str[.!isempty.(str)])
@@ -820,13 +833,13 @@ end
 
 
 "Format title string for normal distribution function"
-_title_normal(x) = "f(x; $(x[1]) < s < $(x[2]))"
+_title_normal(x) = "f(x ; $(x[1]) < s < $(x[2]))"
 
 
 "Format title string for uniform distribution function"
 function _title_uniform(x; abs::Bool=false)
     abs = abs ? "|" : ""
-    return "f($(abs)x$(abs); a>$(x[1]), b<$(x[2]))"
+    return "f($(abs)x$(abs) ; a>$(x[1]), b<$(x[2]))"
 end
 
 

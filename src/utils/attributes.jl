@@ -3,7 +3,7 @@
 Given a cascade and geometry, return a cascade with an updated type.
 """
 function set_geometry(cascade, ::Type{Violin}, args...; kwargs...)
-    return _set_geometry(cascade, Violin, Poly, Coloring, args...; alpha=0.66, style=:fill, kwargs...)
+    return _set_geometry(cascade, Violin, Poly, Coloring, args...; alpha=0.5, style=:fill, kwargs...)
 end
 
 

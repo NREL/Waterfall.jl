@@ -114,6 +114,7 @@ scale_x(cascade::T; kwargs...) where T <: Cascade = scale_x(collect_data(cascade
     scale_y(data::Data)
 """
 function scale_y(v::AbstractArray; vmin, vmax, vscale, kwargs...)
+    # println(vmin, "\t", vmax, "\t", vscale)
     return -vscale * (max.(v,vmin) .- vmax)
 end
 
@@ -157,8 +158,9 @@ function collect_ticks(cascade::Cascade{Data}; vmin=missing, vmax=missing, kwarg
     if |(ismissing(vmin), ismissing(vmax))
         major = _major_order(cascade)
         minor = _minor_order(cascade)
+        minor = max(minor,major-1)
         
-        vsum = cumulative_v(cascade; shift= 0.0, kwargs...)[1:end-1,:]
+        vsum = cumulative_v(cascade; shift = 0.0, kwargs...)[1:end-1,:]
         # CUT IF NOT SUMMING FOR VIOLIN?
         # vkde = getfield.(calculate(v2, KernelDensity.kde),:x)
         # vsum = hcat(first.(vkde), last.(vkde))
@@ -173,12 +175,11 @@ function collect_ticks(cascade::Cascade{Data}; vmin=missing, vmax=missing, kwarg
             vmax = maximum(vsum)
             vmax!=0.0 && (vmax = ceil(maximum(vsum) + 0.5*exp10(major); digits=-major))
         else
-            vmax = floor(vmax; digits=major)
+            vmax = floor(vmax; digits=-major)
         end
     else
-        major = _major_order([vmin,vmax])
-        minor = get_order(vmax-vmin)
-        vmax = floor(vmax; digits=-minor)
+        major = get_order(vmax-vmin)
+        vmax = floor(vmax; digits=-major)
     end
     
     ticks = vmin:exp10(major):vmax
