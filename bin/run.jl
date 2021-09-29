@@ -8,23 +8,22 @@ FONTSIZE = 24
 
 
 # List of permutations.
-perms = vcat([[
+ii = collect(1:4)
+perms = vcat([
     ii,
     swapat!(copy(ii), 1, 2),
-] for ii in [collect(1:4)]]...)
-
+    [ii[2:end];ii[1]],
+])
 
 # !!!! Add support for defining a legend to violin plots.
-for T in [Horizontal, Vertical, Parallel, Violin]
-    for nsample in [1,10,50][[2]]
+nsamples = [1,10,50]
+for T in [Horizontal, Vertical, Parallel, Violin][[2]]
+    for nsample in nsamples[[2]]
         for colorcycle in [true,false]
             for perm in perms
-                rngs = [
-                    missing;
-                    UnitRange.(1, 1:length(cascade));
-                ]
+                rngs = Any[missing]
+                # nsample==10 && append!(rngs, UnitRange.(1, 1:nsample))
                 for rng in rngs
-
                     (length(perm)>length(COLORCYCLE) && colorcycle) && continue
                     
                     # Define keyword arguments specific to this iteration.
@@ -36,11 +35,19 @@ for T in [Horizontal, Vertical, Parallel, Violin]
                         rng = rng,
                         # How should the plot be formatted?
                         colorcycle = colorcycle,
-                        ylabel = "Efficiency (%)",
+                        ylabel = "Cost (thousand USD)",
                         legend = (Statistics.quantile, 0.5),
                     )
                     
-                    global cascade = define_from(Cascade{Data}, df; locals..., kwargs...)
+                    global cascade = if nsample==1
+                        calculate!(
+                            define_from(Cascade{Data}, df; locals..., kwargs..., nsample=nsamples[2]),
+                            locals.legend...,
+                        )
+                    else
+                        define_from(Cascade{Data}, df; locals..., kwargs...)
+                    end
+
                     global plot = define_from(Plot{T}, copy(cascade);
                         subdir=string(T),
                         locals...,
@@ -48,6 +55,10 @@ for T in [Horizontal, Vertical, Parallel, Violin]
                         vmin = 16.0,
                         vmax = 22.5,
                     )
+                    
+                    if nsample==1
+                        plot.title.text = [plot.title.text[1]," "]
+                    end
 
                     Luxor.@png begin
                         Luxor.fontface("Gill Sans")

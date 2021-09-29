@@ -1,7 +1,7 @@
-﻿Process,Step,Value,Units
-first,State of Technology,20,%
-second,A,-2,%
-third,B,0.8,%
-fourth,C,0.0,%
-fifth,D,-0.5,%
-sixth,Projected Efficiency,18.5,%
+﻿Process,Step,Value,Units,Amount
+first,State of Technology,20,USD,0
+second,A,-2,USD,2E6
+third,B,0.8,USD,1E6
+fourth,C,0.0,USD,1E6
+fifth,D,-0.5,USD,1E6
+sixth,Projected Cost,18.5,USD,5E6

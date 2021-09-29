@@ -30,12 +30,12 @@ interactivity=(0.2,0.4)
 sample=:Sample
 value=:Value
 label=:Step
-sublabel=:Process
+sublabel=:Amount
 nsample=5
 
 kwargs = (
     label=label,
-    # sublabel=sublabel,
+    sublabel=sublabel,
     distribution=distribution,
     fuzziness=fuzziness,
     interactivity=interactivity,
