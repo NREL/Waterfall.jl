@@ -3,7 +3,7 @@
 Given a cascade and geometry, return a cascade with an updated type.
 """
 function set_geometry(cascade, ::Type{Violin}, args...; kwargs...)
-    return _set_geometry(cascade, Violin, Poly, Coloring, args...; alpha=0.5, style=:fill, kwargs...)
+    return _set_geometry(cascade, Violin, Poly, Coloring, args...; alpha=0.25, style=:fill, kwargs...)
 end
 
 
@@ -123,7 +123,7 @@ function set_position!(handle::Handle;
 )
     # Select x0 based on the overall plot trend.
     x0 = if trend>0; 3*SEP
-    else;            WIDTH-110
+    else;            WIDTH-150
     end
 
     # Shift y0 based on the number legend entries.

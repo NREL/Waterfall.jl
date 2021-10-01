@@ -10,6 +10,7 @@ Waterfall plots are unique in that they are inherently order-dependent.
 When step one in the cascade is calculated and displayed, it has no information of any subsequent steps.
 However, step two is both calculated and visualized with the knowledge of the results of step one, introducing a correlation between these steps.
 
+
 ## Order-Dependence
 
 In the case of a strictly linear manufacturing process for which all steps must be performed in only one order, the plotting order will be fixed.
@@ -26,6 +27,7 @@ The impact of any investments plotted after it, however, will not be included in
 This has the effect in obscuring correlations between investments and changing the results themselves as an artifact of decisions surrounding plotting order.
 Furthermore, there is no currently accepted method of visualizing uncertainty in waterfall plots.
 
+
 ## Correlated Investments
 
 Suppose we make four investments -- A,B,C,D -- that result in an increase or decrease in cost.
@@ -35,6 +37,7 @@ If we swap the order of investments A and B, we notice the following changes:
 2. A change in the **perceived** impact of each individual investment -- A,B,C,D -- as well as the overall final cost.
 
 If we move A such that it is the first, not the last investment, investment C now appears to **decrease** cost, rather than increase it as it did for the first two permutations (A-D sequentially; swapping A and B).
+
 
 ```@raw html
 <table border="0" cellspacing="0" cellpadding="0">
@@ -56,18 +59,20 @@ If we move A such that it is the first, not the last investment, investment C no
 </tr></table>
 ```
 
+
 ## Uncertainty
 
 Now, suppose that the **exact** impact of each investment is unknown, but rather is represented by *N* samples selected from a distribution.
 
+
 ```@raw html
 <table border="0" cellspacing="0" cellpadding="0"><tr>
 <td style="text-align:center"><em>
-    <img src='assets/output/horizontal_1234_colorcycle1_n01.png' alt='missing' />
+    <img src='assets/output/horizontal_1234_colorcycle0_n01.png' alt='missing' />
         <br>1 sample (no uncertainty)
 </em></td>
 <td style="text-align:center"><em>
-    <img src='assets/output/horizontal_1234_colorcycle1_n10.gif' alt='missing' />
+    <img src='assets/output/horizontal_1234_colorcycle0_n10.gif' alt='missing' />
         <br>10 random samples from a normal distribution
 </em></td>
 </tr></table>
@@ -75,6 +80,7 @@ Now, suppose that the **exact** impact of each investment is unknown, but rather
 
 When investment A is made at the end, rather than the beginning, its plot appears to be "fuzzier" when it is at the end than when it is at the beginning.
 This is a result the compounding impacts of investments B, C, and D preceeding it.
+
 
 ```@raw html
 <table border="0" cellspacing="0" cellpadding="0">
@@ -96,7 +102,8 @@ This is a result the compounding impacts of investments B, C, and D preceeding i
 </tr></table>
 ```
 
-### Visualization Options
+
+## Visualization Options
 
 Given either randomly-generated samples or model output (with the results of each investment stored in a separate spreadsheet), the package calculates and draws the magnitude at each investment step.
 The package also provides four visualization options to provide a user flexibility in how they want to display uncertainty:
@@ -114,15 +121,16 @@ The Horizontal- and Violin-type plots, however, overlay or aggregate samples, re
 The Violin plot shows the distribution of sample values in the width of each investment's violin.
 The Horizontal-type plot shows distribution as opacity, with darker and lighter outcomes more and less-likely to occur.
 
+
 ```@raw html
 <table border="0" cellspacing="0" cellpadding="0">
 <tr>
 <td style="text-align:center"><em>
-	<img src='assets/output/horizontal_1234_colorcycle1_n10.png' alt='missing' />
+	<img src='assets/output/horizontal_1234_colorcycle0_n10.png' alt='missing' />
         <br>Horizontal
 </em></td>
 <td style="text-align:center"><em>
-    <img src='assets/output/vertical_1234_colorcycle1_n10.png' alt='missing' />
+    <img src='assets/output/vertical_1234_colorcycle0_n10.png' alt='missing' />
         <br>Vertical
 </em></td>
 </tr>
@@ -130,20 +138,35 @@ The Horizontal-type plot shows distribution as opacity, with darker and lighter 
 <table border="0" cellspacing="0" cellpadding="0">
 <tr>
 <td style="text-align:center"><em>
-    <img src='assets/output/violin_1234_colorcycle1_n10.png' alt='missing' />
+    <img src='assets/output/violin_1234_colorcycle0_n10.png' alt='missing' />
         <br>Violin
 </em></td>
 <td style="text-align:center"><em>
-    <img src='assets/output/parallel_1234_colorcycle1_n10.png' alt='missing' />
+    <img src='assets/output/parallel_1234_colorcycle0_n10.png' alt='missing' />
         <br>Parallel
 </em></td>
 </tr>
 </table>
 ```
 
-**Explicit metrics.**
-There is the option to outline statistical values, with median sample value shown by default.
 
-**Coloring**
-Users are given the option to assign plot color such that each investment step is uniquely colored or such that there is a distinction between gains and losses.
-Up to 10 investments can be shown with distinguishable colors.
+Additional customization options are available:
+- **Explicit metrics.**
+    There is the option to outline statistical values, with median sample value shown by default.
+- **Coloring.**
+    Users are given the option to assign plot color such that each investment step is uniquely colored or such that there is a distinction between gains and losses.
+    Up to 10 investments can be shown with distinguishable colors.
+
+
+```@raw html
+<table border="0" cellspacing="0" cellpadding="0">
+<tr>
+<td style="text-align:center"><em>
+    <img src='assets/output/horizontal_1234_colorcycle0_n10.png' alt='missing' />
+</em></td>
+<td style="text-align:center"><em>
+    <img src='assets/output/horizontal_1234_colorcycle1_n10.png' alt='missing' />
+</em></td>
+</tr>
+</table>
+```

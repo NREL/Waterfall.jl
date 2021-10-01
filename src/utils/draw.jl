@@ -11,7 +11,10 @@ end
     set(x::Blending)
 These methods set the color or blend defined in `x`.
 """
-set(color::Coloring) = Luxor.setcolor(Luxor.sethue(color.hue)..., color.alpha)
+function set(color::Coloring)
+    println("alpha = $(color.alpha)")
+    Luxor.setcolor(Luxor.sethue(color.hue)..., color.alpha)
+end
 set(color::Blending) = Luxor.setblend(Luxor.blend(color.direction..., color.hue...))
 
 
@@ -142,8 +145,6 @@ function _extents(lab::Label{String}, idx)
     return measurement
 end
 
-
-
 width(lab::Label{String}) = _extents(lab, 3)
 
 width(lab::Vector{Label{String}}) = maximum(width.(lab))
@@ -151,22 +152,24 @@ width(lab::Vector{Label{String}}) = maximum(width.(lab))
 width(ax::XAxis) = ax.frame.position[2][1]
 width(ax::YAxis) = abs(ax.label.position[1]) + height(ax.label)
 
-width(plot::Plot) = ceil(sum(width.(plot.axes)) + 2*SEP) |> Int
+function width(plot::Plot; qualitative=false, kwargs...)
+    return if qualitative;  width()
+    else;                   ceil(sum(width.(plot.axes)) + 2*SEP) |> Int
+    end
+end
+
+width( ; kwargs...) = HEIGHT+2*BORDER
 
 
 """
 """
 
 function height(lab::Vector{T}) where T<:Label
-    result = maxlength(lab) * FONTSIZE * lab[1].scale * lab[1].leading
-    # return convert(Int, ceil(result))
-    return result
+    return maxlength(lab) * FONTSIZE * lab[1].scale * lab[1].leading
 end
 
 function height(lab::Label{Vector{String}})
-    result = length(lab) * FONTSIZE * lab.scale * lab.leading
-    return result
-    # return convert(Int, ceil(result))
+    return length(lab) * FONTSIZE * lab.scale * lab.leading
 end
 
 height(lab::Label{String}) = _extents(lab, 4)
@@ -174,14 +177,33 @@ height(lab::Label{String}) = _extents(lab, 4)
 height(ax::XAxis) = height(ax.ticklabels) + height(ax.ticksublabels)
 height(ax::YAxis) = ax.frame.position[1][2]
 
-height(plot::Plot) = ceil(sum(height.(plot.axes)) -plot.title.position[2] + 1.5*SEP) |> Int
+function height(plot::Plot; qualitative=false, kwargs...)
+    return if qualitative;  height()
+    else;                   ceil(sum(height.(plot.axes)) -plot.title.position[2] + 1.5*SEP) |> Int
+    end
+end
+
+height( ; kwargs...) = HEIGHT+2*BORDER
 
 
 "Return the left border of the plot in pixels."
-left_border(plot::Plot) = ceil(width(plot.axes[2])+SEP) |> Int
+function left_border(plot::Plot; qualitative=false, kwargs...)
+    return if qualitative;  left_border()
+    else;                   ceil(width(plot.axes[2])+SEP) |> Int
+    end
+end
+
+left_border( ; kwargs...) = BORDER
+
 
 "Return the top border of the plot in pixels."
-top_border(plot::Plot) = -ceil(plot.title.position[2]) |> Int
+function top_border(plot::Plot; qualitative=false, kwargs...)
+    return if qualitative;  top_border()
+    else;                   -ceil(plot.title.position[2]) |> Int
+    end
+end
+
+top_border( ; kwargs...) = BORDER
 
 
 """
@@ -189,6 +211,8 @@ top_border(plot::Plot) = -ceil(plot.title.position[2]) |> Int
 maxlength(lab::Vector{T}) where T<:Label = maximum(length.(lab))
 
 
+"Print a disclaimer across the bottom of the plot.
+It is intentionally overlaid above the x-axis to prevent cropping."
 function _disclaimer( ; disclaimer=missing, kwargs...)
     scale=1.3
 
@@ -210,27 +234,3 @@ function _disclaimer( ; disclaimer=missing, kwargs...)
     end
     return nothing
 end
-
-
-# function _draw_disclaimer()
-#     scale = 1.0
-#     border = 2
-#     alpha = 0.5
-
-#     center = Luxor.Point(WIDTH/2, HEIGHT-SEP-FONTSIZE*scale)
-#     lab = _define_from(Label{String}, "demonstration purposes only", center;
-#         scale=scale,
-#         valign=:bottom,
-#     )
-    
-#     shift = [-1; 1] * ([width(lab) height(lab)].+2*border)/2
-    
-#     box = Box(
-#         Tuple(Luxor.Point.(Tuple.(vectorize(shift))) .+ center),
-#         Coloring(_define_colorant("white"), 0.5),
-#         :fill,
-#     )
-#     draw([box,lab])
-
-#     return nothing
-# end

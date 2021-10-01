@@ -24,15 +24,16 @@ function scale_for(cascade, ::Type{T}; nsample, kwargs...) where T<:Geometry
     v2 = cumulative_v(cascade; shift= 0.0, kwargs...)
     
     vlims = vlim(cascade; kwargs...)
-
+    
     y1 = scale_y(v1; vlims...)
     y2 = scale_y(v2; vlims...)
 
     x1, x2 = scale_x(cascade; kwargs..., ncol=nsample)
+    # println(size(x1),"\t",size(y1))
 
     pos = vectorize(
-        Luxor.Point.(x1[:, 1:length(cascade)],y1),
-        Luxor.Point.(x2[:, 1:length(cascade)],y2),
+        Luxor.Point.(x1[:, 1:length(cascade)], y1),
+        Luxor.Point.(x2[:, 1:length(cascade)], y2),
     )
     return all(length.(pos).==1) ? (pos = getindex.(pos,1)) : pos
 end

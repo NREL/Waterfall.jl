@@ -80,7 +80,6 @@ function define_from(::Type{Plot{T}}, cascade::Cascade{Data};
     kwargs...,
 ) where T<:Geometry
     vlims = vlim(cascade; kwargs...)
-    println(vlims)
 
     nsample = coalesce(nsample, length(cascade))
     !ismissing(rng) && getindex!(cascade, rng)
@@ -318,7 +317,7 @@ function _define_from(::Type{Handle}, cascade::Cascade{Violin};
 )
     N = length(cascade)
     # if colorcycle
-        str = "$N SAMPLE" * (N>1 ? "S" : "")
+        str = "SAMPLE" * (N>1 ? "S" : "")
         shape = Box( ; 
             position = Luxor.Point.((0,1),0),
             color = Coloring(_define_colorant("black"), cascade.start.shape.color.alpha),
@@ -411,7 +410,6 @@ This function calculates an alpha for `N` samples to scale transparency for over
 - `fun::Function=log`, scaling function ``\\ln``
 """
 function _define_alpha(N::Int; factor::Real=0.25, fun::Function=log, kwargs...)
-    # @info(N)
     return min(factor/fun(N), 1.0)
 end
 
@@ -780,18 +778,16 @@ function _define_title(str::Vector{String};
 end
 
 
-function _define_title(cascade::Cascade{Data}; nsample, kwargs...)
+function _define_title(cascade::Cascade{Data}; kwargs...)
     # Select which rows of the title to show:
     # (1) Always show the number of samples,
     # (2) Show correlation range if one is applied,
     # (3) Show sample distribution if multiple samples are given.
-    idx = [true, cascade.iscorrelated, nsample>1]
-
     str = [
         _title_correlation( ; kwargs...),
         _title_distribution( ; kwargs...),
-        _title_sample( ; nsample=nsample, kwargs...),
-    ][idx]
+        _title_sample( ; kwargs...),
+    ]
 
     str = String.(str[.!isempty.(str)])
 
@@ -839,24 +835,23 @@ end
 
 
 "Format title string for normal distribution function"
-_title_normal(x) = "f(x ; $(x[1]) < s < $(x[2]))"
+_title_normal(x) = "N(x; t),  t~U($(x[1]), $(x[2]))"
 
 
 "Format title string for uniform distribution function"
 function _title_uniform(x; abs::Bool=false)
-    abs = abs ? "|" : ""
-    return "f($(abs)x$(abs) ; a>$(x[1]), b<$(x[2]))"
+    return "U($(x[1]), $(x[2]))"
 end
 
 
 "Format title string for SAMPLE distribution"
-function _title_distribution( ; distribution=missing, fuzziness=missing, kwargs...)
-    |(ismissing(distribution), ismissing(fuzziness)) && return ""
+function _title_distribution( ; distribution=missing, fuzziness=missing, nsample, kwargs...)
+    |(ismissing(distribution), ismissing(fuzziness), nsample==1) && return " "
+    
+    str = "DISTRIBUTION:  "
 
-    str = uppercase("$distribution sample distribution: ")
-
-    return if distribution==:normal; str * _title_normal(fuzziness)
-    elseif distribution==:uniform;   str * _title_uniform(fuzziness)
+    return if distribution==:normal;       str * _title_normal(fuzziness)
+    elseif distribution==:uniform;  str * _title_uniform(fuzziness)
     else; ""
     end
 end
@@ -864,16 +859,16 @@ end
 
 "Format title string for correlation coefficient"
 function _title_correlation( ; interactivity=missing, kwargs...)
-    return if ismissing(interactivity)
-        ""
+    return if ismissing(interactivity); " "
     else
-        "CORRELATION COEFFICIENT: " * _title_uniform(interactivity; abs=true)
+        "CORRELATION:  |R| ~ " * _title_uniform(interactivity; abs=true)
     end
 end
 
 
 "Format string to print number of samples for a plot title."
 function _title_sample( ; nsample, rng=missing, kwargs...)
+    nsample==1 && return " "
     return string(
         ismissing(rng) ? "" : lpad(rng[end], length(string(nsample)), " ")*"/",
         nsample,

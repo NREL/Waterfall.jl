@@ -2,7 +2,7 @@
 Waterfall.jl provides methods to generate random distributions of randomly correlated data points to provide "toy" data for development purposes.
 This aides in waterfall plot development to assess the challenges of using waterfall plots to visualize correlated investments with uncertain impacts.
 
-## Random Correlations
+## Random Correlation
 Waterfall.jl includes methods to correlate input data by replacing each data point by a random uniform or normal distribution centered at its value, and, if desired, adding random correlation to the sets of samples.
 
 Given uncorrelated, singular data points for each investment, Waterfall.jl has the capability to add a random (or specified) number of random correlations between random sets of investments.

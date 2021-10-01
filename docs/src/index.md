@@ -63,11 +63,11 @@ Now, suppose that the **exact** impact of each investment is unknown, but rather
 ```@raw html
 <table border="0" cellspacing="0" cellpadding="0"><tr>
 <td style="text-align:center"><em>
-    <img src='assets/output/horizontal_1234_colorcycle1_n01.png' alt='missing' />
+    <img src='assets/output/horizontal_1234_colorcycle0_n01.png' alt='missing' />
         <br>1 sample (no uncertainty)
 </em></td>
 <td style="text-align:center"><em>
-    <img src='assets/output/horizontal_1234_colorcycle1_n10.gif' alt='missing' />
+    <img src='assets/output/horizontal_1234_colorcycle0_n10.gif' alt='missing' />
         <br>10 random samples from a normal distribution
 </em></td>
 </tr></table>
@@ -96,7 +96,7 @@ This is a result the compounding impacts of investments B, C, and D preceeding i
 </tr></table>
 ```
 
-### Visualization Options
+## Visualization Options
 
 Given either randomly-generated samples or model output (with the results of each investment stored in a separate spreadsheet), the package calculates and draws the magnitude at each investment step.
 The package also provides four visualization options to provide a user flexibility in how they want to display uncertainty:
@@ -118,11 +118,11 @@ The Horizontal-type plot shows distribution as opacity, with darker and lighter 
 <table border="0" cellspacing="0" cellpadding="0">
 <tr>
 <td style="text-align:center"><em>
-	<img src='assets/output/horizontal_1234_colorcycle1_n10.png' alt='missing' />
+	<img src='assets/output/horizontal_1234_colorcycle0_n10.png' alt='missing' />
         <br>Horizontal
 </em></td>
 <td style="text-align:center"><em>
-    <img src='assets/output/vertical_1234_colorcycle1_n10.png' alt='missing' />
+    <img src='assets/output/vertical_1234_colorcycle0_n10.png' alt='missing' />
         <br>Vertical
 </em></td>
 </tr>
@@ -130,35 +130,33 @@ The Horizontal-type plot shows distribution as opacity, with darker and lighter 
 <table border="0" cellspacing="0" cellpadding="0">
 <tr>
 <td style="text-align:center"><em>
-    <img src='assets/output/violin_1234_colorcycle1_n10.png' alt='missing' />
+    <img src='assets/output/violin_1234_colorcycle0_n10.png' alt='missing' />
         <br>Violin
 </em></td>
 <td style="text-align:center"><em>
-    <img src='assets/output/parallel_1234_colorcycle1_n10.png' alt='missing' />
+    <img src='assets/output/parallel_1234_colorcycle0_n10.png' alt='missing' />
         <br>Parallel
 </em></td>
 </tr>
 </table>
 ```
 
-**Explicit metrics.**
-There is the option to outline statistical values, with median sample value shown by default.
-
-**Coloring**
-Users are given the option to assign plot color such that each investment step is uniquely colored or such that there is a distinction between gains and losses.
-Up to 10 investments can be shown with distinguishable colors.
+Additional customization options are available:
+- **Explicit metrics.**
+    There is the option to outline statistical values, with median sample value shown by default.
+- **Coloring.**
+    Users are given the option to assign plot color such that each investment step is uniquely colored or such that there is a distinction between gains and losses.
+    Up to 10 investments can be shown with distinguishable colors.
 
 
 ```@raw html
 <table border="0" cellspacing="0" cellpadding="0">
 <tr>
 <td style="text-align:center"><em>
-	<img src='assets/output/horizontal_1234_colorcycle1_n10.png' alt='missing' />
-        <br>Investments uniquely colored
+    <img src='assets/output/horizontal_1234_colorcycle0_n10.png' alt='missing' />
 </em></td>
 <td style="text-align:center"><em>
     <img src='assets/output/horizontal_1234_colorcycle1_n10.png' alt='missing' />
-        <br>Gain (blue) vs. loss (red)
 </em></td>
 </tr>
 </table>
